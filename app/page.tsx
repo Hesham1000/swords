@@ -1,65 +1,164 @@
-import Image from "next/image";
+// app/page.tsx - Premium KINGS Landing Page
+"use client";
 
-export default function Home() {
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { motion, useScroll, useTransform } from "framer-motion";
+import {
+  ArrowRight,
+  Zap,
+  Shield,
+  Wallet,
+  LayoutDashboard,
+  Package,
+  TrendingUp,
+  Globe
+} from "lucide-react";
+import "./globals.css";
+
+const KingsLogo = () => (
+  <div className="hero-nav-kings">
+    <motion.div
+      className="sidebar-brand"
+      style={{ fontSize: "24px", fontWeight: 900 }}
+      animate={{ textShadow: ["0 0 0px var(--accent-blue)", "0 0 8px var(--accent-blue)", "0 0 0px var(--accent-blue)"] }}
+      transition={{ duration: 3, repeat: Infinity }}
+    >
+      <motion.span
+        animate={{ backgroundPosition: ["0%", "200%"] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+        style={{
+          background: "linear-gradient(90deg, var(--text-primary), var(--accent-blue), var(--text-primary))",
+          backgroundSize: "200% auto",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent"
+        }}
+      >
+        KINGS
+      </motion.span>
+    </motion.div>
+  </div>
+);
+
+export default function LandingPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { scrollYProgress } = useScroll();
+  const yRange = useTransform(scrollYProgress, [0, 1], [0, -100]);
+
+  useEffect(() => {
+    const cookies = document.cookie.split(";");
+    const hasToken = cookies.some((c) => c.trim().startsWith("access_token="));
+    setIsAuthenticated(hasToken);
+  }, []);
+
+  const features = [
+    { title: "Smart Dashboard", description: "Real-time analytics and inventory tracking for elite fencers.", icon: LayoutDashboard },
+    { title: "Secure Wallet", description: "Seamless EGP, USD, and EUR transactions for global trade.", icon: Wallet },
+    { title: "Premium Gear", description: "Only the highest standard FIE certified equipment.", icon: Shield },
+    { title: "Global Network", description: "Connecting academies and athletes across the world.", icon: Globe },
+  ];
+
+  const categories = [
+    { name: "PBT Professional", image: "/images/fencing_mask.png", count: 42 },
+    { name: "Allstar FIE", image: "/images/fencing_epee.png", count: 28 },
+    { name: "Uhlmann Gear", image: "/images/fencing_glove.png", count: 35 },
+  ];
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="fencing-landing">
+      <KingsLogo />
+
+      {/* Hero Section */}
+      <section className="landing-hero">
+        <div className="hero-bg-container">
+          <img
+            src="/images/fencing_hero.png"
+            alt="Fencing Duel"
+            className="hero-bg-image"
+          />
+          <div className="hero-overlay-gradient" style={{ background: 'radial-gradient(circle at center, rgba(0,0,0,0.3) 0%, var(--bg-deep) 100%)' }}></div>
+        </div>
+
+        <div className="landing-container">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="hero-content-box"
+          >
+            <motion.span
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="section-tag"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              The Next Frontier
+            </motion.span>
+            <h1 className="hero-main-title">
+              ELEVATE YOUR <br />
+              <span className="glow-text">COMMAND</span>
+            </h1>
+            <p className="hero-description" style={{ color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+              The premier marketplace and command center for the global fencing community.
+              Manage equipment, track performance, and dominate the strip.
+            </p>
+
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              Learning
-            </a>{" "}
-            center.
+              <Link href={isAuthenticated ? "/dashboard" : "/sign-in"} style={{ textDecoration: 'none' }}>
+                <button className="primary-btn" style={{ margin: "0 auto", padding: "1.5rem 3rem", fontSize: "1.1rem", textDecoration: 'none' }}>
+                  {isAuthenticated ? "ENTER COMMAND CENTER" : "SIGN IN"}
+                </button>
+              </Link>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Arsenal Section */}
+      <section className="landing-section">
+        <div className="landing-container">
+          <span className="section-tag">THE ARSENAL</span>
+          <h2 className="section-title">PREMIUM SELECTION</h2>
+
+          <div className="arsenal-grid">
+            {categories.map((cat, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                viewport={{ once: true }}
+                className="arsenal-card"
+              >
+                <div style={{ position: 'relative', height: '200px', borderRadius: '16px', overflow: 'hidden', marginBottom: '1.5rem' }}>
+                  <img src={cat.image} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}></div>
+                  <div style={{ position: 'absolute', bottom: '1rem', left: '1rem' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 900, color: 'var(--accent-blue)', letterSpacing: '1px' }}>{cat.count} PRODUCTS</span>
+                  </div>
+                </div>
+                <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '0.5rem' }}>{cat.name}</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Technical precision engineered for professional competition.</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+
+      {/* Footer */}
+      <footer className="landing-section" style={{ padding: '4rem 0', borderTop: '1px solid var(--border-tech)' }}>
+        <div className="landing-container" style={{ textAlign: 'center' }}>
+          <KingsLogo />
+          <p style={{ marginTop: '2rem', color: 'var(--text-secondary)', fontSize: '14px' }}>
+            © 2026 KINGS Fencing Marketplace. All Rights Reserved.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </footer>
     </div>
   );
 }
+
