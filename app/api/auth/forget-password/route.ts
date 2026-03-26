@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       const timeDiff =
         now.getTime() - new Date(existingUser.lastEmailSent).getTime();
       if (timeDiff < 60000) {
-        logger.warn("Password reset email sent too recently", {
+        console.warn("Password reset email sent too recently", {
           email,
           secondsRemaining: Math.ceil((60000 - timeDiff) / 1000),
         });
