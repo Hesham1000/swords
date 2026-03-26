@@ -122,7 +122,7 @@ export default function LandingPage() {
             >
               <Link href={isAuthenticated ? "/dashboard" : "/sign-in"} style={{ textDecoration: 'none' }}>
                 <button className="primary-btn" style={{ margin: "0 auto", padding: "1.5rem 3rem", fontSize: "1.1rem", textDecoration: 'none' }}>
-                  {isAuthenticated ? "PROCEED TO DASHBOARD" : "JOIN THE ELITE"}
+                  {isAuthenticated ? "PROCEED TO DASHBOARD" : "JOIN To Kings"}
                 </button>
               </Link>
             </motion.div>

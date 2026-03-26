@@ -114,9 +114,11 @@ const Sidebar = ({
       >
         <motion.div
           className="sidebar-brand"
+          style={{ display: "flex", alignItems: "center", gap: "10px" }}
           animate={{ textShadow: ["0 0 0px var(--accent-blue)", "0 0 8px var(--accent-blue)", "0 0 0px var(--accent-blue)"] }}
           transition={{ duration: 3, repeat: Infinity }}
         >
+          <img src="/icon.svg" alt="Kings Logo" width="32" height="32" />
           <motion.span
             animate={{ backgroundPosition: ["0%", "200%"] }}
             transition={{ duration: 5, repeat: Infinity, ease: "linear" }}

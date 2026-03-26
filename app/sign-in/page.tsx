@@ -4,6 +4,7 @@ import { useState, FormEvent, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { Eye, EyeOff } from "lucide-react";
 
 interface FormData {
   email: string;
@@ -24,6 +25,7 @@ const FencingLogin = () => {
   const [isLoading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoginForm, setIsLoginForm] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Add error state
   const [error, setError] = useState<string | null>(null);
@@ -316,7 +318,7 @@ const FencingLogin = () => {
 
       <div className="form__group field">
         <input
-          type="password"
+          type={showPassword ? "text" : "password"}
           className={`fencing-input ${formError?.field === "password" ? "error" : ""
             }`}
           value={formData.password}
@@ -332,6 +334,13 @@ const FencingLogin = () => {
           placeholder=" "
         />
         <label className="form__label">Password</label>
+        <button
+          type="button"
+          className="password-toggle-btn"
+          onClick={() => setShowPassword(!showPassword)}
+        >
+          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+        </button>
         <p className="validation" ref={validationRefs.loginPassword}></p>
         {/* Display field-specific error above the input */}
         {formError && formError.field === "password" && (
@@ -398,10 +407,11 @@ const FencingLogin = () => {
               <div className="sidebar-header" style={{ padding: "0 0 2rem 0", background: "none" }}>
                 <motion.div
                   className="sidebar-brand"
-                  style={{ padding: 0, justifyContent: "flex-start", fontSize: "32px" }}
+                  style={{ padding: 0, justifyContent: "flex-start", fontSize: "32px", display: "flex", alignItems: "center", gap: "12px" }}
                   animate={{ textShadow: ["0 0 0px var(--accent-blue)", "0 0 8px var(--accent-blue)", "0 0 0px var(--accent-blue)"] }}
                   transition={{ duration: 3, repeat: Infinity }}
                 >
+                  <img src="/icon.svg" alt="Kings Logo" width="48" height="48" />
                   <motion.span
                     animate={{ backgroundPosition: ["0%", "200%"] }}
                     transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
@@ -437,10 +447,11 @@ const FencingLogin = () => {
               <div className="sidebar-header" style={{ padding: "0 0 2rem 0", background: "none" }}>
                 <motion.div
                   className="sidebar-brand"
-                  style={{ padding: 0, justifyContent: "flex-start", fontSize: "32px" }}
+                  style={{ padding: 0, justifyContent: "flex-start", fontSize: "32px", display: "flex", alignItems: "center", gap: "12px" }}
                   animate={{ textShadow: ["0 0 0px var(--accent-blue)", "0 0 8px var(--accent-blue)", "0 0 0px var(--accent-blue)"] }}
                   transition={{ duration: 3, repeat: Infinity }}
                 >
+                  <img src="/icon.svg" alt="Kings Logo" width="48" height="48" />
                   <motion.span
                     animate={{ backgroundPosition: ["0%", "200%"] }}
                     transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
