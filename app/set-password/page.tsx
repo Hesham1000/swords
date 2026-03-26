@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent, useRef, useEffect } from "react";
+import { useState, FormEvent, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -23,7 +23,7 @@ interface PasswordRequirements {
   passwordsMatch: boolean;
 }
 
-const SetPassword = () => {
+const SetPasswordContent = () => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -310,6 +310,21 @@ const SetPassword = () => {
         </div>
       </div>
     </section>
+  );
+};
+
+const SetPassword = () => {
+  return (
+    <Suspense fallback={
+      <div className="loading-overlay">
+        <div className="loading-content">
+          <div className="spinner"></div>
+          <p>Loading security context...</p>
+        </div>
+      </div>
+    }>
+      <SetPasswordContent />
+    </Suspense>
   );
 };
 
