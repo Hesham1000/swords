@@ -177,6 +177,15 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 6, // 6 hours
     });
 
+    // Add a non-httpOnly cookie for the client UI to check login state
+    response.cookies.set("logged_in", "true", {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 60 * 60 * 6,
+    });
+
     return response;
   } catch (error) {
     if (error instanceof ApiError) {

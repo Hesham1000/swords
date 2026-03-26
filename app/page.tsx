@@ -17,7 +17,8 @@ import {
 import "./globals.css";
 
 const KingsLogo = () => (
-  <div className="hero-nav-kings">
+  <div className="hero-nav-kings" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+    <img src="/icon.svg" alt="Kings Logo" width="40" height="40" />
     <motion.div
       className="sidebar-brand"
       style={{ fontSize: "24px", fontWeight: 900 }}
@@ -47,7 +48,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     const cookies = document.cookie.split(";");
-    const hasToken = cookies.some((c) => c.trim().startsWith("access_token="));
+    const hasToken = cookies.some((c) => c.trim().startsWith("logged_in="));
     setIsAuthenticated(hasToken);
   }, []);
 
@@ -59,9 +60,21 @@ export default function LandingPage() {
   ];
 
   const categories = [
-    { name: "PBT Professional", image: "/images/fencing_mask.png", count: 42 },
-    { name: "Allstar FIE", image: "/images/fencing_epee.png", count: 28 },
-    { name: "Uhlmann Gear", image: "/images/fencing_glove.png", count: 35 },
+    { 
+      name: "PBT", 
+      image: "/images/fencing_mask.png", 
+      description: "Hungarian excellence known for unparalleled durability and classic competitive designs."
+    },
+    { 
+      name: "Allstar", 
+      image: "/images/fencing_epee.png", 
+      description: "The choice of champions. High-performance German engineering for the world's elite."
+    },
+    { 
+      name: "Uhlmann", 
+      image: "/images/fencing_glove.png", 
+      description: "Precision and reliability. Premium FIE-certified gear for serious competitors."
+    },
   ];
 
   return (
@@ -92,15 +105,15 @@ export default function LandingPage() {
               transition={{ delay: 0.2 }}
               className="section-tag"
             >
-              The Next Frontier
+              EQUIPPING THE ELITE
             </motion.span>
             <h1 className="hero-main-title">
-              ELEVATE YOUR <br />
-              <span className="glow-text">COMMAND</span>
+              THE ULTIMATE <br />
+              <span className="glow-text">ARSENAL</span>
             </h1>
             <p className="hero-description" style={{ color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-              The premier marketplace and command center for the global fencing community.
-              Manage equipment, track performance, and dominate the strip.
+              Direct access to **PBT**, **Allstar**, and **Uhlmann**. The premier marketplace and command center for the global fencing community. 
+              Manage your gear, track your performance, and dominate the strip.
             </p>
 
             <motion.div
@@ -109,7 +122,7 @@ export default function LandingPage() {
             >
               <Link href={isAuthenticated ? "/dashboard" : "/sign-in"} style={{ textDecoration: 'none' }}>
                 <button className="primary-btn" style={{ margin: "0 auto", padding: "1.5rem 3rem", fontSize: "1.1rem", textDecoration: 'none' }}>
-                  {isAuthenticated ? "ENTER COMMAND CENTER" : "SIGN IN"}
+                  {isAuthenticated ? "PROCEED TO DASHBOARD" : "JOIN THE ELITE"}
                 </button>
               </Link>
             </motion.div>
@@ -137,11 +150,10 @@ export default function LandingPage() {
                   <img src={cat.image} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}></div>
                   <div style={{ position: 'absolute', bottom: '1rem', left: '1rem' }}>
-                    <span style={{ fontSize: '10px', fontWeight: 900, color: 'var(--accent-blue)', letterSpacing: '1px' }}>{cat.count} PRODUCTS</span>
                   </div>
                 </div>
                 <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '0.5rem' }}>{cat.name}</h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Technical precision engineered for professional competition.</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{cat.description}</p>
               </motion.div>
             ))}
           </div>

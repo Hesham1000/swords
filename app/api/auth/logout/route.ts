@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
     const authCookies = [
       "access_token",
       "refresh_token",
+      "logged_in",
     ];
 
     for (const cookieName of authCookies) {

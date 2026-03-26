@@ -1,0 +1,12 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Circular Border -->
+  <circle cx="256" cy="256" r="240" stroke="#0066FF" stroke-width="20"/>
+  
+  <!-- Crown (Kings) -->
+  <path d="M156 320L120 200L200 240L256 120L312 240L392 200L356 320H156Z" fill="#0066FF"/>
+  
+  <!-- Fencing Sword (Epee) -->
+  <rect x="246" y="320" width="20" height="120" rx="4" fill="#0F172A"/>
+  <circle cx="256" cy="330" r="30" stroke="#0F172A" stroke-width="8"/>
+  <path d="M256 100V440" stroke="#0F172A" stroke-width="4" stroke-linecap="round"/>
+</svg>
