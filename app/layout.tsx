@@ -1,13 +1,11 @@
 // app/layout.tsx
 import "./globals.css";
+import { Inter } from "next/font/google";
 
-// Removed Google Font import to fix network-related build errors in Docker
-// const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: "Fencing Marketplace - Premier Fencing Community",
-  // description:
-    // "Connect with elite fencers, discover premium equipment, and elevate your fencing journey.",
 };
 
 export default function RootLayout({
@@ -17,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased font-sans">
+      <body className={inter.className}>
         {/* Remove any navigation that conflicts with landing page */}
         {children}
       </body>
