@@ -25,7 +25,7 @@ import Sidebar from "../components/sidebar";
 import ProductForm from "../components/productform";
 import ProductsList from "../components/products-list";
 import { getProducts, deleteProduct, Product } from "../lib/api/product";
-import { getInvoices, createInvoice, updateInvoiceStatus, Invoice } from "../lib/api/invoice";
+import { getInvoices, updateInvoiceStatus, Invoice } from "../lib/api/invoice";
 import { getWalletBalance, getWalletTransactions, WalletTransaction } from "../lib/api/wallet";
 import InvoiceForm from "../components/invoice-form";
 import WalletDepositForm from "../components/wallet-deposit-form";
@@ -65,6 +65,7 @@ const AdminLayoutContent = () => {
   const [invoicesLoading, setInvoicesLoading] = useState(false);
   const [invoicesError, setInvoicesError] = useState<string>("");
   const [showInvoiceForm, setShowInvoiceForm] = useState(false);
+  const [viewingItemsInvoice, setViewingItemsInvoice] = useState<Invoice | null>(null);
   const [refreshInvoices, setRefreshInvoices] = useState(false);
 
   // Wallet state
@@ -717,25 +718,32 @@ const AdminLayoutContent = () => {
                   </div>
                   <div className="invoice-date">{invoice.date}</div>
                 </div>
-                <div className="invoice-actions-col">
-                  <span className={`status-badge status-${invoice.status}`}>
-                    {invoice.status === "overdue" && <AlertCircle size={14} />}
-                    {invoice.status}
-                  </span>
-                  {invoice.status !== "paid" && (
+                  <div className="invoice-actions-col">
                     <button 
-                      className="mark-paid-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMarkAsPaid(invoice._id!);
-                      }}
+                      className="view-items-btn"
+                      onClick={() => setViewingItemsInvoice(invoice)}
+                      title="View Items"
                     >
-                      <CheckCircle size={14} />
-                      Mark as Paid
+                      <Package size={14} />
+                      Items
                     </button>
-                  )}
-                  
-                </div>
+                    <span className={`status-badge status-${invoice.status}`}>
+                      {invoice.status === "overdue" && <AlertCircle size={14} />}
+                      {invoice.status}
+                    </span>
+                    {invoice.status !== "paid" && (
+                      <button 
+                        className="mark-paid-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMarkAsPaid(invoice._id!);
+                        }}
+                      >
+                        <CheckCircle size={14} />
+                        Mark as Paid
+                      </button>
+                    )}
+                  </div>
               </div>
             ))}
           </div>
@@ -778,6 +786,94 @@ const AdminLayoutContent = () => {
                       setShowInvoiceForm(false);
                     }}
                   />
+                </div>
+              </motion.div>
+            </motion.div>
+          </div>
+        )}
+
+        {viewingItemsInvoice && (
+          <div className="management-modal-wrapper">
+            <motion.div
+              className="modal-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setViewingItemsInvoice(null)}
+            >
+              <motion.div
+                className="centered-modal"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="modal-header">
+                  <div className="header-info">
+                    <h2 className="modal-title">Invoice Items</h2>
+                    <p className="modal-subtitle">{viewingItemsInvoice.invoiceId} — {viewingItemsInvoice.customer}</p>
+                  </div>
+                  <button
+                    className="close-modal-btn"
+                    onClick={() => setViewingItemsInvoice(null)}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="modal-body">
+                  <div className="invoice-detail-view">
+                    <div className="items-table-header">
+                      <span>Product</span>
+                      <span className="text-center">Qty</span>
+                      <span className="text-right">Price</span>
+                      <span className="text-right">Total</span>
+                    </div>
+                    <div className="items-table-body">
+                      {viewingItemsInvoice.items.map((item, idx) => (
+                        <div key={idx} className="item-detail-row">
+                          <div className="item-name-col">
+                            <span className="name">{item.name}</span>
+                            {item.discount > 0 && (
+                              <span className="discount-tag">-{item.discount} EGP discount</span>
+                            )}
+                          </div>
+                          <div className="item-qty-col text-center">{item.quantity}</div>
+                          <div className="item-price-col text-right">
+                             {(item.price || 0).toLocaleString()} EGP
+                          </div>
+                          <div className="item-total-col text-right">
+                            {(( (item.price || 0) - (item.discount || 0) ) * item.quantity).toLocaleString()} EGP
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="invoice-summary-details">
+                       {viewingItemsInvoice.discount > 0 && (
+                        <div className="summary-row">
+                          <span>Subtotal</span>
+                          <span>{(viewingItemsInvoice.amount + viewingItemsInvoice.discount).toLocaleString()} EGP</span>
+                        </div>
+                       )}
+                       {viewingItemsInvoice.discount > 0 && (
+                        <div className="summary-row discount">
+                          <span>Total Discount</span>
+                          <span>-{viewingItemsInvoice.discount.toLocaleString()} EGP</span>
+                        </div>
+                       )}
+                       <div className="summary-row grand-total">
+                         <span>Grand Total</span>
+                         <span>{viewingItemsInvoice.amount.toLocaleString()} EGP</span>
+                       </div>
+                       {viewingItemsInvoice.deposit && viewingItemsInvoice.deposit > 0 && (
+                         <div className="summary-row deposit">
+                           <span>Deposit Paid</span>
+                           <span>{viewingItemsInvoice.deposit.toLocaleString()} EGP</span>
+                         </div>
+                       )}
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>
@@ -1262,6 +1358,154 @@ const AdminLayoutContent = () => {
           /* Fallback for items not moved to cols yet if any */
           flex: 1;
         }
+
+        :global(.view-items-btn) {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: rgba(255, 255, 255, 0.05);
+          color: var(--text-secondary);
+          border: 1px solid var(--border-tech);
+          padding: 0.5rem 1rem;
+          border-radius: 8px;
+          font-family: var(--font-display);
+          font-size: 11px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        :global(.view-items-btn):hover {
+          background: rgba(var(--accent-blue-rgb, 59, 130, 246), 0.1);
+          border-color: var(--accent-blue);
+          color: var(--accent-blue);
+          transform: translateY(-1px);
+        }
+
+        :global(.invoice-detail-view) {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+
+        :global(.items-table-header) {
+          display: grid;
+          grid-template-columns: 2fr 0.5fr 1fr 1fr;
+          padding: 0.75rem 1rem;
+          background: rgba(255, 255, 255, 0.03);
+          border-radius: 8px;
+          font-family: var(--font-display);
+          font-size: 10px;
+          font-weight: 800;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+
+        :global(.items-table-body) {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          max-height: 400px;
+          overflow-y: auto;
+          padding-right: 0.5rem;
+        }
+
+        :global(.item-detail-row) {
+          display: grid;
+          grid-template-columns: 2fr 0.5fr 1fr 1fr;
+          padding: 1rem;
+          background: rgba(255, 255, 255, 0.02);
+          border-radius: 8px;
+          border-left: 2px solid transparent;
+          transition: all 0.2s ease;
+          align-items: center;
+        }
+
+        :global(.item-detail-row):hover {
+          background: rgba(255, 255, 255, 0.04);
+          border-left-color: var(--accent-blue);
+        }
+
+        :global(.item-name-col) {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+
+        :global(.item-name-col .name) {
+          font-weight: 700;
+          color: var(--text-primary);
+          font-size: 14px;
+        }
+
+        :global(.discount-tag) {
+          font-size: 10px;
+          color: #10b981;
+          font-weight: 700;
+          background: rgba(16, 185, 129, 0.1);
+          padding: 1px 6px;
+          border-radius: 4px;
+          width: fit-content;
+        }
+
+        :global(.item-qty-col) {
+          font-weight: 800;
+          color: var(--text-secondary);
+        }
+
+        :global(.item-price-col) {
+          font-weight: 600;
+          color: var(--text-secondary);
+        }
+
+        :global(.item-total-col) {
+          font-weight: 700;
+          color: var(--accent-blue);
+        }
+
+        :global(.invoice-summary-details) {
+          margin-top: 1rem;
+          padding: 1.5rem;
+          background: linear-gradient(to right, rgba(255, 255, 255, 0.03), transparent);
+          border-radius: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        :global(.summary-row) {
+          display: flex;
+          justify-content: space-between;
+          font-size: 13px;
+          color: var(--text-secondary);
+        }
+
+        :global(.summary-row.discount) {
+          color: #10b981;
+        }
+
+        :global(.summary-row.grand-total) {
+          margin-top: 0.5rem;
+          padding-top: 0.75rem;
+          border-top: 1px dotted rgba(255, 255, 255, 0.1);
+          font-family: var(--font-display);
+          font-size: 18px;
+          font-weight: 900;
+          color: var(--text-primary);
+        }
+
+        :global(.summary-row.deposit) {
+          font-size: 14px;
+          color: var(--accent-blue);
+          font-weight: 700;
+        }
+
+        :global(.text-center) { text-align: center; }
+        :global(.text-right) { text-align: right; }
 
         @keyframes spin {
           to {

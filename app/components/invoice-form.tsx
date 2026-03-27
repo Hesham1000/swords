@@ -4,7 +4,6 @@ import React, { useState, ChangeEvent, FormEvent, useEffect, useRef, useCallback
 import { DollarSign, User, Calendar, FileText, CheckCircle, Clock, AlertCircle, Plus, Trash2, Package, Percent } from "lucide-react";
 import { createInvoice, Invoice, InvoiceItem } from "../lib/api/invoice";
 import { getProducts, Product } from "../lib/api/product";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface InvoiceFormData {
   customer: string;
