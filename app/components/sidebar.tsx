@@ -114,23 +114,11 @@ const Sidebar = ({
       >
         <motion.div
           className="sidebar-brand"
-          style={{ display: "flex", alignItems: "center", gap: "10px" }}
-          animate={{ textShadow: ["0 0 0px var(--accent-blue)", "0 0 8px var(--accent-blue)", "0 0 0px var(--accent-blue)"] }}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", marginBottom: "-20px" }}
+          animate={{ textShadow: ["0 0 0px var(--accent-gold)", "0 0 8px var(--accent-gold)", "0 0 0px var(--accent-gold)"] }}
           transition={{ duration: 3, repeat: Infinity }}
         >
-          <img src="/icon.svg" alt="Kings Logo" width="32" height="32" />
-          <motion.span
-            animate={{ backgroundPosition: ["0%", "200%"] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-            style={{
-              background: "linear-gradient(90deg, var(--text-primary), var(--accent-blue), var(--text-primary))",
-              backgroundSize: "200% auto",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent"
-            }}
-          >
-            KINGS
-          </motion.span>
+          <img src="/icon.png" alt="Kings Logo" width="100" height="100" />
         </motion.div>
       </motion.div>
 

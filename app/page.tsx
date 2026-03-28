@@ -17,34 +17,23 @@ import {
 import "./globals.css";
 
 const KingsLogo = () => (
-  <div className="hero-nav-kings" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-    <img src="/icon.svg" alt="Kings Logo" width="40" height="40" />
-    <motion.div
-      className="sidebar-brand"
-      style={{ fontSize: "24px", fontWeight: 900 }}
-      animate={{ textShadow: ["0 0 0px var(--accent-blue)", "0 0 8px var(--accent-blue)", "0 0 0px var(--accent-blue)"] }}
-      transition={{ duration: 3, repeat: Infinity }}
-    >
-      <motion.span
-        animate={{ backgroundPosition: ["0%", "200%"] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-        style={{
-          background: "linear-gradient(90deg, var(--text-primary), var(--accent-blue), var(--text-primary))",
-          backgroundSize: "200% auto",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent"
-        }}
-      >
-        KINGS
-      </motion.span>
-    </motion.div>
+  <div className="hero-nav-kings" style={{ 
+    display: "flex", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    width: "100%", 
+    position: "absolute", 
+    top: "10px", 
+    left: 0, 
+    zIndex: 100 
+  }}>
+    <img src="/icon.png" alt="Kings Logo" width="120" height="120" />
   </div>
 );
 
 export default function LandingPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { scrollYProgress } = useScroll();
-  const yRange = useTransform(scrollYProgress, [0, 1], [0, -100]);
 
   useEffect(() => {
     const cookies = document.cookie.split(";");
@@ -78,11 +67,9 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="fencing-landing">
-      <KingsLogo />
-
+    <div className="fencing-landing" style={{ overflowX: "hidden" }}>
       {/* Hero Section */}
-      <section className="landing-hero">
+      <section className="landing-hero" style={{ position: "relative" }}>
         <div className="hero-bg-container">
           <img
             src="/images/fencing_hero.png"

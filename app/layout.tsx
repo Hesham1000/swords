@@ -7,7 +7,8 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata = {
   title: "Kings",
   icons: {
-    icon: "/icon.svg",
+    icon: "/icon.png",
+    apple: "/icon.png",
   },
 };
 

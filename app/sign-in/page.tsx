@@ -404,26 +404,14 @@ const FencingLogin = () => {
           </div>
           <div className="formBx">
             <form onSubmit={(e) => e.preventDefault()}>
-              <div className="sidebar-header" style={{ padding: "0 0 2rem 0", background: "none" }}>
+              <div className="sidebar-header" style={{ padding: "0 0 0.5rem 0", background: "none" }}>
                 <motion.div
                   className="sidebar-brand"
-                  style={{ padding: 0, justifyContent: "flex-start", fontSize: "32px", display: "flex", alignItems: "center", gap: "12px" }}
-                  animate={{ textShadow: ["0 0 0px var(--accent-blue)", "0 0 8px var(--accent-blue)", "0 0 0px var(--accent-blue)"] }}
+                  style={{ padding: 0, justifyContent: "center", fontSize: "32px", display: "flex", alignItems: "center", width: "100%" }}
+                  animate={{ textShadow: ["0 0 0px var(--accent-gold)", "0 0 8px var(--accent-gold)", "0 0 0px var(--accent-gold)"] }}
                   transition={{ duration: 3, repeat: Infinity }}
                 >
-                  <img src="/icon.svg" alt="Kings Logo" width="48" height="48" />
-                  <motion.span
-                    animate={{ backgroundPosition: ["0%", "200%"] }}
-                    transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-                    style={{
-                      background: "linear-gradient(90deg, var(--text-primary), var(--accent-blue), var(--text-primary))",
-                      backgroundSize: "200% auto",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent"
-                    }}
-                  >
-                    KINGS
-                  </motion.span>
+                  <img src="/icon.png" alt="Kings Logo" width="120" height="120" />
                 </motion.div>
               </div>
               <AnimatePresence mode="wait">{renderLoginForm()}</AnimatePresence>
@@ -444,26 +432,14 @@ const FencingLogin = () => {
         <div className="user singupBx">
           <div className="formBx">
             <form onSubmit={(e) => e.preventDefault()}>
-              <div className="sidebar-header" style={{ padding: "0 0 2rem 0", background: "none" }}>
+              <div className="sidebar-header" style={{ padding: "0 0 0.5rem 0", background: "none" }}>
                 <motion.div
                   className="sidebar-brand"
-                  style={{ padding: 0, justifyContent: "flex-start", fontSize: "32px", display: "flex", alignItems: "center", gap: "12px" }}
-                  animate={{ textShadow: ["0 0 0px var(--accent-blue)", "0 0 8px var(--accent-blue)", "0 0 0px var(--accent-blue)"] }}
+                  style={{ padding: 0, justifyContent: "center", fontSize: "32px", display: "flex", alignItems: "center", width: "100%" }}
+                  animate={{ textShadow: ["0 0 0px var(--accent-gold)", "0 0 8px var(--accent-gold)", "0 0 0px var(--accent-gold)"] }}
                   transition={{ duration: 3, repeat: Infinity }}
                 >
-                  <img src="/icon.svg" alt="Kings Logo" width="48" height="48" />
-                  <motion.span
-                    animate={{ backgroundPosition: ["0%", "200%"] }}
-                    transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-                    style={{
-                      background: "linear-gradient(90deg, var(--text-primary), var(--accent-blue), var(--text-primary))",
-                      backgroundSize: "200% auto",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent"
-                    }}
-                  >
-                    KINGS
-                  </motion.span>
+                  <img src="/icon.png" alt="Kings Logo" width="120" height="120" />
                 </motion.div>
               </div>
               <AnimatePresence mode="wait">
