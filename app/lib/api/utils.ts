@@ -1,4 +1,5 @@
 // app/lib/api/utils.ts
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 /**
  * Transforms a MongoDB product document into the format expected by the frontend.

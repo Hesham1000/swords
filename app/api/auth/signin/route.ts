@@ -56,9 +56,7 @@ export async function POST(request: NextRequest) {
     const lockoutKey = user.email;
 
     if (user) {
-      if (!user.roles?.includes("admin")) {
-        throw ApiError.badRequest("You do not have permission to sign in here");
-      } else if (!user.isActive) {
+      if (!user.isActive) {
         throw ApiError.badRequest(
           "You do not complete the registration process. Please check your email to set your password"
         );

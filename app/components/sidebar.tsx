@@ -18,6 +18,7 @@ interface SidebarProps {
   onNavigation: (page: string) => void;
   sidebarOpen: boolean;
   onLogoutSuccess?: () => void; // Optional callback after successful logout
+  user?: any; // Added user prop
 }
 
 const Sidebar = ({
@@ -25,6 +26,7 @@ const Sidebar = ({
   onNavigation,
   sidebarOpen,
   onLogoutSuccess,
+  user,
 }: SidebarProps) => {
   const router = useRouter();
 
@@ -37,8 +39,6 @@ const Sidebar = ({
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
     if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
-      // Note: User asked for default light, so we only auto-dark if they specifically set it or if Windows is dark.
-      // But for "default light", we can just check if savedTheme is dark.
       if (savedTheme === "dark") {
         setIsDarkMode(true);
         document.documentElement.classList.add("dark-mode");
@@ -58,12 +58,14 @@ const Sidebar = ({
     }
   };
 
+  const isAdmin = user?.roles?.includes("admin");
+
   const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "products", label: "Products", icon: Package },
-    { id: "invoices", label: "Invoices", icon: FileText },
-    { id: "wallet", label: "Wallet", icon: Wallet },
-  ];
+    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, adminOnly: true },
+    { id: "products", label: "Products", icon: Package, adminOnly: false },
+    { id: "invoices", label: "Invoices", icon: FileText, adminOnly: true },
+    { id: "wallet", label: "Wallet", icon: Wallet, adminOnly: true },
+  ].filter(item => !item.adminOnly || isAdmin);
 
   const handleLogout = async () => {
     try {
@@ -83,21 +85,13 @@ const Sidebar = ({
         throw new Error(`Logout failed with status: ${response.status}`);
       }
 
-      const data = await response.json();
-      console.log("Logout successful:", data);
-
-      // Call the success callback if provided
       if (onLogoutSuccess) {
         onLogoutSuccess();
       }
 
       router.push("/");
-
-      // Optional: Redirect to login page or home page
-      // window.location.href = '/login';
     } catch (error) {
       console.error("Logout error:", error);
-      // Handle error (show toast, alert, etc.)
       alert("Logout failed. Please try again.");
     } finally {
       setIsLoggingOut(false);
@@ -150,10 +144,12 @@ const Sidebar = ({
 
       <div className="sidebar-footer">
         <div className="user-info">
-          <div className="user-avatar">A</div>
+          <div className="user-avatar">{user?.username?.[0]?.toUpperCase() || "U"}</div>
           <div className="user-details">
-            <div className="user-name">Admin User</div>
-            <div className="user-role">Administrator</div>
+            <div className="user-name">{user?.username || "Guest"}</div>
+            <div className="user-role">
+              {isAdmin ? "Administrator" : "User"}
+            </div>
           </div>
         </div>
 

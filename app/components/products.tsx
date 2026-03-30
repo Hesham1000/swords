@@ -9,20 +9,22 @@ import { useState } from "react";
 interface ProductRowProps {
   product: Product;
   onEdit?: (product: Product) => void;
-  onDelete: (productId: string) => void;
+  onDelete?: (productId: string) => void;
+  isAdmin?: boolean;
 }
 
 const ProductRow: React.FC<ProductRowProps> = ({
   product,
   onEdit,
   onDelete,
+  isAdmin,
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const images = product.images || [];
   const hasMultipleImages = images.length > 1;
 
   const handleDelete = () => {
-    onDelete(product.id);
+    onDelete?.(product.id);
   };
 
   const nextImage = (e: React.MouseEvent) => {
@@ -102,7 +104,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
         </div>
 
         <div className="floating-actions">
-          {onEdit && (
+          {isAdmin && onEdit && (
             <motion.button
               className="floating-btn edit"
               whileHover={{ scale: 1.1 }}
@@ -113,15 +115,17 @@ const ProductRow: React.FC<ProductRowProps> = ({
               <Edit size={14} />
             </motion.button>
           )}
-          <motion.button
-            className="floating-btn delete"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={handleDelete}
-            title="Delete product"
-          >
-            <X size={16} />
-          </motion.button>
+          {isAdmin && onDelete && (
+            <motion.button
+              className="floating-btn delete"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={handleDelete}
+              title="Delete product"
+            >
+              <X size={16} />
+            </motion.button>
+          )}
         </div>
       </div>
 

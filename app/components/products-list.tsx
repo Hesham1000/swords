@@ -19,6 +19,7 @@ interface ProductsListProps {
     totalCount: number;
   };
   onPageChange?: (page: number) => void;
+  isAdmin?: boolean;
 }
 
 const ProductsList: React.FC<ProductsListProps> = ({
@@ -29,6 +30,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
   onDelete,
   pagination,
   onPageChange,
+  isAdmin,
 }) => {
   if (loading) {
     return (
@@ -69,6 +71,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
             product={product}
             onEdit={onEdit}
             onDelete={onDelete}
+            isAdmin={isAdmin}
           />
         ))}
       </div>

@@ -33,6 +33,7 @@ import ShipmentForm from "../components/shipment-form";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { getCurrentUser, User } from "../lib/api/auth";
 
 const AdminLayoutContent = () => {
   const router = useRouter();
@@ -40,9 +41,14 @@ const AdminLayoutContent = () => {
 
   const [showProductForm, setShowProductForm] = useState(false);
   const [refreshProducts, setRefreshProducts] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const tab = searchParams.get("tab");
-  const currentPage = (tab && ["dashboard", "products", "invoices", "wallet"].includes(tab)) ? tab : "dashboard";
-  const [loading, setLoading] = useState(false);
+  
+  const isAdmin = user?.roles?.includes("admin");
+  const allowedTabs = isAdmin ? ["dashboard", "products", "invoices", "wallet"] : ["products"];
+  const currentPage = (tab && allowedTabs.includes(tab)) ? tab : (isAdmin ? "dashboard" : "products");
+
+  const [loading, setLoading] = useState(true); // Start loading true to fetch user
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Products state
@@ -88,19 +94,34 @@ const AdminLayoutContent = () => {
     setTimeout(() => setLoading(false), 500);
   };
 
+  // Fetch current user
+  useEffect(() => {
+    const fetchUser = async () => {
+      setLoading(true);
+      const data = await getCurrentUser();
+      if (data) {
+        setUser(data.user);
+      }
+      setLoading(false);
+    };
+    fetchUser();
+  }, []);
+
   // Fetch products and invoices for dashboard, or specific data for tabs
   useEffect(() => {
-    if (currentPage === "dashboard") {
+    if (loading) return; // Wait for user data
+
+    if (currentPage === "dashboard" && isAdmin) {
       fetchProducts();
       fetchInvoices();
     } else if (currentPage === "products") {
       fetchProducts(productsPage);
-    } else if (currentPage === "invoices") {
+    } else if (currentPage === "invoices" && isAdmin) {
       fetchInvoices();
-    } else if (currentPage === "wallet") {
+    } else if (currentPage === "wallet" && isAdmin) {
       fetchWalletData();
     }
-  }, [currentPage, refreshProducts, refreshInvoices, refreshWallet, productsPage, searchQuery, filterCategory, filterType, filterBrand]);
+  }, [currentPage, refreshProducts, refreshInvoices, refreshWallet, productsPage, searchQuery, filterCategory, filterType, filterBrand, loading, isAdmin]);
 
   const fetchInvoices = async () => {
     setInvoicesLoading(true);
@@ -481,16 +502,18 @@ const AdminLayoutContent = () => {
     <div className="page-content">
       <div className="page-header">
         <h1 className="page-title">Products</h1>
-        <button
-          className="primary-btn"
-          onClick={() => {
-            setEditingProduct(null);
-            setShowProductForm(true);
-          }}
-        >
-          <Plus size={20} />
-          Add New Product
-        </button>
+        {isAdmin && (
+          <button
+            className="primary-btn"
+            onClick={() => {
+              setEditingProduct(null);
+              setShowProductForm(true);
+            }}
+          >
+            <Plus size={20} />
+            Add New Product
+          </button>
+        )}
       </div>
 
       {/* Filter Bar */}
@@ -596,13 +619,14 @@ const AdminLayoutContent = () => {
       <ProductsList
         products={products}
         loading={productsLoading}
-        onDelete={handleDeleteProduct}
-        onEdit={handleEditProduct}
+        onDelete={isAdmin ? handleDeleteProduct : () => {}}
+        onEdit={isAdmin ? handleEditProduct : undefined}
         pagination={productsPagination}
         onPageChange={(page) => {
           setProductsPage(page);
           fetchProducts(page);
         }}
+        isAdmin={isAdmin}
       />
 
 
@@ -1167,15 +1191,15 @@ const AdminLayoutContent = () => {
 
     switch (currentPage) {
       case "dashboard":
-        return DashboardContent();
+        return isAdmin ? DashboardContent() : ProductsContent();
       case "products":
         return ProductsContent();
       case "invoices":
-        return InvoicesContent();
+        return isAdmin ? InvoicesContent() : ProductsContent();
       case "wallet":
-        return WalletContent();
+        return isAdmin ? WalletContent() : ProductsContent();
       default:
-        return DashboardContent();
+        return isAdmin ? DashboardContent() : ProductsContent();
     }
   };
 
@@ -1197,6 +1221,7 @@ const AdminLayoutContent = () => {
           }
         }}
         sidebarOpen={sidebarOpen}
+        user={user}
       />
 
       <main className={`main-content ${sidebarOpen ? "" : "expanded"}`}>
