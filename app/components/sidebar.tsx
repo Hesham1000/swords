@@ -99,7 +99,7 @@ const Sidebar = ({
   };
 
   return (
-    <aside className={`sidebar ${sidebarOpen ? "mobile-open" : "closed"}`}>
+    <aside className={`sidebar ${sidebarOpen ? 'mobile-open' : ''}`}>
       <motion.div
         className="sidebar-header"
         initial={{ opacity: 0, y: -20 }}

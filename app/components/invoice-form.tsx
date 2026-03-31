@@ -508,6 +508,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess }) => {
           border-radius: 12px;
           padding: 0.75rem;
           height: 200px;
+          max-height: 40dvh;
           overflow-y: auto;
         }
         .product-add-btn {

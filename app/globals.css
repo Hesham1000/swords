@@ -4105,3 +4105,511 @@ input[type="password"]::-ms-clear {
 .dark-mode .filter-select {
   background: rgba(0, 0, 0, 0.2);
 }
+
+
+/* ============================================================
+   ADMIN DASHBOARD — SAMSUNG ULTRA MOBILE FIX
+   Targets S22 Ultra (360px) through S24 Ultra (412px)
+   Add this block at the very end of your CSS file
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+  /* ── Layout ── */
+  .admin-layout {
+    flex-direction: column;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100%;
+    min-height: 100dvh;
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    padding: 0 1rem;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 900;
+  }
+
+  .topbar-title {
+    font-size: 10px;
+    letter-spacing: 0.8px;
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ── Content ── */
+  .content-wrapper {
+    padding: 1.25rem 1rem;
+  }
+
+  /* ── Page Header ── */
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.875rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .page-title {
+    font-size: 22px;
+    text-align: left;
+  }
+
+  .page-title::after {
+    left: 0;
+    transform: none;
+  }
+
+  .primary-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.875rem 1rem;
+    font-size: 12px;
+  }
+
+  /* ── Stats Grid ── */
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.875rem;
+  }
+
+  .stat-card {
+    padding: 1.25rem 1rem;
+    border-radius: 14px;
+  }
+
+  .stat-value {
+    font-size: 26px;
+  }
+
+  .stat-title {
+    font-size: 9px;
+  }
+
+  .stat-badge {
+    font-size: 9px;
+    padding: 0.2rem 0.5rem;
+    top: 1rem;
+    right: 1rem;
+  }
+
+  /* ── Dashboard Grid ── */
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .chart-card,
+  .list-card {
+    padding: 1.25rem 1rem;
+    border-radius: 14px;
+  }
+
+  .chart-container-wrapper {
+    height: 220px;
+  }
+
+  .bar-label {
+    font-size: 9px;
+  }
+
+  /* ── Invoice List ── */
+  .invoice-list {
+    gap: 0.625rem;
+  }
+
+  .invoice-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .invoice-id-col,
+  .invoice-amount-col {
+    width: 100%;
+    flex: none;
+  }
+
+  .invoice-amount-col {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .invoice-actions-col {
+    width: 100%;
+    flex: none;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.625rem;
+  }
+
+  .invoice-id {
+    font-size: 13px;
+  }
+
+  .invoice-customer {
+    font-size: 11px;
+  }
+
+  .invoice-amount {
+    font-size: 15px;
+  }
+
+  .mark-paid-btn,
+  .view-items-btn {
+    font-size: 10px !important;
+    padding: 0.5rem 0.875rem !important;
+    flex: 1;
+    justify-content: center !important;
+  }
+
+  /* ── Filter Bar ── */
+  .filter-bar {
+    flex-direction: column;
+    padding: 1rem;
+    gap: 0.875rem;
+    border-radius: 12px;
+  }
+
+  .search-wrapper {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .search-input {
+    font-size: 16px; /* prevents iOS/Android zoom on focus */
+    padding: 0.875rem 1rem 0.875rem 3rem;
+    border-radius: 10px;
+  }
+
+  .filters-selectors {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.625rem;
+    width: 100%;
+  }
+
+  .filter-select {
+    font-size: 10px;
+    padding: 0.625rem 2rem 0.625rem 0.75rem;
+    border-radius: 8px;
+    width: 100%;
+    letter-spacing: 0;
+  }
+
+  .clear-filters-btn {
+    grid-column: 1 / -1;
+    justify-content: center;
+    padding: 0.625rem 1rem;
+    font-size: 10px;
+  }
+
+  /* ── Products Grid ── */
+  .products-list-container {
+    padding: 1rem;
+    border-radius: 16px;
+  }
+
+  .products-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .product-card {
+    border-radius: 10px;
+  }
+
+  .product-image-container {
+    height: 150px;
+  }
+
+  .product-content {
+    padding: 1rem 0.875rem;
+    gap: 0.875rem;
+  }
+
+  .product-title {
+    font-size: 13px;
+  }
+
+  .price-value {
+    font-size: 15px;
+  }
+
+  .meta-badge {
+    font-size: 8px;
+    padding: 0.25rem 0.5rem;
+  }
+
+  /* ── Pagination ── */
+  .pagination-controls {
+    gap: 0.875rem;
+    padding: 0.875rem;
+    flex-wrap: wrap;
+  }
+
+  .pagination-btn {
+    min-width: 90px;
+    padding: 0.5rem 0.875rem;
+    font-size: 11px;
+  }
+
+  /* ── Wallet ── */
+  .wallet-balance-card {
+    padding: 1.5rem 1.25rem;
+    border-radius: 16px;
+  }
+
+  .wallet-balance-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .wallet-balance-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+  }
+
+  .wallet-balance-value {
+    font-size: 30px;
+  }
+
+  .wallet-currency {
+    font-size: 16px;
+  }
+
+  .wallet-balance-secondary {
+    flex-wrap: wrap;
+    gap: 0.875rem;
+  }
+
+  .wallet-stats-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .wallet-stat-card {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .wallet-stat-value {
+    font-size: 15px;
+  }
+
+  .wallet-transactions-list {
+    padding: 0.625rem;
+    max-height: 420px;
+  }
+
+  .wallet-tx-item {
+    padding: 0.875rem;
+    border-radius: 10px;
+    gap: 0.75rem;
+  }
+
+  .wallet-tx-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+
+  .wallet-tx-type {
+    font-size: 11px;
+  }
+
+  .wallet-tx-note {
+    font-size: 11px;
+  }
+
+  .wallet-tx-amount {
+    font-size: 14px;
+  }
+
+  .wallet-tx-date {
+    font-size: 10px;
+  }
+
+  /* ── Wallet action buttons row ── */
+  .page-header > div[style] {
+    flex-wrap: wrap;
+    gap: 0.625rem !important;
+  }
+
+  .wallet-deposit-btn,
+  .wallet-withdraw-btn,
+  .wallet-shipment-btn {
+    flex: 1;
+    min-width: 90px;
+    justify-content: center;
+    font-size: 11px !important;
+    padding: 0.75rem 0.5rem !important;
+  }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .centered-modal,
+  .centered-modal.large-modal {
+    max-width: 100%;
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .modal-header {
+    padding: 1.25rem 1.25rem 1rem;
+  }
+
+  .modal-title {
+    font-size: 1rem;
+  }
+
+  .modal-body {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  /* ── Invoice Detail in Modal ── */
+  .items-table-header {
+    grid-template-columns: 2fr 0.5fr 1fr 1fr !important;
+    font-size: 9px !important;
+    padding: 0.625rem 0.75rem !important;
+  }
+
+  .item-detail-row {
+    grid-template-columns: 2fr 0.5fr 1fr 1fr !important;
+    padding: 0.75rem !important;
+  }
+
+  .item-name-col .name {
+    font-size: 12px !important;
+  }
+
+  /* ── Leaderboard ── */
+  .leaderboard-item {
+    padding: 1rem;
+    gap: 1rem;
+    border-radius: 12px;
+  }
+
+  .item-rank {
+    font-size: 16px;
+    width: 28px;
+  }
+
+  .item-name {
+    font-size: 13px;
+  }
+
+  .item-revenue {
+    font-size: 13px;
+  }
+
+  /* ── Sidebar mobile override ── */
+  .sidebar {
+    transform: translateX(-100%);
+    box-shadow: none;
+    pointer-events: none;
+    visibility: hidden;
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+    visibility: visible;
+    opacity: 1;
+    pointer-events: all;
+    box-shadow: 20px 0 60px rgba(0, 0, 0, 0.45);
+  }
+}
+
+/* ── S24 Ultra sweet spot (390–412px) ── */
+@media (min-width: 390px) and (max-width: 430px) {
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.875rem;
+  }
+
+  .stat-value {
+    font-size: 28px;
+  }
+
+  .products-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .product-image-container {
+    height: 160px;
+  }
+
+  .content-wrapper {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .chart-container-wrapper {
+    height: 240px;
+  }
+
+  /* Slightly more room for invoice actions on wider Ultras */
+  .invoice-actions-col {
+    flex-wrap: nowrap;
+  }
+
+  .mark-paid-btn,
+  .view-items-btn {
+    flex: none !important;
+  }
+}
+
+/* ── S22 Ultra narrow (360px) ── */
+@media (max-width: 389px) {
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .products-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filters-selectors {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  .content-wrapper {
+    padding: 1rem 0.875rem;
+  }
+
+  .topbar-title {
+    display: none;
+  }
+
+  .wallet-deposit-btn,
+  .wallet-withdraw-btn,
+  .wallet-shipment-btn {
+    width: 100% !important;
+    flex: none !important;
+  }
+}
