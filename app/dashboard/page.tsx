@@ -20,6 +20,7 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   CheckCircle,
+  Search,
 } from "lucide-react";
 import Sidebar from "../components/sidebar";
 import ProductForm from "../components/productform";
@@ -73,6 +74,8 @@ const AdminLayoutContent = () => {
   const [showInvoiceForm, setShowInvoiceForm] = useState(false);
   const [viewingItemsInvoice, setViewingItemsInvoice] = useState<Invoice | null>(null);
   const [refreshInvoices, setRefreshInvoices] = useState(false);
+  const [invoiceSearchQuery, setInvoiceSearchQuery] = useState("");
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
 
   // Wallet state
   const [walletBalanceEGP, setWalletBalanceEGP] = useState(0);
@@ -117,17 +120,17 @@ const AdminLayoutContent = () => {
     } else if (currentPage === "products") {
       fetchProducts(productsPage);
     } else if (currentPage === "invoices" && isAdmin) {
-      fetchInvoices();
+      fetchInvoices(invoiceSearchQuery);
     } else if (currentPage === "wallet" && isAdmin) {
       fetchWalletData();
     }
-  }, [currentPage, refreshProducts, refreshInvoices, refreshWallet, productsPage, searchQuery, filterCategory, filterType, filterBrand, loading, isAdmin]);
+  }, [currentPage, refreshProducts, refreshInvoices, refreshWallet, productsPage, searchQuery, filterCategory, filterType, filterBrand, invoiceSearchQuery, loading, isAdmin]);
 
-  const fetchInvoices = async () => {
+  const fetchInvoices = async (search?: string) => {
     setInvoicesLoading(true);
     setInvoicesError("");
     try {
-      const response = await getInvoices();
+      const response = await getInvoices(search);
       setInvoices(response.data);
     } catch (error: any) {
       setInvoicesError(error.message || "Failed to load invoices");
@@ -240,6 +243,11 @@ const AdminLayoutContent = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditInvoice = (invoice: Invoice) => {
+    setEditingInvoice(invoice);
+    setShowInvoiceForm(true);
   };
 
   // Calculate dynamic stats
@@ -693,15 +701,46 @@ const AdminLayoutContent = () => {
 
   const InvoicesContent = () => (
     <div className="page-content">
-      <div className="page-header">
-        <h1 className="page-title">Invoices Management</h1>
-        <button 
-          className="primary-btn"
-          onClick={() => setShowInvoiceForm(true)}
-        >
-          <Plus size={20} />
-          Create Invoice
-        </button>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '2rem' }}>
+          <div className="search-bar" style={{ flex: 1, marginBottom: 0 }}>
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder="Search by customer name..."
+              value={invoiceSearchQuery}
+              onChange={(e) => setInvoiceSearchQuery(e.target.value)}
+            />
+          </div>
+          <button
+            className="primary-btn"
+            onClick={() => setShowInvoiceForm(true)}
+          >
+            <Plus size={20} />
+            Create Invoice
+          </button>
+        </div>
+
+      {/* Invoice Filter Bar */}
+      <div className="filter-bar">
+        <div className="search-wrapper">
+          <FileText size={18} className="search-icon" />
+          <input
+            type="text"
+            placeholder="Search by customer name..."
+            value={invoiceSearchQuery}
+            onChange={(e) => setInvoiceSearchQuery(e.target.value)}
+            className="search-input"
+          />
+        </div>
+        {invoiceSearchQuery && (
+          <button 
+            className="clear-filters-btn"
+            onClick={() => setInvoiceSearchQuery("")}
+          >
+            <X size={14} />
+            Clear
+          </button>
+        )}
       </div>
 
       {invoicesError && (
@@ -755,6 +794,30 @@ const AdminLayoutContent = () => {
                       {invoice.status === "overdue" && <AlertCircle size={14} />}
                       {invoice.status}
                     </span>
+                    {invoice.status === "pending" && (
+                      <button 
+                        className="edit-invoice-btn"
+                        onClick={() => handleEditInvoice(invoice)}
+                        title="Edit Invoice"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          background: 'rgba(251, 191, 36, 0.1)',
+                          color: '#fbbf24',
+                          border: '1px solid #fbbf24',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          fontWeight: '800',
+                          textTransform: 'uppercase',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Edit size={14} />
+                        Edit
+                      </button>
+                    )}
                     {invoice.status !== "paid" && (
                       <button 
                         className="mark-paid-btn"
@@ -793,10 +856,13 @@ const AdminLayoutContent = () => {
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="modal-header">
-                  <h2 className="modal-title">Create New Invoice</h2>
+                  <h2 className="modal-title">{editingInvoice ? "Edit Invoice" : "Create New Invoice"}</h2>
                   <button
                     className="close-modal-btn"
-                    onClick={() => setShowInvoiceForm(false)}
+                    onClick={() => {
+                      setShowInvoiceForm(false);
+                      setEditingInvoice(null);
+                    }}
                   >
                     <X size={20} />
                   </button>
@@ -804,11 +870,16 @@ const AdminLayoutContent = () => {
 
                 <div className="modal-body">
                   <InvoiceForm
-                    onClose={() => setShowInvoiceForm(false)}
+                    onClose={() => {
+                      setShowInvoiceForm(false);
+                      setEditingInvoice(null);
+                    }}
                     onSuccess={() => {
                       setRefreshInvoices(!refreshInvoices);
                       setShowInvoiceForm(false);
+                      setEditingInvoice(null);
                     }}
+                    initialData={editingInvoice || undefined}
                   />
                 </div>
               </motion.div>
@@ -1382,6 +1453,31 @@ const AdminLayoutContent = () => {
         :global(.invoice-item) div:not([class]) {
           /* Fallback for items not moved to cols yet if any */
           flex: 1;
+        }
+
+        :global(.edit-invoice-btn) {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: rgba(var(--accent-gold-rgb, 251, 191, 36), 0.1);
+          color: var(--accent-gold);
+          border: 1px solid var(--accent-gold);
+          padding: 0.5rem 1rem;
+          border-radius: 8px;
+          font-family: var(--font-display);
+          font-size: 11px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        :global(.edit-invoice-btn):hover {
+          background: var(--accent-gold);
+          color: var(--bg-deep);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
         }
 
         :global(.view-items-btn) {

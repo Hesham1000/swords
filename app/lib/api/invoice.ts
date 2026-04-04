@@ -40,21 +40,16 @@ export interface InvoiceResponse {
 /**
  * Fetch all invoices
  */
-export async function getInvoices(): Promise<InvoicesResponse> {
+export async function getInvoices(customer?: string): Promise<InvoicesResponse> {
   try {
-    const response = await fetch(`${apiUrl}/api/invoices`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      cache: "no-store",
-    });
+    const url = new URL(`${apiUrl}/api/invoices`);
+    if (customer) url.searchParams.append("customer", customer);
 
+    const response = await fetch(url.toString());
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.error || "Failed to fetch invoices");
     }
-
     const data = await response.json();
     return { success: true, data: data.data };
   } catch (error) {
@@ -107,6 +102,32 @@ export async function updateInvoiceStatus(id: string, status?: string, deposit?:
     }
 
     return await response.json();
+  } catch (error) {
+    console.error("Error updating invoice:", error);
+    throw error;
+  }
+}
+
+/**
+ * Full update of an invoice
+ */
+export async function updateInvoice(id: string, invoiceData: Partial<Invoice>): Promise<InvoiceResponse> {
+  try {
+    const response = await fetch(`${apiUrl}/api/invoices`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id, ...invoiceData }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to update invoice");
+    }
+
+    const data = await response.json();
+    return { success: true, data: data.data };
   } catch (error) {
     console.error("Error updating invoice:", error);
     throw error;

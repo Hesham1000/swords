@@ -2,7 +2,7 @@
 
 import React, { useState, ChangeEvent, FormEvent, useEffect, useRef, useCallback } from "react";
 import { DollarSign, User, Calendar, FileText, CheckCircle, Clock, AlertCircle, Plus, Trash2, Package, Percent } from "lucide-react";
-import { createInvoice, Invoice, InvoiceItem } from "../lib/api/invoice";
+import { createInvoice, updateInvoice, Invoice, InvoiceItem } from "../lib/api/invoice";
 import { getProducts, Product } from "../lib/api/product";
 
 interface InvoiceFormData {
@@ -15,18 +15,19 @@ interface InvoiceFormData {
 interface InvoiceFormProps {
   onClose: () => void;
   onSuccess?: () => void;
+  initialData?: Invoice;
 }
 
-const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess }) => {
+const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialData }) => {
   const [formData, setFormData] = useState<InvoiceFormData>({
-    customer: "",
-    status: "pending",
-    paymentMethod: "cash",
-    date: new Date().toISOString().split('T')[0],
+    customer: initialData?.customer || "",
+    status: initialData?.status || "pending",
+    paymentMethod: initialData?.paymentMethod || "cash",
+    date: initialData?.date || new Date().toISOString().split('T')[0],
   });
-  const [deposit, setDeposit] = useState<string>("0");
+  const [deposit, setDeposit] = useState<string>(initialData?.deposit?.toString() || "0");
 
-  const [items, setItems] = useState<InvoiceItem[]>([]);
+  const [items, setItems] = useState<InvoiceItem[]>(initialData?.items || []);
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
@@ -167,7 +168,11 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess }) => {
         deposit: parseFloat(deposit) || 0,
       };
 
-      await createInvoice(invoiceData);
+      if (initialData?._id) {
+        await updateInvoice(initialData._id, invoiceData);
+      } else {
+        await createInvoice(invoiceData);
+      }
       
       if (onSuccess) onSuccess();
       onClose();
@@ -394,7 +399,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess }) => {
             CANCEL
           </button>
           <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? "GENERATING..." : "CREATE INVOICE"}
+            {loading ? "PROCESSING..." : initialData ? "UPDATE INVOICE" : "CREATE INVOICE"}
           </button>
         </div>
       </form>
@@ -517,7 +522,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess }) => {
           align-items: center;
           justify-content: space-between;
           padding: 0.75rem;
-          background: var(--bg-card);
+          background: var(--bg-deep);
           border: 1px solid var(--border-tech);
           border-radius: 8px;
           margin-bottom: 0.5rem;
@@ -525,8 +530,14 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess }) => {
           cursor: pointer;
         }
         .product-add-btn:hover {
+          background: var(--bg-card);
           border-color: var(--accent-blue);
           transform: translateX(4px);
+          box-shadow: 0 4px 12px rgba(0, 102, 255, 0.1);
+        }
+        .product-add-btn :global(svg) {
+          color: var(--accent-blue) !important;
+          stroke-width: 3px;
         }
         .p-name {
           font-size: 13px;
