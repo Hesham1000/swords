@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       username: username,
       email,
       isActive: false,
-      roles: ["admin"], // 👈 roles array instead of single role
+      roles: ["user"], // 👈 roles array instead of single role
       sessions: [],
       dateJoined: new Date(),
       lastEmailSent: new Date(),
