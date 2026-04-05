@@ -701,24 +701,16 @@ const AdminLayoutContent = () => {
 
   const InvoicesContent = () => (
     <div className="page-content">
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '2rem' }}>
-          <div className="search-bar" style={{ flex: 1, marginBottom: 0 }}>
-            <Search size={18} />
-            <input
-              type="text"
-              placeholder="Search by customer name..."
-              value={invoiceSearchQuery}
-              onChange={(e) => setInvoiceSearchQuery(e.target.value)}
-            />
-          </div>
-          <button
-            className="primary-btn"
-            onClick={() => setShowInvoiceForm(true)}
-          >
-            <Plus size={20} />
-            Create Invoice
-          </button>
-        </div>
+      <div className="page-header">
+        <h1 className="page-title">Invoices</h1>
+        <button
+          className="primary-btn"
+          onClick={() => setShowInvoiceForm(true)}
+        >
+          <Plus size={20} />
+          Create Invoice
+        </button>
+      </div>
 
       {/* Invoice Filter Bar */}
       <div className="filter-bar">
