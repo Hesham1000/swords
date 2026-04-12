@@ -487,7 +487,14 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
           position: absolute;
           left: 0.875rem;
           color: var(--text-secondary);
+          pointer-events: none;
+          transition: var(--transition-smooth);
         }
+        :global(.dark-mode) .input-with-icon :global(svg) {
+          color: var(--accent-blue);
+          filter: drop-shadow(0 0 2px rgba(59, 130, 246, 0.3));
+        }
+
         .input-with-icon input {
           padding-left: 2.5rem !important;
           width: 100%;

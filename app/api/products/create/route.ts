@@ -130,6 +130,21 @@ export async function POST(request: NextRequest) {
     const result = await productsCollection.insertOne(productData);
     const insertedProduct = transformProduct({ ...productData, _id: result.insertedId });
 
+    // Log the initial stock arrival
+    try {
+      const { logInventoryChange } = await import("../../../lib/inventory-server");
+      await logInventoryChange({
+        productId: result.insertedId.toString(),
+        productName: productData.name,
+        changeAmount: productData.quantity,
+        newQuantity: productData.quantity,
+        reason: "Initial Stock",
+        note: "Initial stock load from product creation"
+      });
+    } catch (logError) {
+      console.error("Failed to log initial inventory:", logError);
+    }
+
     return NextResponse.json(
       {
         message: "Product created successfully",

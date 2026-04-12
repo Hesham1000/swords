@@ -28,21 +28,25 @@ export interface Invoice {
 export interface InvoicesResponse {
   success: boolean;
   data: Invoice[];
-  message?: string;
-}
-
-export interface InvoiceResponse {
-  success: boolean;
-  data: Invoice;
+  pagination?: {
+    page: number;
+    limit: number;
+    totalPages: number;
+    totalCount: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
   message?: string;
 }
 
 /**
- * Fetch all invoices
+ * Fetch all invoices with pagination
  */
-export async function getInvoices(customer?: string): Promise<InvoicesResponse> {
+export async function getInvoices(page: number = 1, limit: number = 10, customer?: string): Promise<InvoicesResponse> {
   try {
     const url = new URL(`${apiUrl}/api/invoices`);
+    url.searchParams.append("page", page.toString());
+    url.searchParams.append("limit", limit.toString());
     if (customer) url.searchParams.append("customer", customer);
 
     const response = await fetch(url.toString());
@@ -50,8 +54,12 @@ export async function getInvoices(customer?: string): Promise<InvoicesResponse> 
       const errorData = await response.json();
       throw new Error(errorData.error || "Failed to fetch invoices");
     }
-    const data = await response.json();
-    return { success: true, data: data.data };
+    const result = await response.json();
+    return { 
+      success: true, 
+      data: result.data,
+      pagination: result.pagination
+    };
   } catch (error) {
     console.error("Error fetching invoices:", error);
     throw error;

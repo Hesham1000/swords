@@ -39,6 +39,8 @@ export interface ProductsResponse {
   };
   summary?: {
     totalQuantity: number;
+    lowStockItems?: Product[];
+    lowStockCount?: number;
   };
 }
 
@@ -66,6 +68,7 @@ export async function getProducts(
     category?: string;
     productType?: string;
     brand?: string;
+    dashboard?: boolean;
   } = {}
 ): Promise<ProductsResponse> {
   try {
@@ -88,6 +91,9 @@ export async function getProducts(
     }
     if (filters.brand) {
       url.searchParams.append("brand", filters.brand);
+    }
+    if (filters.dashboard) {
+      url.searchParams.append("dashboard", "true");
     }
 
     const response = await fetch(url.toString(), {

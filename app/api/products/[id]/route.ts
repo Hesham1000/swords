@@ -124,10 +124,48 @@ export async function PUT(
             updatedAt: new Date().toISOString(),
         };
 
+        const quantityChange = parseInt(quantity) - (existingProduct.quantity || 0);
+        const newPriceValue = price ? parseFloat(price) : null;
+        const oldPriceValue = existingProduct.price;
+        const hasPriceChanged = newPriceValue !== oldPriceValue;
+
         await productsCollection.updateOne(
             { _id: new ObjectId(id) },
             { $set: updateData }
         );
+
+        // 📝 AUDIT LOGGING
+        try {
+            const { logInventoryChange } = await import("../../../lib/inventory-server");
+            
+            // 1. Log manual stock adjustment if it changed
+            if (quantityChange !== 0) {
+                await logInventoryChange({
+                    productId: id,
+                    productName: name || existingProduct.name,
+                    changeAmount: quantityChange,
+                    newQuantity: parseInt(quantity),
+                    reason: "Manual Adjustment",
+                    note: `Quantity updated from ${existingProduct.quantity} to ${quantity}`
+                });
+            }
+
+            // 2. Log price update if it changed
+            if (hasPriceChanged) {
+                await logInventoryChange({
+                    productId: id,
+                    productName: name || existingProduct.name,
+                    changeAmount: 0, // No stock change
+                    newQuantity: parseInt(quantity),
+                    reason: "Price Update",
+                    oldPrice: oldPriceValue,
+                    newPrice: newPriceValue,
+                    note: `Price adjusted from EGP ${oldPriceValue?.toLocaleString() || 0} to EGP ${newPriceValue?.toLocaleString() || 0}`
+                });
+            }
+        } catch (logError) {
+            console.error("Failed to log inventory update:", logError);
+        }
 
         return NextResponse.json({
             success: true,

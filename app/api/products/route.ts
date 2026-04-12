@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     const productsCollection = await getProductsCollection();
+    const dashboard = searchParams.get("dashboard") === "true";
 
     // Build query object
     const query: any = {};
@@ -59,6 +60,33 @@ export async function GET(request: NextRequest) {
       query.brand = brand;
     }
 
+    // DASHBOARD OPTIMIZED RESPONSE
+    if (dashboard) {
+      // 1. Calculate total quantity matching query
+      const qtyResult = await productsCollection.aggregate([
+        { $match: query },
+        { $group: { _id: null, total: { $sum: "$quantity" } } }
+      ]).toArray();
+      const totalQuantity = qtyResult.length > 0 ? qtyResult[0].total : 0;
+
+      // 2. Fetch ALL low stock items (quantity < 3) matching query
+      const lowStockQuery = { ...query, quantity: { $lt: 3 } };
+      const lowStockItems = await productsCollection
+        .find(lowStockQuery)
+        .sort({ quantity: 1 })
+        .toArray();
+
+      return NextResponse.json({
+        success: true,
+        summary: {
+          totalQuantity,
+          lowStockItems: lowStockItems.map(transformProduct),
+          lowStockCount: lowStockItems.length
+        }
+      }, { status: 200 });
+    }
+
+    // STANDARD PAGINATED RESPONSE
     // Get total count of products for pagination metadata
     const totalCount = await productsCollection.countDocuments(query);
 

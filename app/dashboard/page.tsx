@@ -21,6 +21,7 @@ import {
   ArrowDownCircle,
   CheckCircle,
   Search,
+  Loader2,
 } from "lucide-react";
 import Sidebar from "../components/sidebar";
 import ProductForm from "../components/productform";
@@ -31,7 +32,12 @@ import { getWalletBalance, getWalletTransactions, WalletTransaction } from "../l
 import InvoiceForm from "../components/invoice-form";
 import WalletDepositForm from "../components/wallet-deposit-form";
 import ShipmentForm from "../components/shipment-form";
-import { motion, AnimatePresence } from "framer-motion";
+import { getInventoryLogs, InventoryLog } from "../lib/api/inventory";
+import { getAnalytics, AnalyticsData } from "../lib/api/analytics";
+import { 
+  motion, 
+  AnimatePresence 
+} from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentUser, User } from "../lib/api/auth";
@@ -46,7 +52,7 @@ const AdminLayoutContent = () => {
   const tab = searchParams.get("tab");
   
   const isAdmin = user?.roles?.includes("admin");
-  const allowedTabs = isAdmin ? ["dashboard", "products", "invoices", "wallet"] : ["products"];
+  const allowedTabs = isAdmin ? ["dashboard", "products", "invoices", "wallet", "history"] : ["products"];
   const currentPage = (tab && allowedTabs.includes(tab)) ? tab : (isAdmin ? "dashboard" : "products");
 
   const [loading, setLoading] = useState(true); // Start loading true to fetch user
@@ -60,6 +66,7 @@ const AdminLayoutContent = () => {
   const [productsPage, setProductsPage] = useState(1);
   const [productsPagination, setProductsPagination] = useState<any>(null);
   const [totalInventory, setTotalInventory] = useState(0);
+  const [lowStockItems, setLowStockItems] = useState<Product[]>([]);
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -76,6 +83,8 @@ const AdminLayoutContent = () => {
   const [refreshInvoices, setRefreshInvoices] = useState(false);
   const [invoiceSearchQuery, setInvoiceSearchQuery] = useState("");
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [invoicesPage, setInvoicesPage] = useState(1);
+  const [invoicesPagination, setInvoicesPagination] = useState<any>(null);
 
   // Wallet state
   const [walletBalanceEGP, setWalletBalanceEGP] = useState(0);
@@ -88,6 +97,16 @@ const AdminLayoutContent = () => {
   const [showWithdrawForm, setShowWithdrawForm] = useState(false);
   const [showShipmentForm, setShowShipmentForm] = useState(false);
   const [refreshWallet, setRefreshWallet] = useState(false);
+  
+  // Inventory History state
+  const [inventoryLogs, setInventoryLogs] = useState<InventoryLog[]>([]);
+  const [inventoryLogsLoading, setInventoryLogsLoading] = useState(false);
+  const [inventoryLogsError, setInventoryLogsError] = useState<string>("");
+
+  // Analytics state
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string>("");
 
 
 
@@ -117,21 +136,64 @@ const AdminLayoutContent = () => {
     if (currentPage === "dashboard" && isAdmin) {
       fetchProducts();
       fetchInvoices();
+      fetchAnalyticsData();
     } else if (currentPage === "products") {
       fetchProducts(productsPage);
-    } else if (currentPage === "invoices" && isAdmin) {
-      fetchInvoices(invoiceSearchQuery);
     } else if (currentPage === "wallet" && isAdmin) {
       fetchWalletData();
+    } else if (currentPage === "history" && isAdmin) {
+      fetchInventoryLogs();
+    } else if (currentPage === "analytics" && isAdmin) {
+      fetchAnalyticsData();
     }
-  }, [currentPage, refreshProducts, refreshInvoices, refreshWallet, productsPage, searchQuery, filterCategory, filterType, filterBrand, invoiceSearchQuery, loading, isAdmin]);
+  }, [currentPage, refreshProducts, refreshWallet, productsPage, searchQuery, filterCategory, filterType, filterBrand, loading, isAdmin]);
 
-  const fetchInvoices = async (search?: string) => {
-    setInvoicesLoading(true);
+  useEffect(() => {
+    if (currentPage === "invoices") {
+      fetchInvoices(invoicesPage);
+    }
+  }, [currentPage, refreshInvoices, invoicesPage]);
+
+  // Reset page when searching
+  useEffect(() => {
+    setInvoicesPage(1);
+  }, [invoiceSearchQuery]);
+
+  const fetchAnalyticsData = async () => {
+    setAnalyticsLoading(true);
+    setAnalyticsError("");
+    try {
+      const response = await getAnalytics();
+      setAnalyticsData(response.data);
+    } catch (error: any) {
+      setAnalyticsError(error.message || "Failed to load analytics");
+      console.error("Error fetching analytics:", error);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  const fetchInventoryLogs = async () => {
+    setInventoryLogsLoading(true);
+    setInventoryLogsError("");
+    try {
+      const response = await getInventoryLogs();
+      setInventoryLogs(response.data);
+    } catch (error: any) {
+      setInventoryLogsError(error.message || "Failed to load history");
+      console.error("Error fetching logs:", error);
+    } finally {
+      setInventoryLogsLoading(false);
+    }
+  };
+
+  const fetchInvoices = async (page: number = 1) => {
+    if (invoices.length === 0) setInvoicesLoading(true);
     setInvoicesError("");
     try {
-      const response = await getInvoices(search);
+      const response = await getInvoices(page, 10, invoiceSearchQuery);
       setInvoices(response.data);
+      setInvoicesPagination(response.pagination);
     } catch (error: any) {
       setInvoicesError(error.message || "Failed to load invoices");
       console.error("Error fetching invoices:", error);
@@ -141,7 +203,7 @@ const AdminLayoutContent = () => {
   };
 
   const fetchWalletData = async () => {
-    setWalletLoading(true);
+    if (walletTransactions.length === 0) setWalletLoading(true);
     setWalletError("");
     try {
       const [balanceRes, transactionsRes] = await Promise.all([
@@ -161,7 +223,7 @@ const AdminLayoutContent = () => {
   };
 
   const fetchProducts = async (page: number = 1) => {
-    setProductsLoading(true);
+    if (products.length === 0) setProductsLoading(true);
     setProductsError("");
 
     try {
@@ -170,13 +232,18 @@ const AdminLayoutContent = () => {
         search: searchQuery,
         category: filterCategory,
         productType: filterType,
-        brand: filterBrand
+        brand: filterBrand,
+        dashboard: isDashboard
       });
-      setProducts(response.data);
-      setProductsPagination(response.pagination);
       
-      if (isDashboard && response.summary) {
-        setTotalInventory(response.summary.totalQuantity);
+      if (isDashboard) {
+        if (response.summary) {
+          setTotalInventory(response.summary.totalQuantity);
+          setLowStockItems(response.summary.lowStockItems || []);
+        }
+      } else {
+        setProducts(response.data);
+        setProductsPagination(response.pagination);
       }
     } catch (error: any) {
       setProductsError(error.message || "Failed to load products");
@@ -209,16 +276,16 @@ const AdminLayoutContent = () => {
   };
 
   const handleMarkAsPaid = async (id: string) => {
+    if (!confirm("Are you sure you want to mark this invoice as Paid? This will update your wallet balance.")) {
+      return;
+    }
     try {
-      setLoading(true);
       await updateInvoiceStatus(id, "paid");
       setRefreshInvoices(!refreshInvoices);
       setRefreshWallet(!refreshWallet);
     } catch (error: any) {
       console.error("Failed to mark invoice as paid:", error);
       alert(error.message || "Failed to update status");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -233,15 +300,12 @@ const AdminLayoutContent = () => {
     }
 
     try {
-      setLoading(true);
       await updateInvoiceStatus(id, undefined, numAmount);
       setRefreshInvoices(!refreshInvoices);
       setRefreshWallet(!refreshWallet);
     } catch (error: any) {
       console.error("Failed to add deposit:", error);
       alert(error.message || "Failed to add deposit");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -382,35 +446,151 @@ const AdminLayoutContent = () => {
       </div>
 
       <div className="dashboard-grid">
-        <div className="chart-card">
+        {/* Revenue Performance Area Chart (Premium) */}
+        <div className="chart-card wide-chart">
           <div className="card-header">
-            <h2 className="card-title">Revenue Trend</h2>
+            <h2 className="card-title">Revenue Performance</h2>
+            <div className="header-actions">
+               <button className="refresh-btn" onClick={fetchAnalyticsData} title="Update Analytics">
+                  <TrendingUp size={14} className="refresh-icon" />
+                  <span>Refresh</span>
+               </button>
+            </div>
           </div>
-          <div className="chart-container-wrapper">
-            <div className="chart-grid-lines">
-              <span></span><span></span><span></span><span></span>
+          <div className="area-chart-container">
+             {analyticsLoading && !analyticsData ? (
+               <div className="chart-inner-loading">
+                 <Loader2 size={24} className="animate-spin" />
+               </div>
+             ) : analyticsData?.trends ? (
+               <>
+                 <svg viewBox="0 0 800 200" className="svg-area-chart">
+                    <defs>
+                      <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--accent-blue)" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="var(--accent-blue)" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    {[0, 50, 100, 150].map(y => (
+                      <line key={y} x1="0" y1={y} x2="800" y2={y} stroke="var(--border-tech)" strokeDasharray="4 4" strokeOpacity="0.3" />
+                    ))}
+                    <path
+                      d={`M 0 200 ${analyticsData.trends.map((t, i) => {
+                        const maxRev = Math.max(...analyticsData.trends.map(d => d.revenue), 1);
+                        const x = (i / (analyticsData.trends.length - 1)) * 800;
+                        const y = 200 - (t.revenue / maxRev) * 150;
+                        return `L ${x} ${y}`;
+                      }).join(' ')} L 800 200 Z`}
+                      fill="url(#areaGradient)"
+                    />
+                    <path
+                      d={analyticsData.trends.map((t, i) => {
+                        const maxRev = Math.max(...analyticsData.trends.map(d => d.revenue), 1);
+                        const x = (i / (analyticsData.trends.length - 1)) * 800;
+                        const y = 200 - (t.revenue / maxRev) * 150;
+                        return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+                      }).join(' ')}
+                      fill="none"
+                      stroke="var(--accent-blue)"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                    />
+                 </svg>
+                 <div className="chart-labels">
+                    <span>{analyticsData.trends[0]?.date}</span>
+                    <span>{analyticsData.trends[analyticsData.trends.length-1]?.date}</span>
+                 </div>
+               </>
+             ) : (
+               <div className="empty-chart">No trend data available</div>
+             )}
+          </div>
+        </div>
+
+        {/* Category Distribution Donut */}
+        <div className="list-card donut-card">
+          <div className="card-header">
+            <h2 className="card-title">Sales by Category</h2>
+          </div>
+          <div className="donut-container">
+             {analyticsLoading && !analyticsData ? (
+                <div className="donut-inner-loading">
+                   <Loader2 size={24} className="animate-spin" />
+                </div>
+             ) : analyticsData?.categories ? (
+                <>
+                  <svg viewBox="0 0 200 200" className="svg-donut">
+                     {analyticsData.categories.map((cat, i) => {
+                       const total = analyticsData.categories.reduce((sum, c) => sum + c.value, 0);
+                       const startAngle = (analyticsData.categories.slice(0, i).reduce((sum, c) => sum + c.value, 0) / (total || 1)) * 360;
+                       const angle = (cat.value / (total || 1)) * 360;
+                       
+                       const x1 = 100 + 70 * Math.cos((startAngle - 90) * Math.PI / 180);
+                       const y1 = 100 + 70 * Math.sin((startAngle - 90) * Math.PI / 180);
+                       const x2 = 100 + 70 * Math.cos((startAngle + angle - 90) * Math.PI / 180);
+                       const y2 = 100 + 70 * Math.sin((startAngle + angle - 90) * Math.PI / 180);
+                       
+                       const colors = ['#3b82f6', '#fbbf24', '#f472b6', '#10b981'];
+                       
+                       return (
+                         <path
+                           key={cat.name}
+                           d={`M ${x1} ${y1} A 70 70 0 ${angle > 180 ? 1 : 0} 1 ${x2} ${y2}`}
+                           fill="none"
+                           stroke={colors[i % colors.length]}
+                           strokeWidth="15"
+                           strokeLinecap="round"
+                         />
+                       );
+                     })}
+                     <circle cx="100" cy="100" r="50" fill="var(--bg-deep)" />
+                     <text x="100" y="105" textAnchor="middle" className="donut-center-text" fill="var(--text-primary)">
+                        {analyticsData.categories.length} CATEGORIES
+                     </text>
+                  </svg>
+                  <div className="donut-legend">
+                     {analyticsData.categories.map((cat, i) => {
+                       const total = analyticsData.categories.reduce((sum, c) => sum + c.value, 0);
+                       return (
+                         <div key={cat.name} className="legend-item">
+                           <span className="legend-dot" style={{ background: ['#3b82f6', '#fbbf24', '#f472b6', '#10b981'][i % 4] }}></span>
+                           <span className="legend-name">{cat.name}</span>
+                           <span className="legend-value">{Math.round((cat.value / (total || 1)) * 100)}%</span>
+                         </div>
+                       );
+                     })}
+                  </div>
+                </>
+             ) : (
+                <div className="empty-chart">No category data</div>
+             )}
+          </div>
+        </div>
+
+        <div className="list-card">
+          <div className="card-header">
+            <h2 className="card-title">Low Stock Alerts</h2>
+            <div className={`alert-badge-count ${lowStockItems.length > 0 ? 'active' : ''}`}>
+              {lowStockItems.length} Items
             </div>
-            <div className="chart-container">
-              <div className="bar-chart">
-                {monthlySales.map((data, idx) => {
-                  const maxRevenue = Math.max(
-                    ...monthlySales.map((d) => d.revenue)
-                  );
-                  const height = maxRevenue > 0 ? (data.revenue / maxRevenue) * 100 : 0;
-                  return (
-                    <div key={idx} className="bar-item">
-                      <div className="bar" style={{ height: `${height}%` }}>
-                        <div className="bar-glow"></div>
-                        <span className="bar-tooltip">
-                          EGP {(data.revenue).toLocaleString()}
-                        </span>
-                      </div>
-                      <span className="bar-label">{data.month}</span>
-                    </div>
-                  );
-                })}
+          </div>
+          <div className="alerts-list">
+            {lowStockItems.length === 0 ? (
+              <div className="empty-alerts">
+                <CheckCircle size={32} />
+                <p>All stock levels healthy</p>
               </div>
-            </div>
+            ) : (
+              lowStockItems.map(product => (
+                <div key={product.id} className={`alert-item ${product.quantity === 0 ? 'critical' : 'warning'}`}>
+                  <AlertCircle size={14} className="alert-icon" />
+                  <div className="alert-info">
+                    <span className="alert-name">{product.name}</span>
+                    <span className="alert-stock">{product.quantity} left</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -441,7 +621,7 @@ const AdminLayoutContent = () => {
                   </span>
                   {invoice.status !== "paid" && (
                     <button 
-                      className="mark-paid-btn"
+                      className="mark-paid-btn dashboard-action"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleMarkAsPaid(invoice._id!);
@@ -449,7 +629,6 @@ const AdminLayoutContent = () => {
                       title="Mark as Paid"
                     >
                       <CheckCircle size={14} />
-                      Paid
                     </button>
                   )}
                   
@@ -756,77 +935,140 @@ const AdminLayoutContent = () => {
           </p>
         </div>
       ) : (
-        <div className="list-card active-list">
-          <div className="invoice-list full-width">
-            {invoices.map((invoice) => (
-              <div
-                key={invoice._id || invoice.invoiceId}
-                className={`invoice-item status-${invoice.status}`}
-              >
-                <div className="invoice-id-col">
-                  <div className="invoice-id">{invoice.invoiceId}</div>
-                  <div className="invoice-customer">{invoice.customer}</div>
-                </div>
-                <div className="invoice-amount-col">
-                  <div className="invoice-amount">
-                    {invoice.amount.toLocaleString()} EGP
+        <>
+          <div className="list-card active-list">
+            <div className="invoice-list full-width">
+              {invoices.map((invoice) => (
+                <div
+                  key={invoice._id || invoice.invoiceId}
+                  className={`invoice-item status-${invoice.status}`}
+                >
+                  <div className="invoice-id-col">
+                    <div className="invoice-id">{invoice.invoiceId}</div>
+                    <div className="invoice-customer">{invoice.customer}</div>
                   </div>
-                  <div className="invoice-date">{invoice.date}</div>
-                </div>
-                  <div className="invoice-actions-col">
-                    <button 
-                      className="view-items-btn"
-                      onClick={() => setViewingItemsInvoice(invoice)}
-                      title="View Items"
-                    >
-                      <Package size={14} />
-                      Items
-                    </button>
-                    <span className={`status-badge status-${invoice.status}`}>
-                      {invoice.status === "overdue" && <AlertCircle size={14} />}
-                      {invoice.status}
-                    </span>
-                    {invoice.status === "pending" && (
-                      <button 
-                        className="edit-invoice-btn"
-                        onClick={() => handleEditInvoice(invoice)}
-                        title="Edit Invoice"
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          background: 'rgba(251, 191, 36, 0.1)',
-                          color: '#fbbf24',
-                          border: '1px solid #fbbf24',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '8px',
-                          fontSize: '11px',
-                          fontWeight: '800',
-                          textTransform: 'uppercase',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <Edit size={14} />
-                        Edit
-                      </button>
-                    )}
-                    {invoice.status !== "paid" && (
-                      <button 
-                        className="mark-paid-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMarkAsPaid(invoice._id!);
-                        }}
-                      >
-                        <CheckCircle size={14} />
-                        Mark as Paid
-                      </button>
-                    )}
+                  <div className="invoice-amount-col">
+                    <div className="invoice-amount">
+                      {invoice.amount.toLocaleString()} EGP
+                    </div>
+                    <div className="invoice-date">{invoice.date}</div>
                   </div>
-              </div>
-            ))}
+                    <div className="invoice-actions-col">
+                      <button 
+                        className="view-items-btn"
+                        onClick={() => setViewingItemsInvoice(invoice)}
+                        title="View Items"
+                      >
+                        <Package size={14} />
+                        Items
+                      </button>
+                      <span className={`status-badge status-${invoice.status}`}>
+                        {invoice.status === "overdue" && <AlertCircle size={14} />}
+                        {invoice.status}
+                      </span>
+                      {invoice.status === "pending" && (
+                        <button 
+                          className="edit-invoice-btn"
+                          onClick={() => handleEditInvoice(invoice)}
+                          title="Edit Invoice"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            background: 'rgba(251, 191, 36, 0.1)',
+                            color: '#fbbf24',
+                            border: '1px solid #fbbf24',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: '800',
+                            textTransform: 'uppercase',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <Edit size={14} />
+                          Edit
+                        </button>
+                      )}
+                      {invoice.status !== "paid" && (
+                        <button 
+                          className="mark-paid-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkAsPaid(invoice._id!);
+                          }}
+                        >
+                          <CheckCircle size={14} />
+                          Mark as Paid
+                        </button>
+                      )}
+                    </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+
+          {/* Invoice Pagination */}
+          {invoicesPagination && invoicesPagination.totalPages > 1 && (
+            <div className="pagination-wrapper invoice-pagination">
+              <div className="pagination-controls">
+                <button
+                  className="pagination-arr-btn"
+                  disabled={!invoicesPagination.hasPrevPage}
+                  onClick={() => setInvoicesPage(invoicesPage - 1)}
+                >
+                  &lt;
+                </button>
+                
+                <div className="pagination-pages">
+                  {(() => {
+                    const total = invoicesPagination.totalPages;
+                    const current = invoicesPage;
+                    const range = [];
+                    const delta = 1;
+
+                    for (let i = 1; i <= total; i++) {
+                      if (
+                        i === 1 || 
+                        i === total || 
+                        (i >= current - delta && i <= current + delta)
+                      ) {
+                        range.push(i);
+                      } else if (range.length > 0 && range[range.length - 1] !== "...") {
+                        range.push("...");
+                      }
+                    }
+
+                    return range.map((p, idx) => (
+                      p === "..." ? (
+                        <span key={`ellipsis-${idx}`} className="pagination-ellipsis">...</span>
+                      ) : (
+                        <button
+                          key={p}
+                          className={`pagination-number-btn ${p === current ? 'active' : ''}`}
+                          onClick={() => setInvoicesPage(p as number)}
+                        >
+                          {p}
+                        </button>
+                      )
+                    ));
+                  })()}
+                </div>
+
+                <button
+                  className="pagination-arr-btn"
+                  disabled={!invoicesPagination.hasNextPage}
+                  onClick={() => setInvoicesPage(invoicesPage + 1)}
+                >
+                  &gt;
+                </button>
+              </div>
+              <div className="pagination-summary">
+                Showing <strong>{invoices.length}</strong> of <strong>{invoicesPagination.totalCount}</strong> invoices
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       <AnimatePresence>
@@ -1242,6 +1484,74 @@ const AdminLayoutContent = () => {
     </div>
   );
 
+  const HistoryContent = () => (
+    <div className="page-content">
+      <div className="page-header">
+        <h1 className="page-title">Inventory History</h1>
+        <button className="refresh-btn" onClick={fetchInventoryLogs}>
+          <TrendingUp size={16} className="refresh-icon" />
+          <span>Refresh</span>
+        </button>
+      </div>
+      
+      {inventoryLogsLoading && inventoryLogs.length === 0 ? (
+        <div className="dashboard-loading">
+          <div className="spinner"></div>
+          <p>Loading history...</p>
+        </div>
+      ) : inventoryLogs.length === 0 ? (
+        <div className="content-placeholder">
+          <Package size={48} />
+          <h3>No history recorded yet</h3>
+          <p>Stock changes will appear here automatically.</p>
+        </div>
+      ) : (
+        <div className="list-card active-list">
+          <div className="history-list full-width">
+            <div className="history-header-row">
+              <span className="history-col-product">Product</span>
+              <span className="history-col-change">Change</span>
+              <span className="history-col-reason">Reason</span>
+              <span className="history-col-date">Date</span>
+            </div>
+            {inventoryLogs.map((log) => (
+              <div key={log._id || log.id} className="history-item">
+                <div className="history-col-product">
+                  <span className="log-product-name">{log.productName}</span>
+                  <span className="log-product-id">ID: {log.productId}</span>
+                </div>
+                <div className="history-col-change">
+                  {log.reason === "Price Update" ? (
+                    <div className="price-evolution">
+                      <span className="price-old">EGP {log.oldPrice?.toLocaleString()}</span>
+                      <span className="price-arrow">→</span>
+                      <span className="price-new">EGP {log.newPrice?.toLocaleString()}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <span className={`log-amount ${log.changeAmount > 0 ? 'positive' : 'negative'}`}>
+                        {log.changeAmount > 0 ? `+${log.changeAmount}` : log.changeAmount}
+                      </span>
+                      <span className="log-new-qty">Balance: {log.newQuantity}</span>
+                    </>
+                  )}
+                </div>
+                <div className="history-col-reason">
+                  <span className="log-reason">{log.reason}</span>
+                  {log.note && <span className="log-note">{log.note}</span>}
+                </div>
+                <div className="history-col-date">
+                  <span>{new Date(log.timestamp).toLocaleDateString()}</span>
+                  <span>{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -1261,6 +1571,8 @@ const AdminLayoutContent = () => {
         return isAdmin ? InvoicesContent() : ProductsContent();
       case "wallet":
         return isAdmin ? WalletContent() : ProductsContent();
+      case "history":
+        return isAdmin ? HistoryContent() : ProductsContent();
       default:
         return isAdmin ? DashboardContent() : ProductsContent();
     }
@@ -1625,6 +1937,141 @@ const AdminLayoutContent = () => {
             transform: rotate(360deg);
           }
         }
+        :global(.alert-badge-count) {
+          background: rgba(var(--accent-red-rgb, 220, 38, 38), 0.1);
+          color: var(--accent-red);
+          padding: 0.25rem 0.6rem;
+          border-radius: 99px;
+          font-size: 11px;
+          font-weight: 800;
+          opacity: 0.5;
+        }
+
+        :global(.alert-badge-count.active) {
+          opacity: 1;
+          background: var(--accent-red);
+          color: white;
+          box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+        }
+
+        :global(.alerts-list) {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          margin-top: 1rem;
+          max-height: 400px;
+          overflow-y: auto;
+          padding-right: 0.5rem;
+        }
+
+        :global(.alert-item) {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.85rem;
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid var(--border-tech);
+          transition: all 0.3s ease;
+        }
+
+        :global(.alert-item.warning) {
+          border-left: 3px solid #fbbf24;
+        }
+
+        :global(.alert-item.critical) {
+          border-left: 3px solid #ef4444;
+          background: rgba(239, 68, 68, 0.05);
+        }
+
+        :global(.alert-icon) {
+          color: #fbbf24;
+        }
+
+        :global(.alert-item.critical .alert-icon) {
+          color: #ef4444;
+        }
+
+        :global(.alert-info) {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+        }
+
+        :global(.alert-name) {
+          font-weight: 700;
+          font-size: 13px;
+          color: var(--text-primary);
+        }
+
+        :global(.alert-stock) {
+          font-size: 11px;
+          color: var(--text-secondary);
+        }
+
+        :global(.empty-alerts) {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          padding: 2rem;
+          color: #10b981;
+          opacity: 0.6;
+        }
+
+        :global(.history-list) {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        :global(.history-header-row) {
+          display: flex;
+          padding: 0.75rem 1.5rem;
+          font-size: 11px;
+          font-weight: 800;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          background: rgba(255, 255, 255, 0.02);
+          border-radius: 8px;
+        }
+
+        :global(.history-item) {
+          display: flex;
+          align-items: center;
+          padding: 1.25rem 1.5rem;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid var(--border-tech);
+          border-radius: 12px;
+          transition: all 0.2s ease;
+        }
+
+        :global(.history-item:hover) {
+          border-color: var(--accent-blue);
+          background: rgba(255, 255, 255, 0.05);
+          transform: translateX(4px);
+        }
+
+        :global(.history-col-product) { flex: 2; display: flex; flex-direction: column; }
+        :global(.history-col-change) { flex: 1; display: flex; flex-direction: column; }
+        :global(.history-col-reason) { flex: 2; display: flex; flex-direction: column; }
+        :global(.history-col-date) { flex: 1; display: flex; flex-direction: column; align-items: flex-end; }
+
+        :global(.log-product-name) { font-weight: 700; color: var(--text-primary); font-size: 14px; }
+        :global(.log-product-id) { font-size: 10px; color: var(--text-secondary); opacity: 0.5; }
+        
+        :global(.log-amount) { font-weight: 800; font-size: 15px; }
+        :global(.log-amount.positive) { color: #10b981; }
+        :global(.log-amount.negative) { color: #f43f5e; }
+        :global(.log-new-qty) { font-size: 10px; color: var(--text-secondary); }
+
+        :global(.log-reason) { font-weight: 600; font-size: 12px; color: var(--text-primary); }
+        :global(.log-note) { font-size: 11px; color: var(--text-secondary); font-style: italic; }
+
+        :global(.history-col-date span:first-child) { font-weight: 600; color: var(--text-primary); font-size: 12px; }
+        :global(.history-col-date span:last-child) { font-size: 10px; color: var(--text-secondary); }
       `}</style>
     </div>
   );

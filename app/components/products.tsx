@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Edit, X, Package, Crown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Edit, X, Package, Crown, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { Product } from "../lib/api/product";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
@@ -102,6 +102,13 @@ const ProductRow: React.FC<ProductRowProps> = ({
         <div className="category-badge">
           {Array.isArray(product.category) ? product.category.join(" / ") : product.category}
         </div>
+        
+        {product.quantity < 3 && (
+          <div className={`stock-alert-badge ${product.quantity === 0 ? 'out' : 'low'}`}>
+            <AlertCircle size={10} />
+            {product.quantity === 0 ? 'Out of Stock' : 'Low Stock'}
+          </div>
+        )}
 
         <div className="floating-actions">
           {isAdmin && onEdit && (
@@ -188,8 +195,8 @@ const ProductRow: React.FC<ProductRowProps> = ({
             </span>
             <span className="price-currency">EGP</span>
           </div>
-          <div className="stock-tag">
-            <Package size={12} />
+          <div className={`stock-tag ${product.quantity < 3 ? (product.quantity === 0 ? 'critical' : 'warning') : ''}`}>
+            {product.quantity < 3 ? <AlertCircle size={12} /> : <Package size={12} />}
             <span>{product.quantity} AVAILABLE</span>
           </div>
         </div>

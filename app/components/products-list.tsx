@@ -78,25 +78,64 @@ const ProductsList: React.FC<ProductsListProps> = ({
 
       {/* Pagination Controls */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="pagination-controls">
-          <button
-            className="pagination-btn"
-            disabled={!pagination.hasPrevPage}
-            onClick={() => onPageChange?.(pagination.page - 1)}
-          >
-            Previous
-          </button>
-          <div className="pagination-info">
-            Page <strong>{pagination.page}</strong> of <strong>{pagination.totalPages}</strong>
-            <span className="total-count">({pagination.totalCount} total)</span>
+        <div className="pagination-wrapper">
+          <div className="pagination-controls">
+            <button
+              className="pagination-arr-btn"
+              disabled={!pagination.hasPrevPage}
+              onClick={() => onPageChange?.(pagination.page - 1)}
+              title="Previous Page"
+            >
+              &lt;
+            </button>
+            
+            <div className="pagination-pages">
+              {(() => {
+                const total = pagination.totalPages;
+                const current = pagination.page;
+                const range = [];
+                const delta = 1; // Number of neighbors to show
+
+                for (let i = 1; i <= total; i++) {
+                  if (
+                    i === 1 || 
+                    i === total || 
+                    (i >= current - delta && i <= current + delta)
+                  ) {
+                    range.push(i);
+                  } else if (range[range.length - 1] !== "...") {
+                    range.push("...");
+                  }
+                }
+
+                return range.map((p, idx) => (
+                  p === "..." ? (
+                    <span key={`ellipsis-${idx}`} className="pagination-ellipsis">...</span>
+                  ) : (
+                    <button
+                      key={p}
+                      className={`pagination-number-btn ${p === current ? 'active' : ''}`}
+                      onClick={() => onPageChange?.(p as number)}
+                    >
+                      {p}
+                    </button>
+                  )
+                ));
+              })()}
+            </div>
+
+            <button
+              className="pagination-arr-btn"
+              disabled={!pagination.hasNextPage}
+              onClick={() => onPageChange?.(pagination.page + 1)}
+              title="Next Page"
+            >
+              &gt;
+            </button>
           </div>
-          <button
-            className="pagination-btn"
-            disabled={!pagination.hasNextPage}
-            onClick={() => onPageChange?.(pagination.page + 1)}
-          >
-            Next
-          </button>
+          <div className="pagination-summary">
+            Showing <strong>{products.length}</strong> of <strong>{pagination.totalCount}</strong> items
+          </div>
         </div>
       )}
 

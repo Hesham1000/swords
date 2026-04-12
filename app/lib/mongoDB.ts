@@ -201,3 +201,17 @@ export const getShipmentsCollection = async () => {
     throw error;
   }
 };
+
+export const getInventoryLogsCollection = async () => {
+  console.log("📁 Accessing inventory_logs collection...");
+  try {
+    const connection = await getConnection();
+    const collection = connection.collection("inventory_logs");
+    console.log("✅ Inventory logs collection accessed successfully");
+    return collection;
+  } catch (error) {
+    console.error("❌ Error accessing inventory_logs collection:", error);
+    throw error;
+  }
+};
+
