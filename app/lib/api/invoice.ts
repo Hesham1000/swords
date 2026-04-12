@@ -39,6 +39,12 @@ export interface InvoicesResponse {
   message?: string;
 }
 
+export interface InvoiceResponse {
+  success: boolean;
+  data: Invoice;
+  message?: string;
+}
+
 /**
  * Fetch all invoices with pagination
  */

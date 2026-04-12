@@ -10,8 +10,8 @@ export interface InventoryLog {
   changeAmount: number; // Positive for additions, negative for deductions
   newQuantity: number;
   reason: InventoryChangeReason;
-  oldPrice?: number;
-  newPrice?: number;
+  oldPrice?: number | null;
+  newPrice?: number | null;
   referenceId?: string | ObjectId;
   note?: string;
   operator?: string;
@@ -27,6 +27,8 @@ export async function logInventoryChange(logData: {
   changeAmount: number;
   newQuantity: number;
   reason: InventoryChangeReason;
+  oldPrice?: number | null;
+  newPrice?: number | null;
   referenceId?: string | ObjectId;
   note?: string;
   operator?: string;

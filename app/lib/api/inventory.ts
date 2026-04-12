@@ -2,14 +2,15 @@
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export interface InventoryLog {
-  id: string;
+  _id?: string;
+  id?: string;
   productId: string;
   productName: string;
   changeAmount: number;
   newQuantity: number;
   reason: string;
-  oldPrice?: number;
-  newPrice?: number;
+  oldPrice?: number | null;
+  newPrice?: number | null;
   referenceId?: string;
   note?: string;
   timestamp: string;
