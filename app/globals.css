@@ -1650,7 +1650,7 @@ input[type="password"]::-ms-clear {
 }
 
 .sidebar-header {
-  padding: 2.5rem 1.5rem;
+  padding: 1rem 1.5rem;
   background: linear-gradient(to bottom, rgba(0, 102, 255, 0.05), transparent);
 }
 
@@ -1678,7 +1678,7 @@ input[type="password"]::-ms-clear {
 
 .sidebar-nav {
   flex: 1;
-  padding: 1.5rem 0.75rem;
+  padding: 0.75rem;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border-tech) transparent;
@@ -1703,7 +1703,7 @@ input[type="password"]::-ms-clear {
   transition: var(--transition-smooth);
   font-weight: 600;
   font-size: 13px;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
   border-radius: 8px;
   border: 1px solid transparent;
 }
@@ -1725,7 +1725,7 @@ input[type="password"]::-ms-clear {
 }
 
 .sidebar-footer {
-  padding: 1.5rem;
+  padding: 1rem 1.25rem;
   border-top: 1px solid var(--border-tech);
   background: var(--bg-deep);
 }
@@ -1734,7 +1734,7 @@ input[type="password"]::-ms-clear {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.75rem;
 }
 
 .user-avatar {
@@ -1752,7 +1752,7 @@ input[type="password"]::-ms-clear {
 }
 
 .theme-toggle-container {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .theme-btn {
@@ -4379,9 +4379,14 @@ input[type="password"]::-ms-clear {
 
   /* ── Pagination ── */
   .pagination-controls {
-    gap: 0.875rem;
-    padding: 0.875rem;
-    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .pagination-controls::-webkit-scrollbar {
+    display: none;
   }
 
   .pagination-btn {
@@ -4902,13 +4907,15 @@ input[type="password"]::-ms-clear {
   
   .pagination-pages {
     gap: 0.25rem;
+    flex-shrink: 0;
   }
 
   .pagination-number-btn, .pagination-arr-btn {
-    min-width: 36px;
-    height: 36px;
-    font-size: 13px;
+    min-width: 32px;
+    height: 32px;
+    font-size: 12px;
     border-radius: 8px;
+    flex-shrink: 0;
   }
 
   .pagination-summary {

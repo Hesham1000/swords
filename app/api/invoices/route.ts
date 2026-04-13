@@ -86,17 +86,6 @@ export async function POST(request: NextRequest) {
             { $inc: { quantity: -item.quantity } }
           );
 
-          // Log the inventory deduction
-          await logInventoryChange({
-            productId: item.productId,
-            productName: item.name,
-            changeAmount: -item.quantity,
-            newQuantity: newQty,
-            reason: "Sale",
-            referenceId: result.insertedId.toString(),
-            note: `Sold via invoice ${invoiceData.invoiceId}`
-          });
-
           console.log(`✅ Stocks updated for product: ${item.name} (-${item.quantity})`);
         } catch (updateError) {
           console.error(`❌ Failed to update stock for product ${item.productId}:`, updateError);
@@ -172,20 +161,69 @@ export async function PATCH(request: NextRequest) {
     const additionalDeposit = parseFloat(body.deposit) || 0;
     const productsCollection = await getProductsCollection();
     
-    // 1. STOCK ADJUSTMENT (if items changed)
+    // 1. STOCK ADJUSTMENT AND HISTORY LOGGING (if items changed)
     if (items && Array.isArray(items)) {
       const { logInventoryChange } = await import("../../lib/inventory-server");
+      const oldItems = invoice.items || [];
+      
+      // Track which old items were processed
+      const processedOldProductIds = new Set<string>();
 
-      // Revert old items stock
-      if (invoice.items && Array.isArray(invoice.items)) {
-        for (const oldItem of invoice.items) {
+      // Process new items (Updates and Additions)
+      for (const newItem of items) {
+        const oldItem = oldItems.find((oi: any) => oi.productId === newItem.productId);
+        processedOldProductIds.add(newItem.productId);
+
+        const oldQty = oldItem ? oldItem.quantity : 0;
+        const netChange = newItem.quantity - oldQty;
+        const oldPrice = oldItem ? oldItem.price : null;
+        const priceChanged = oldPrice !== newItem.price;
+
+        if (netChange !== 0) {
+          // Adjust stock
           try {
+            await productsCollection.updateOne(
+              { _id: new ObjectId(newItem.productId) },
+              { $inc: { quantity: -netChange } }
+            );
+          } catch (e) {
+            console.error(`Stock update fail for ${newItem.name}:`, e);
+          }
+        }
+
+        // ONLY LOG IF PRICE OR QUANTITY CHANGED
+        if (netChange !== 0 || priceChanged) {
+          try {
+            const product = await productsCollection.findOne({ _id: new ObjectId(newItem.productId) });
+            await logInventoryChange({
+              productId: newItem.productId,
+              productName: newItem.name,
+              changeAmount: -netChange,
+              newQuantity: product?.quantity || 0,
+              reason: priceChanged && netChange === 0 ? "Price Update" : "Sale",
+              oldPrice: oldPrice,
+              newPrice: newItem.price,
+              referenceId: id,
+              note: `Updated via invoice ${invoice.invoiceId}${priceChanged ? ' (Price change)' : ''}`
+            });
+            console.log(`📝 Logged update for ${newItem.name}: Qty Δ ${-netChange}, Price Δ ${priceChanged}`);
+          } catch (e) {
+            console.error(`History log fail for ${newItem.name}:`, e);
+          }
+        }
+      }
+
+      // Process removed items (Deletions)
+      for (const oldItem of oldItems) {
+        if (!processedOldProductIds.has(oldItem.productId)) {
+          try {
+            // Revert stock
             await productsCollection.updateOne(
               { _id: new ObjectId(oldItem.productId) },
               { $inc: { quantity: oldItem.quantity } }
             );
 
-            // Log the reversion
+            // Log removal
             const product = await productsCollection.findOne({ _id: new ObjectId(oldItem.productId) });
             await logInventoryChange({
               productId: oldItem.productId,
@@ -194,31 +232,13 @@ export async function PATCH(request: NextRequest) {
               newQuantity: product?.quantity || 0,
               reason: "Order Cancelled",
               referenceId: id,
-              note: `Stock reverted due to invoice update/cancel ${invoice.invoiceId}`
+              note: `Item removed from invoice ${invoice.invoiceId}`
             });
-          } catch (e) { console.error("Stock revert fail:", e); }
+            console.log(`📝 Logged removal for ${oldItem.name}`);
+          } catch (e) {
+            console.error(`Stock revert/log fail for removed item ${oldItem.name}:`, e);
+          }
         }
-      }
-      // Apply new items stock
-      for (const newItem of items) {
-        try {
-          await productsCollection.updateOne(
-            { _id: new ObjectId(newItem.productId) },
-            { $inc: { quantity: -newItem.quantity } }
-          );
-
-          // Log the reduction
-          const product = await productsCollection.findOne({ _id: new ObjectId(newItem.productId) });
-          await logInventoryChange({
-            productId: newItem.productId,
-            productName: newItem.name,
-            changeAmount: -newItem.quantity,
-            newQuantity: product?.quantity || 0,
-            reason: "Sale",
-            referenceId: id,
-            note: `Sold via invoice update ${invoice.invoiceId}`
-          });
-        } catch (e) { console.error("Stock apply fail:", e); }
       }
     }
 
