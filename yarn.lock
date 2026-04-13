@@ -677,7 +677,6 @@ __metadata:
 "@next/swc-linux-arm64-musl@npm:16.0.10":
   version: 16.0.10
   resolution: "@next/swc-linux-arm64-musl@npm:16.0.10"
-  checksum: 10/793e61385ba94937642663b1d345e96ee35685938a45d128461eab064105edff6fd79f15bea57fdb49212bcd2c115e4f538768ea7c0d5d2486953f0ff69ae99d
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
@@ -692,7 +691,6 @@ __metadata:
 "@next/swc-linux-x64-musl@npm:16.0.10":
   version: 16.0.10
   resolution: "@next/swc-linux-x64-musl@npm:16.0.10"
-  checksum: 10/697ad8f191030c1eed52fe3ad46a8b81131bab6abd9d15e715f169fc6602c3f40486e3690ba48f69d721d2658a4b26be41f479c09d6cd215262f3459e7e0880f
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
@@ -707,7 +705,6 @@ __metadata:
 "@next/swc-win32-x64-msvc@npm:16.0.10":
   version: 16.0.10
   resolution: "@next/swc-win32-x64-msvc@npm:16.0.10"
-  checksum: 10/a51ae448d4fec5e4aa494e419a0f873f8241fa9971d363a609f844b4a18d2b151c51405bdcdbb0e1630a8460c0b912641c981477eaed790747094f013ecf7dea
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -4358,6 +4355,13 @@ __metadata:
     tailwindcss: "npm:^4"
     typescript: "npm:^5"
     uuid: "npm:^13.0.0"
+  dependenciesMeta:
+    "@next/swc-linux-arm64-musl":
+      optional: true
+    "@next/swc-linux-x64-musl":
+      optional: true
+    "@next/swc-win32-x64-msvc":
+      optional: true
   languageName: unknown
   linkType: soft
 
