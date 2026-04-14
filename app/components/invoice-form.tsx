@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, ChangeEvent, FormEvent, useEffect, useRef, useCallback } from "react";
-import { DollarSign, User, Calendar, FileText, CheckCircle, Clock, AlertCircle, Plus, Trash2, Package, Percent } from "lucide-react";
+import { DollarSign, User, Calendar, FileText, CheckCircle, Clock, AlertCircle, Plus, Trash2, Package, Percent, X } from "lucide-react";
 import { createInvoice, updateInvoice, Invoice, InvoiceItem } from "../lib/api/invoice";
 import { getProducts, Product } from "../lib/api/product";
 
@@ -184,9 +184,15 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
   };
 
   return (
-    <div className="invoice-form-container">
-      <form onSubmit={handleSubmit} className="invoice-form">
-        {error && <div className="error-message">{error}</div>}
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-content-wrapper">
+        <button className="modal-close-btn" onClick={onClose} type="button">
+          <X size={18} />
+        </button>
+
+        <div className="invoice-form-container">
+          <form onSubmit={handleSubmit} className="invoice-form">
+            {error && <div className="error-message">{error}</div>}
 
         <div className="form-section">
           <div className="section-header">
@@ -403,10 +409,12 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
           </button>
         </div>
       </form>
-
-      <style jsx>{`
+    </div>
+    <style jsx>{`
         .invoice-form-container {
-          padding: 1.5rem;
+          padding: 2.5rem;
+          max-height: 85dvh;
+          overflow-y: auto;
         }
         .invoice-form {
           display: flex;
@@ -774,7 +782,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
 
       `}</style>
     </div>
-  );
+  </div>
+);
 };
 
 export default InvoiceForm;

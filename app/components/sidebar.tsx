@@ -129,7 +129,11 @@ const Sidebar = ({
             whileHover={{ x: 5, backgroundColor: "var(--glass-bg)" }}
             whileTap={{ scale: 0.95 }}
             className={`nav-item ${currentPage === item.id ? "active" : ""}`}
-            onClick={() => onNavigation(item.id)}
+            onClick={() => {
+              const target = item.id === "dashboard" ? "/dashboard" : `/${item.id}`;
+              router.push(target);
+              onNavigation(item.id);
+            }}
           >
             <motion.div
               animate={currentPage === item.id ? {

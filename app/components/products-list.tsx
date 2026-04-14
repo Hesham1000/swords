@@ -20,6 +20,7 @@ interface ProductsListProps {
   };
   onPageChange?: (page: number) => void;
   isAdmin?: boolean;
+  currentPage?: number;
 }
 
 const ProductsList: React.FC<ProductsListProps> = ({
