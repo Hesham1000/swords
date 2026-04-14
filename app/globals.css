@@ -4932,7 +4932,7 @@ input[type="password"]::-ms-clear {
     display: none !important; /* Hide numbered pages on extreme mobile, only show arrows */
   }
   /* Optional: Or just show first/last if you prefer */
-}
+
 }
 
 /* Premium Invoice List Refinement */
