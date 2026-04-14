@@ -274,6 +274,14 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
             border: 1px solid var(--border-tech);
             color: var(--text-primary);
           }
+
+          @media (max-width: 768px) {
+            .wallet-form-container { padding: 1.25rem !important; }
+            .wallet-currency-selector { flex-wrap: wrap !important; }
+            .wallet-currency-option { flex: none !important; width: calc(50% - 0.25rem) !important; }
+            .form-actions { flex-direction: column-reverse !important; gap: 0.75rem !important; }
+            .form-actions button { width: 100% !important; }
+          }
         `}</style>
       </div>
     </div>
