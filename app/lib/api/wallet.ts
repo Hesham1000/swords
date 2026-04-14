@@ -29,6 +29,13 @@ export interface WalletBalanceResponse {
 export interface WalletTransactionsResponse {
   success: boolean;
   data: WalletTransaction[];
+  pagination?: {
+    totalItems: number;
+    totalPages: number;
+    currentPage: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
   message?: string;
 }
 
@@ -102,9 +109,13 @@ export async function withdrawFromWallet(amount: number, note?: string, currency
 /**
  * Fetch wallet transaction history
  */
-export async function getWalletTransactions(): Promise<WalletTransactionsResponse> {
+export async function getWalletTransactions(page: number = 1, limit: number = 10): Promise<WalletTransactionsResponse> {
   try {
-    const response = await fetch(`${apiUrl}/api/wallet/transactions`, {
+    const url = new URL(`${apiUrl}/api/wallet/transactions`);
+    url.searchParams.append("page", page.toString());
+    url.searchParams.append("limit", limit.toString());
+
+    const response = await fetch(url.toString(), {
       method: "GET",
       headers: { "Content-Type": "application/json" },
       cache: "no-store",
@@ -116,7 +127,7 @@ export async function getWalletTransactions(): Promise<WalletTransactionsRespons
     }
 
     const data = await response.json();
-    return { success: true, data: data.data };
+    return { success: true, data: data.data, pagination: data.pagination };
   } catch (error) {
     console.error("Error fetching wallet transactions:", error);
     throw error;

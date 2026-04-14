@@ -5199,3 +5199,90 @@ input[type="password"]::-ms-clear {
   font-size: 9px !important;
   white-space: nowrap;
 }
+
+/* --- MOBILE RESPONSIVENESS OVERRIDES --- */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  .page-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+    margin-bottom: 2rem !important;
+  }
+
+  .header-actions {
+    width: 100% !important;
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    display: flex !important;
+  }
+
+  .header-actions button, 
+  .header-actions .deposit-btn, 
+  .header-actions .withdraw-btn, 
+  .header-actions .shipment-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    margin: 0 !important;
+  }
+
+  .page-title {
+    font-size: 1.5rem !important;
+  }
+
+  .content-wrapper {
+    padding: 1rem !important;
+  }
+
+  /* History Table Mobile View */
+  .history-header-row {
+    display: none !important; /* Hide headers on mobile */
+  }
+
+  .history-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+    padding: 1.5rem !important;
+  }
+
+  .history-col-product,
+  .history-col-change,
+  .history-col-reason,
+  .history-col-date {
+    width: 100% !important;
+    flex: none !important;
+    text-align: left !important;
+    align-items: flex-start !important;
+  }
+
+  .history-col-date {
+    border-top: 1px solid var(--border-tech);
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+  }
+
+  /* Wallet Transactions Mobile */
+  .transaction-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+
+  .tx-amount {
+    width: 100%;
+    text-align: right;
+    border-top: 1px solid var(--border-tech);
+    padding-top: 0.5rem;
+  }
+
+  /* Dashboard Grid */
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+

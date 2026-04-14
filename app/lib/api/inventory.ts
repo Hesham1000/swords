@@ -19,14 +19,22 @@ export interface InventoryLog {
 export interface InventoryLogsResponse {
   success: boolean;
   data: InventoryLog[];
+  pagination?: {
+    totalItems: number;
+    totalPages: number;
+    currentPage: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
 }
 
 /**
  * Fetch inventory logs from the API
  */
-export async function getInventoryLogs(productId?: string, limit: number = 50): Promise<InventoryLogsResponse> {
+export async function getInventoryLogs(page: number = 1, limit: number = 10, productId?: string): Promise<InventoryLogsResponse> {
   try {
     const url = new URL(`${apiUrl}/api/inventory/logs`);
+    url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
     if (productId) {
       url.searchParams.append("productId", productId);
