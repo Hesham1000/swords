@@ -573,6 +573,17 @@ const ProductForm: React.FC<ProductFormProps> = ({
           .btn-primary, .btn-secondary { padding: 0.875rem 1.5rem; font-family: var(--font-display); font-size: 12px; font-weight: 900; border-radius: 8px; cursor: pointer; text-transform: uppercase; }
           .btn-primary { background: var(--accent-blue); color: white; border: none; }
           .btn-secondary { background: transparent; border: 1px solid var(--border-tech); color: var(--text-primary); }
+
+          @media (max-width: 768px) {
+            .product-form-container { padding: 1.25rem !important; }
+            .form-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
+            .form-group.full-width { grid-column: auto !important; }
+            .disciplines-grid { flex-direction: column !important; gap: 0.75rem !important; }
+            .media-previews { grid-template-columns: repeat(2, 1fr) !important; }
+            .form-actions { flex-direction: column-reverse !important; gap: 0.75rem !important; }
+            .form-actions button { width: 100% !important; }
+            .upload-trigger { padding: 1rem !important; flex-direction: column !important; text-align: center !important; }
+          }
         `}</style>
       </div>
     </div>

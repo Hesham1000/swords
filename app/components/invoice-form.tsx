@@ -771,13 +771,43 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
           margin: 0.5rem auto;
         }
         .end-of-list {
-          font-size: 10px;
-          color: var(--text-secondary);
-          text-align: center;
-          margin-top: 0.5rem;
           opacity: 0.6;
           font-style: italic;
           padding-bottom: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+          .invoice-form-container {
+            padding: 1.25rem !important;
+          }
+          .product-selector-grid {
+            grid-template-columns: 1fr !important;
+            gap: 2rem !important;
+          }
+          .selected-item-row {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 1rem !important;
+          }
+          .item-controls {
+            width: 100% !important;
+            justify-content: space-between !important;
+            border-top: 1px solid var(--border-tech);
+            padding-top: 0.75rem;
+          }
+          .form-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .form-group.full-width {
+            grid-column: auto !important;
+          }
+          .form-actions {
+            flex-direction: column-reverse !important;
+            gap: 0.75rem !important;
+          }
+          .form-actions button {
+            width: 100% !important;
+          }
         }
 
       `}</style>

@@ -234,6 +234,14 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ onClose, onSuccess }) => {
             border: 1px solid var(--border-tech);
             color: var(--text-primary);
           }
+
+          @media (max-width: 768px) {
+            .shipment-form-container { padding: 1.25rem !important; }
+            .form-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
+            .form-group.full-width { grid-column: auto !important; }
+            .form-actions { flex-direction: column-reverse !important; gap: 0.75rem !important; }
+            .form-actions button { width: 100% !important; }
+          }
         `}</style>
       </div>
     </div>
