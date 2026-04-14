@@ -223,7 +223,7 @@ const AdminLayoutContent = () => {
   };
 
   const fetchProducts = async (page: number = 1) => {
-    if (products.length === 0) setProductsLoading(true);
+    setProductsLoading(true);
     setProductsError("");
 
     try {
@@ -811,7 +811,6 @@ const AdminLayoutContent = () => {
         pagination={productsPagination}
         onPageChange={(page) => {
           setProductsPage(page);
-          fetchProducts(page);
         }}
         isAdmin={isAdmin}
       />

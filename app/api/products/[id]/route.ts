@@ -1,11 +1,8 @@
-// app/api/products/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir, unlink } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
 import { ObjectId } from "mongodb";
 import { getProductsCollection } from "../../../lib/mongoDB";
 import { transformProduct } from "../../../lib/api/utils";
+import { uploadImage, deleteImage, getPublicIdFromUrl, getRelativePathFromUrl } from "../../../lib/cloudinary";
 
 // GET a single product
 export async function GET(
@@ -74,33 +71,22 @@ export async function PUT(
         const images = formData.getAll("images") as (File | string)[];
         const imagePaths: string[] = [];
 
-        const uploadDir = join(process.cwd(), "public", "uploads", "products");
-        if (!existsSync(uploadDir)) {
-            await mkdir(uploadDir, { recursive: true });
-        }
-
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
-
         for (const image of images) {
             if (typeof image === "string") {
-                // Keep existing image, but strip API URL if it's there to keep relative paths in DB
-                let finalPath = image;
-                if (apiUrl && image.startsWith(apiUrl)) {
-                    finalPath = image.replace(apiUrl, "");
-                }
-                imagePaths.push(finalPath);
+                // Keep existing image
+                imagePaths.push(image);
             } else if (image instanceof File && image.size > 0) {
                 // Process new upload
-                const timestamp = Date.now();
-                const randomString = Math.random().toString(36).substring(7);
-                const extension = image.name.split(".").pop();
-                const filename = `${timestamp}-${randomString}.${extension}`;
-                const filepath = join(uploadDir, filename);
-
                 const bytes = await image.arrayBuffer();
                 const buffer = Buffer.from(bytes);
-                await writeFile(filepath, buffer);
-                imagePaths.push(`/uploads/products/${filename}`);
+
+                // Upload to Cloudinary
+                const result = await uploadImage(buffer, "products");
+                imagePaths.push(getRelativePathFromUrl(result.url));
+
+                // Note: In a more advanced implementation, we would track which old images 
+                // were removed and delete them from Cloudinary here. 
+                // For now, we focus on making the upload work.
             }
         }
 
@@ -137,7 +123,7 @@ export async function PUT(
         // 📝 AUDIT LOGGING
         try {
             const { logInventoryChange } = await import("../../../lib/inventory-server");
-            
+
             // 1. Log manual stock adjustment if it changed
             if (quantityChange !== 0) {
                 await logInventoryChange({
@@ -196,15 +182,15 @@ export async function DELETE(
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
 
-        // Delete associated images from storage
+        // Delete associated images from Cloudinary
         if (product.images && Array.isArray(product.images)) {
-            for (const imagePath of product.images) {
-                const fullPath = join(process.cwd(), "public", imagePath);
-                if (existsSync(fullPath)) {
+            for (const imageUrl of product.images) {
+                const publicId = getPublicIdFromUrl(imageUrl);
+                if (publicId) {
                     try {
-                        await unlink(fullPath);
+                        await deleteImage(publicId);
                     } catch (err) {
-                        console.error(`Failed to delete image: ${fullPath}`, err);
+                        console.error(`Failed to delete image from Cloudinary: ${publicId}`, err);
                     }
                 }
             }

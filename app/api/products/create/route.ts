@@ -1,10 +1,7 @@
-// app/api/products/create/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
 import { getProductsCollection } from "../../../lib/mongoDB";
 import { transformProduct } from "../../../lib/api/utils";
+import { uploadImage, getRelativePathFromUrl } from "../../../lib/cloudinary";
 
 // Define the product data structure with optional fields
 interface ProductData {
@@ -54,29 +51,17 @@ export async function POST(request: NextRequest) {
     const images = formData.getAll("images") as (File | string)[];
     const imagePaths: string[] = [];
 
-    const uploadDir = join(process.cwd(), "public", "uploads", "products");
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
-
     for (const image of images) {
       if (typeof image === "string") {
         if (image.length > 0) imagePaths.push(image);
       } else if (image instanceof File && image.size > 0) {
-        // Generate unique filename
-        const timestamp = Date.now();
-        const randomString = Math.random().toString(36).substring(7);
-        const extension = image.name.split(".").pop();
-        const filename = `${timestamp}-${randomString}.${extension}`;
-        const filepath = join(uploadDir, filename);
-
-        // Convert file to buffer and save
+        // Convert file to buffer
         const bytes = await image.arrayBuffer();
         const buffer = Buffer.from(bytes);
-        await writeFile(filepath, buffer);
-
-        // Store relative path for database
-        imagePaths.push(`/uploads/products/${filename}`);
+        
+        // Upload to Cloudinary
+        const result = await uploadImage(buffer, "products");
+        imagePaths.push(getRelativePathFromUrl(result.url));
       }
     }
 

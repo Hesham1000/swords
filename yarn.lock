@@ -1647,6 +1647,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"cloudinary@npm:^2.9.0":
+  version: 2.9.0
+  resolution: "cloudinary@npm:2.9.0"
+  dependencies:
+    lodash: "npm:^4.17.21"
+  checksum: 10/fe54867526e126fc95e250fddebf22cab65a9d1f348160defb5eac5d3bca5b3e7feb8e02950afe3a7328bdf5723f714d5008a460a540dde5cb3039488c044555
+  languageName: node
+  linkType: hard
+
 "color-convert@npm:^2.0.1":
   version: 2.0.1
   resolution: "color-convert@npm:2.0.1"
@@ -3227,6 +3236,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lodash@npm:^4.17.21":
+  version: 4.18.1
+  resolution: "lodash@npm:4.18.1"
+  checksum: 10/306fea53dfd39dad1f03d45ba654a2405aebd35797b673077f401edb7df2543623dc44b9effbb98f69b32152295fff725a4cec99c684098947430600c6af0c3f
+  languageName: node
+  linkType: hard
+
 "loose-envify@npm:^1.4.0":
   version: 1.4.0
   resolution: "loose-envify@npm:1.4.0"
@@ -4341,6 +4357,7 @@ __metadata:
     "@types/uuid": "npm:^10.0.0"
     baseline-browser-mapping: "npm:^2.10.18"
     bcryptjs: "npm:^3.0.3"
+    cloudinary: "npm:^2.9.0"
     eslint: "npm:^9"
     eslint-config-next: "npm:16.0.10"
     framer-motion: "npm:^12.23.26"

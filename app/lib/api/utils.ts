@@ -10,6 +10,7 @@ export function transformProduct(product: any) {
     if (!product) return null;
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
 
     const transformed = {
         ...product,
@@ -18,7 +19,16 @@ export function transformProduct(product: any) {
             if (img.startsWith("http")) {
                 return img;
             }
-            return `${apiUrl}${img}`;
+            if (img.startsWith("/uploads")) {
+                return `${apiUrl}${img}`;
+            }
+            // If it starts with 'v' followed by numbers, it's likely a Cloudinary path
+            // e.g., v1744646400/products/my-image.jpg
+            if (img.match(/^v\d+\//) && cloudName) {
+                return `https://res.cloudinary.com/${cloudName}/image/upload/${img}`;
+            }
+            // Fallback for any other local relative paths
+            return img.startsWith("/") ? `${apiUrl}${img}` : img;
         }),
     };
 
