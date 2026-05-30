@@ -60,26 +60,24 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
                 <h3>{isDeposit ? "CASH DEPOSIT" : "WITHDRAW CASH"}</h3>
               </div>
 
-              {/* Currency Selection - deposit only */}
-              {isDeposit && (
-                <div className="form-group full-width">
-                  <label>Currency *</label>
-                  <div className="wallet-currency-selector">
-                    {(["EGP", "USD", "EUR"] as const).map((cur) => (
-                      <button
-                        key={cur}
-                        type="button"
-                        className={`wallet-currency-option ${currency === cur ? "active" : ""}`}
-                        onClick={() => setCurrency(cur)}
-                        disabled={loading}
-                      >
-                        <span className="wallet-currency-symbol">{currencySymbols[cur]}</span>
-                        <span className="wallet-currency-code">{cur}</span>
-                      </button>
-                    ))}
-                  </div>
+              {/* Currency Selection */}
+              <div className="form-group full-width">
+                <label>Currency *</label>
+                <div className="wallet-currency-selector">
+                  {(["EGP", "USD", "EUR"] as const).map((cur) => (
+                    <button
+                      key={cur}
+                      type="button"
+                      className={`wallet-currency-option ${currency === cur ? "active" : ""}`}
+                      onClick={() => setCurrency(cur)}
+                      disabled={loading}
+                    >
+                      <span className="wallet-currency-symbol">{currencySymbols[cur]}</span>
+                      <span className="wallet-currency-code">{cur}</span>
+                    </button>
+                  ))}
                 </div>
-              )}
+              </div>
 
               <div className="form-group full-width">
                 <label>Amount ({currency}) *</label>
@@ -150,14 +148,13 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
             display: flex;
             flex-direction: column;
             gap: 1rem;
-          }
-          .section-header {
+                   .section-header {
             display: flex;
             align-items: center;
             gap: 0.75rem;
             padding-bottom: 0.5rem;
             border-bottom: 1px solid var(--border-tech);
-            color: ${isDeposit ? '#10b981' : '#f87171'};
+            color: ${isDeposit ? 'var(--accent-gold)' : '#ea580c'};
           }
           .section-header h3 {
             font-family: var(--font-display);
@@ -205,7 +202,7 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
             padding-left: 2.5rem !important;
             width: 100%;
           }
-
+ 
           .wallet-currency-selector {
             display: flex;
             gap: 0.5rem;
@@ -227,8 +224,8 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
             border-color: var(--text-secondary);
           }
           .wallet-currency-option.active {
-            border-color: ${isDeposit ? '#10b981' : '#f87171'};
-            background: ${isDeposit ? 'rgba(16, 185, 129, 0.08)' : 'rgba(248, 113, 113, 0.08)'};
+            border-color: ${isDeposit ? 'var(--accent-gold)' : '#ea580c'};
+            background: ${isDeposit ? 'rgba(var(--accent-gold-rgb), 0.08)' : 'rgba(234, 88, 12, 0.08)'};
           }
           .wallet-currency-symbol {
             font-family: var(--font-display);
@@ -244,7 +241,7 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
             color: var(--text-secondary);
             text-transform: uppercase;
           }
-
+ 
           .form-actions {
             display: flex;
             justify-content: flex-end;
@@ -262,18 +259,18 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
             text-transform: uppercase;
           }
           .btn-primary {
-            background: ${isDeposit ? '#10b981' : '#f87171'};
-            color: white;
+            background: ${isDeposit ? 'var(--accent-gold)' : '#ea580c'};
+            color: ${isDeposit ? 'var(--bg-deep)' : 'white'};
             border: none;
           }
           .btn-withdraw {
-            background: #f87171 !important;
+            background: #ea580c !important;
           }
           .btn-secondary {
             background: transparent;
             border: 1px solid var(--border-tech);
             color: var(--text-primary);
-          }
+          }  }
 
           @media (max-width: 768px) {
             .wallet-form-container { padding: 1.25rem !important; }

@@ -7,7 +7,7 @@ import { ObjectId } from "mongodb";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const customer = searchParams.get("customer");
+    const searchVal = searchParams.get("search") || searchParams.get("customer");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
@@ -15,8 +15,14 @@ export async function GET(request: NextRequest) {
     const invoicesCollection = await getInvoicesCollection();
     
     let query = {};
-    if (customer) {
-      query = { customer: { $regex: customer, $options: "i" } };
+    if (searchVal) {
+      query = {
+        $or: [
+          { customer: { $regex: searchVal, $options: "i" } },
+          { invoiceId: { $regex: searchVal, $options: "i" } },
+          { "items.name": { $regex: searchVal, $options: "i" } }
+        ]
+      };
     }
     
     const totalCount = await invoicesCollection.countDocuments(query);

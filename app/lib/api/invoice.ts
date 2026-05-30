@@ -48,12 +48,12 @@ export interface InvoiceResponse {
 /**
  * Fetch all invoices with pagination
  */
-export async function getInvoices(page: number = 1, limit: number = 10, customer?: string): Promise<InvoicesResponse> {
+export async function getInvoices(page: number = 1, limit: number = 10, search?: string): Promise<InvoicesResponse> {
   try {
     const url = new URL(`${apiUrl}/api/invoices`);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
-    if (customer) url.searchParams.append("customer", customer);
+    if (search) url.searchParams.append("search", search);
 
     const response = await fetch(url.toString());
     if (!response.ok) {

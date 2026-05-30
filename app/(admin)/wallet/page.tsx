@@ -270,41 +270,41 @@ export default function WalletPage() {
         }
 
         .deposit-btn {
-          background: rgba(16, 185, 129, 0.1);
-          color: #10b981;
-          border-color: rgba(16, 185, 129, 0.2);
+          background: rgba(var(--accent-gold-rgb), 0.1);
+          color: var(--accent-gold);
+          border-color: rgba(var(--accent-gold-rgb), 0.2);
         }
         .deposit-btn:hover {
-          background: #10b981;
-          color: white;
-          border-color: #10b981;
-          box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+          background: var(--accent-gold);
+          color: var(--bg-deep);
+          border-color: var(--accent-gold);
+          box-shadow: 0 0 20px rgba(var(--accent-gold-rgb), 0.3);
           transform: translateY(-2px);
         }
 
         .withdraw-btn {
-          background: rgba(244, 63, 94, 0.1);
-          color: #f43f5e;
-          border-color: rgba(244, 63, 94, 0.2);
+          background: rgba(234, 88, 12, 0.1);
+          color: #ea580c;
+          border-color: rgba(234, 88, 12, 0.2);
         }
         .withdraw-btn:hover {
-          background: #f43f5e;
+          background: #ea580c;
           color: white;
-          border-color: #f43f5e;
-          box-shadow: 0 0 20px rgba(244, 63, 94, 0.3);
+          border-color: #ea580c;
+          box-shadow: 0 0 20px rgba(234, 88, 12, 0.3);
           transform: translateY(-2px);
         }
 
         .shipment-btn {
-          background: rgba(59, 130, 246, 0.1);
-          color: #3b82f6;
-          border-color: rgba(59, 130, 246, 0.2);
+          background: rgba(var(--accent-blue-rgb), 0.1);
+          color: var(--accent-blue);
+          border-color: rgba(var(--accent-blue-rgb), 0.2);
         }
         .shipment-btn:hover {
-          background: #3b82f6;
-          color: white;
-          border-color: #3b82f6;
-          box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+          background: var(--accent-blue);
+          color: var(--bg-deep);
+          border-color: var(--accent-blue);
+          box-shadow: 0 0 20px rgba(var(--accent-blue-rgb), 0.3);
           transform: translateY(-2px);
         }
       `}</style>
