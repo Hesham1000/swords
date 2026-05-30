@@ -227,9 +227,9 @@ export default function DashboardLayout({
         }
         .topbar {
           height: 70px;
-          background: rgba(15, 23, 42, 0.8);
+          background: var(--bg-card);
           backdrop-filter: blur(12px);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          border-bottom: 1px solid var(--border-tech);
           display: flex;
           align-items: center;
           padding: 0 2rem;
@@ -243,14 +243,14 @@ export default function DashboardLayout({
           font-size: 1.25rem;
           font-weight: 800;
           letter-spacing: -0.02em;
-          background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+          background: var(--grad-amber);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
         .menu-toggle {
           background: none;
           border: none;
-          color: white;
+          color: var(--text-primary);
           cursor: pointer;
           display: flex;
           align-items: center;
@@ -258,13 +258,13 @@ export default function DashboardLayout({
           width: 40px;
           height: 40px;
           border-radius: 10px;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          background: var(--glass-bg);
+          border: 1px solid var(--border-tech);
           transition: all 0.2s;
         }
         .menu-toggle:hover {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: rgba(255, 255, 255, 0.1);
+          background: rgba(var(--accent-blue-rgb), 0.08);
+          border-color: rgba(var(--accent-blue-rgb), 0.2);
         }
         .content-wrapper {
           padding: 2rem;

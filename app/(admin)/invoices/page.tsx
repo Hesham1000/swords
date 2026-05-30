@@ -72,7 +72,7 @@ export default function InvoicesPage() {
           <Search size={18} className="search-icon" />
           <input
             type="text"
-            placeholder="Search by customer..."
+            placeholder="Search by customer, invoice ID or product name..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
