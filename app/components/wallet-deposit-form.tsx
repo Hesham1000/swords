@@ -148,13 +148,14 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
             display: flex;
             flex-direction: column;
             gap: 1rem;
-                   .section-header {
+          }
+          .section-header {
             display: flex;
             align-items: center;
             gap: 0.75rem;
             padding-bottom: 0.5rem;
             border-bottom: 1px solid var(--border-tech);
-            color: ${isDeposit ? 'var(--accent-gold)' : '#ea580c'};
+            color: ${isDeposit ? 'var(--accent-gold)' : 'var(--accent-red)'};
           }
           .section-header h3 {
             font-family: var(--font-display);
@@ -224,8 +225,8 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
             border-color: var(--text-secondary);
           }
           .wallet-currency-option.active {
-            border-color: ${isDeposit ? 'var(--accent-gold)' : '#ea580c'};
-            background: ${isDeposit ? 'rgba(var(--accent-gold-rgb), 0.08)' : 'rgba(234, 88, 12, 0.08)'};
+            border-color: ${isDeposit ? 'var(--accent-gold)' : 'var(--accent-red)'};
+            background: ${isDeposit ? 'rgba(var(--accent-gold-rgb), 0.08)' : 'rgba(var(--accent-red-rgb), 0.08)'};
           }
           .wallet-currency-symbol {
             font-family: var(--font-display);
@@ -250,27 +251,64 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
             border-top: 1px solid var(--border-tech);
           }
           .btn-primary, .btn-secondary {
-            padding: 0.75rem 1.5rem;
+            padding: 0.875rem 1.75rem;
             font-family: var(--font-display);
             font-size: 11px;
-            font-weight: 900;
-            border-radius: 6px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            border-radius: 10px;
             cursor: pointer;
             text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
           }
           .btn-primary {
-            background: ${isDeposit ? 'var(--accent-gold)' : '#ea580c'};
-            color: ${isDeposit ? 'var(--bg-deep)' : 'white'};
-            border: none;
+            background: ${isDeposit 
+              ? 'var(--grad-btn)' 
+              : 'linear-gradient(135deg, var(--accent-red) 0%, #991b1b 100%)'};
+            color: ${isDeposit ? 'var(--bg-deep)' : '#ffffff'};
+            border: 1px solid ${isDeposit ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.15)'};
+            box-shadow: ${isDeposit 
+              ? '0 4px 15px rgba(var(--accent-gold-rgb), 0.25)' 
+              : '0 4px 15px rgba(var(--accent-red-rgb), 0.25)'};
           }
-          .btn-withdraw {
-            background: #ea580c !important;
+          .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: ${isDeposit 
+              ? '0 8px 25px rgba(var(--accent-gold-rgb), 0.4)' 
+              : '0 8px 25px rgba(var(--accent-red-rgb), 0.4)'};
+          }
+          .btn-primary:active {
+            transform: translateY(0);
+          }
+          .btn-primary:disabled {
+            background: var(--border-tech);
+            color: var(--text-secondary);
+            box-shadow: none;
+            transform: none;
+            cursor: not-allowed;
           }
           .btn-secondary {
             background: transparent;
             border: 1px solid var(--border-tech);
+            color: var(--text-secondary);
+          }
+          .btn-secondary:hover {
+            background: rgba(var(--accent-gold-rgb), 0.05);
+            border-color: var(--text-primary);
             color: var(--text-primary);
-          }  }
+            transform: translateY(-2px);
+          }
+          .btn-secondary:active {
+            transform: translateY(0);
+          }
+          .btn-secondary:disabled {
+            opacity: 0.5;
+            transform: none;
+            cursor: not-allowed;
+          }
 
           @media (max-width: 768px) {
             .wallet-form-container { padding: 1.25rem !important; }

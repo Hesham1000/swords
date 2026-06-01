@@ -34,15 +34,17 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
   const [error, setError] = useState<string>("");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const fetchProducts = useCallback(async (pageNum: number, isInitial = false) => {
+  const fetchProducts = useCallback(async (pageNum: number, searchStr = "", isInitial = false) => {
     if (pageNum > 1) setLoadingMore(true);
     else setProductsLoading(true);
     
     try {
-      const response = await getProducts(pageNum, 10); // Standardizing on 10 per page
-      if (isInitial) {
+      const response = await getProducts(pageNum, 10, false, { search: searchStr });
+      if (isInitial || pageNum === 1) {
         setAvailableProducts(response.data);
       } else {
         setAvailableProducts(prev => {
@@ -65,19 +67,21 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
   }, []);
 
   useEffect(() => {
-    fetchProducts(1, true);
-  }, [fetchProducts]);
+    const delayDebounce = setTimeout(() => {
+      fetchProducts(1, searchQuery, true);
+    }, 300);
+    
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery, fetchProducts]);
 
   const handleScroll = () => {
     if (!scrollRef.current || productsLoading || loadingMore || !hasMore) return;
 
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
     if (scrollHeight - scrollTop <= clientHeight + 50) {
-      fetchProducts(page + 1);
+      fetchProducts(page + 1, searchQuery);
     }
   };
-
-  const [loadingMore, setLoadingMore] = useState(false);
 
   const calculateSubtotal = () => {
     return items.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
@@ -224,6 +228,16 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
           <div className="product-selector-grid">
             <div className="available-products">
               <label className="sub-label">Select Products</label>
+              <div className="product-search-wrapper">
+                <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search products by name..."
+                  className="product-search-input"
+                  disabled={loading}
+                />
+              </div>
               <div className="products-scroll-area" ref={scrollRef} onScroll={handleScroll}>
                 {productsLoading ? (
                   <div className="mini-spinner"></div>
@@ -521,6 +535,27 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
           margin-bottom: 0.5rem;
           display: block;
           text-transform: uppercase;
+        }
+        .product-search-wrapper {
+          margin-bottom: 0.75rem;
+          position: relative;
+        }
+        .product-search-input {
+          width: 100%;
+          padding: 0.625rem 1rem;
+          background: var(--bg-deep);
+          border: 1px solid var(--border-tech);
+          border-radius: 8px;
+          font-family: var(--font-sans);
+          font-size: 13px;
+          color: var(--text-primary);
+          transition: var(--transition-smooth);
+        }
+        .product-search-input:focus {
+          outline: none;
+          border-color: var(--accent-blue);
+          box-shadow: 0 0 0 3px rgba(var(--accent-blue-rgb), 0.15);
+          background: var(--bg-card);
         }
         .products-scroll-area, .items-list {
           background: var(--bg-deep);
