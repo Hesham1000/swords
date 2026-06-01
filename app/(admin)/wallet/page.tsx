@@ -283,15 +283,15 @@ export default function WalletPage() {
         }
 
         .withdraw-btn {
-          background: rgba(234, 88, 12, 0.1);
-          color: #ea580c;
-          border-color: rgba(234, 88, 12, 0.2);
+          background: rgba(var(--accent-red-rgb), 0.1);
+          color: var(--accent-red);
+          border-color: rgba(var(--accent-red-rgb), 0.2);
         }
         .withdraw-btn:hover {
-          background: #ea580c;
-          color: white;
-          border-color: #ea580c;
-          box-shadow: 0 0 20px rgba(234, 88, 12, 0.3);
+          background: var(--accent-red);
+          color: var(--bg-deep);
+          border-color: var(--accent-red);
+          box-shadow: 0 0 20px rgba(var(--accent-red-rgb), 0.3);
           transform: translateY(-2px);
         }
 

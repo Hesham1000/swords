@@ -3,21 +3,21 @@
 
 /* PBT Professional Design System - Obsidian & Amber Redesign */
 :root {
-  /* LIGHT MODE (DEFAULT) - Premium Showroom Aesthetic */
-  --bg-deep: #fcfbfa; /* Warm champagne/alabaster background */
+  /* LIGHT MODE (DEFAULT) - Premium Sports Fencing Aesthetic */
+  --bg-deep: #f8fafc; /* Clean slate-white background */
   --bg-card: #ffffff;
-  --accent-blue: #cf8f23; /* Warm amber gold */
-  --accent-blue-rgb: 207, 143, 35;
-  --accent-gold: #e5a93b;
-  --accent-gold-rgb: 229, 169, 59;
-  --accent-red: #d34545;
-  --accent-red-rgb: 211, 69, 69;
-  --text-primary: #1a1612; /* Rich dark warm espresso charcoal */
-  --text-secondary: #7e7364; /* Refined bronze-gray */
-  --border-tech: #e9e3d3; /* Warm goldish/champagne border */
-  --glass-bg: rgba(207, 143, 35, 0.03);
-  --shadow-sm: 0 1px 2px rgba(207, 143, 35, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(207, 143, 35, 0.08);
+  --accent-blue: #2563eb; /* Cobalt fencer primary blue */
+  --accent-blue-rgb: 37, 99, 235;
+  --accent-gold: #0ea5e9; /* Sky / Ice fencer secondary blue */
+  --accent-gold-rgb: 14, 165, 233;
+  --accent-red: #ef4444; /* Scoring light crimson red */
+  --accent-red-rgb: 239, 68, 68;
+  --text-primary: #0f172a; /* Slate primary text */
+  --text-secondary: #64748b; /* Muted steel text */
+  --border-tech: #e2e8f0; /* Crisp light steel border */
+  --glass-bg: rgba(37, 99, 235, 0.03);
+  --shadow-sm: 0 1px 2px rgba(37, 99, 235, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(37, 99, 235, 0.08);
 
   /* Typography */
   --font-display: 'Outfit', sans-serif;
@@ -28,32 +28,32 @@
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   
   /* Gradations */
-  --grad-amber: linear-gradient(135deg, #e5a93b 0%, #b8730a 100%);
-  --grad-obsidian: linear-gradient(135deg, #fcfbfa 0%, #f4eee1 100%);
-  --grad-btn: linear-gradient(135deg, #cf8f23 0%, #b8730a 100%);
+  --grad-amber: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  --grad-obsidian: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  --grad-btn: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
 }
 
 .dark-mode {
-  /* DARK MODE - Elite Technical Aesthetic */
-  --bg-deep: #07070a; /* Pure deep obsidian black with subtle warm undertones */
-  --bg-card: #0e0e14; /* Dark slate obsidian card background */
-  --accent-blue: #ffb633; /* Rich glowing amber gold */
-  --accent-blue-rgb: 255, 182, 51;
-  --accent-gold: #ffb633;
-  --accent-gold-rgb: 255, 182, 51;
-  --accent-red: #ff5555;
-  --accent-red-rgb: 255, 85, 85;
-  --text-primary: #f6eedf; /* Warm champagne white */
-  --text-secondary: #a89d8d; /* Muted warm bronze gray */
-  --border-tech: #1d1b22; /* Fine dark warm border */
-  --glass-bg: rgba(255, 182, 51, 0.03);
+  /* DARK MODE - Elite Technical Fencing Aesthetic */
+  --bg-deep: #030712; /* Deep space dark fencer background */
+  --bg-card: #0b0f19; /* Technical dark slate card background */
+  --accent-blue: #3b82f6; /* Electric cobalt blue */
+  --accent-blue-rgb: 59, 130, 246;
+  --accent-gold: #38bdf8; /* Sky / Electric Ice blue */
+  --accent-gold-rgb: 56, 189, 248;
+  --accent-red: #f43f5e; /* Bright scoring crimson */
+  --accent-red-rgb: 244, 63, 94;
+  --text-primary: #f8fafc; /* Crisp silver white */
+  --text-secondary: #94a3b8; /* Muted steel gray */
+  --border-tech: #1e293b; /* Sleek dark slate border */
+  --glass-bg: rgba(59, 130, 246, 0.03);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6);
   color-scheme: dark;
   
-  --grad-amber: linear-gradient(135deg, #ffb633 0%, #cf8f23 100%);
-  --grad-obsidian: linear-gradient(135deg, #100f16 0%, #07070a 100%);
-  --grad-btn: linear-gradient(135deg, #ffb633 0%, #cf8f23 100%);
+  --grad-amber: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  --grad-obsidian: linear-gradient(135deg, #0b0f19 0%, #030712 100%);
+  --grad-btn: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
 }
 
 /* Fix for native date/time picker icons in dark mode */
