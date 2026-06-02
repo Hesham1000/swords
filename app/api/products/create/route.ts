@@ -9,8 +9,8 @@ interface ProductData {
   description: string;
   price: number | null;
   category: ("Foil" | "Sabre" | "Epée")[];
-  productType: string; // Changed to string as it's validated later
-  brand: string; // No longer optional
+  productType: string;
+  brand?: string;
   model?: string;
   subCategory?: string;
   isKings?: boolean;
@@ -18,6 +18,7 @@ interface ProductData {
   lameColor?: string;
   material?: string;
   hand?: string;
+  gloveSize?: string;
   quantity: number;
   images: string[];
   createdAt: string;
@@ -65,22 +66,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Base product data
+    // Base product data - only common fields
     const productData: ProductData = {
       name,
       description: description || "",
       price: price ? parseFloat(price) : null,
       category: category as any,
       productType: productType,
-      brand: brand || "pbt", // Default to pbt if not provided
-      model: model || "",
       quantity: parseInt(quantity),
       images: imagePaths,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    // Add type-specific fields conditionally
+    // Add type-specific fields conditionally — only include what's relevant
     if (productType === "lame") {
       const isKings = formData.get("isKings") === "true";
       const isMini = formData.get("isMini") === "true";
@@ -88,6 +87,8 @@ export async function POST(request: NextRequest) {
       const material = formData.get("material") as string;
       const subCategory = formData.get("subCategory") as string;
 
+      productData.brand = brand || "";
+      if (model) productData.model = model;
       productData.isKings = isKings;
       productData.isMini = isMini;
       if (lameColor) productData.lameColor = lameColor;
@@ -95,6 +96,7 @@ export async function POST(request: NextRequest) {
       if (subCategory) productData.subCategory = subCategory;
     } 
     else if (["grip", "guard", "guard_padding"].includes(productType)) {
+      productData.brand = brand || "pbt";
       const subCategory = formData.get("subCategory") as string;
       const hand = formData.get("hand") as string;
       const material = formData.get("material") as string;
@@ -108,8 +110,21 @@ export async function POST(request: NextRequest) {
       }
     } 
     else if (productType === "socket") {
+      productData.brand = brand || "pbt";
       const subCategory = formData.get("subCategory") as string;
       if (subCategory) productData.subCategory = subCategory;
+    }
+    else if (productType === "glove") {
+      const gloveSize = formData.get("gloveSize") as string;
+      const hand = formData.get("hand") as string;
+      
+      if (gloveSize) productData.gloveSize = gloveSize;
+      if (hand) productData.hand = hand;
+    }
+    else {
+      // Simple types (wire, french_pommel, nut, point, etc.)
+      productData.brand = brand || "pbt";
+      if (model) productData.model = model;
     }
 
     const result = await productsCollection.insertOne(productData);

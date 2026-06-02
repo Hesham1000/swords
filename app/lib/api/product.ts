@@ -8,7 +8,7 @@ export interface Product {
   description: string;
   price: number | null;
   category: ("Foil" | "Sabre" | "Epée")[];
-  productType: "lame" | "wire" | "pbt" | "weapon" | "grip" | "guard" | "guard_padding" | "french_pommel" | "nut" | "point" | "screws" | "point_contact_springs" | "socket" | "insulating_tube" | "body_wire" | "cable" | "pin";
+  productType: "lame" | "wire" | "pbt" | "weapon" | "grip" | "guard" | "guard_padding" | "french_pommel" | "nut" | "point" | "screws" | "point_contact_springs" | "socket" | "insulating_tube" | "body_wire" | "cable" | "pin" | "glove";
   brand: string;
   model: string;
   subCategory?: string;
@@ -17,6 +17,7 @@ export interface Product {
   isMini?: boolean;
   lameColor?: "silver" | "blue" | "rainbow";
   material?: "Maraging" | "Metal" | "Other";
+  gloveSize?: "7" | "7.1/2" | "8.1/2";
   quantity: number;
   images: string[];
   createdAt?: string;
