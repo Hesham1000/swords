@@ -38,7 +38,7 @@ interface ProductFormData {
   description: string;
   price: string;
   category: ("Foil" | "Sabre" | "Epée")[];
-  productType: "lame" | "wire" | "pbt" | "weapon" | "grip" | "guard" | "guard_padding" | "french_pommel" | "nut" | "point" | "screws" | "point_contact_springs" | "socket" | "insulating_tube" | "body_wire" | "cable" | "pin";
+  productType: "lame" | "wire" | "pbt" | "weapon" | "grip" | "guard" | "guard_padding" | "french_pommel" | "nut" | "point" | "screws" | "point_contact_springs" | "socket" | "insulating_tube" | "body_wire" | "cable" | "pin" | "glove";
   brand: Brand | "";
   model: string;
   subCategory: string;
@@ -47,6 +47,7 @@ interface ProductFormData {
   isMini: boolean;
   lameColor: "silver" | "blue" | "rainbow";
   material?: "Maraging" | "Metal" | "Other";
+  gloveSize: string;
   quantity: string;
   images: File[];
 }
@@ -78,6 +79,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     isMini: initialData?.isMini || false,
     lameColor: initialData?.lameColor || "silver",
     material: initialData?.material || "Metal",
+    gloveSize: (initialData as any)?.gloveSize || "",
     quantity: initialData?.quantity?.toString() || "1",
     images: [],
   });
@@ -140,10 +142,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
       ...prev,
       productType,
       brand: isSimplifiedType ? "pbt" : "",
-      category: isSimplifiedType ? ["Epée"] : prev.category,
+      category: productType === "glove" ? ["Epée"] : (isSimplifiedType ? ["Epée"] : prev.category),
       model: "",
       subCategory: "",
       hand: "",
+      gloveSize: "",
     }));
   };
 
@@ -222,6 +225,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
         if (formData.productType === "guard") formDataToSend.append("isMini", String(formData.isMini));
       }
 
+      if (formData.productType === "glove") {
+        if (formData.gloveSize) formDataToSend.append("gloveSize", formData.gloveSize);
+        if (formData.hand) formDataToSend.append("hand", formData.hand);
+      }
+
       formDataToSend.append("quantity", formData.quantity);
       existingImages.forEach((img) => formDataToSend.append("images", img));
       formData.images.forEach((image) => formDataToSend.append("images", image));
@@ -275,6 +283,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     <option value="body_wire">Body Wire</option>
                     <option value="cable">Cable</option>
                     <option value="pin">Pin</option>
+                    <option value="glove">Glove</option>
                   </select>
                 </div>
                 <div className="form-group full-width">
@@ -328,7 +337,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 </div>
                 <div className="form-group">
                   <label>Manufacturer *</label>
-                  <select name="brand" value={formData.brand} onChange={handleBrandChange} required disabled={loading || ["wire", "grip", "guard_padding", "french_pommel", "nut", "point", "screws", "point_contact_springs", "socket", "insulating_tube", "body_wire", "cable", "pin"].includes(formData.productType)}>
+                  <select name="brand" value={formData.brand} onChange={handleBrandChange} required disabled={loading || ["wire", "grip", "guard_padding", "french_pommel", "nut", "point", "screws", "point_contact_springs", "socket", "insulating_tube", "body_wire", "cable", "pin", "glove"].includes(formData.productType)}>
                     <option value="">Select Brand</option>
                     {formData.productType === "guard" ? (
                       <>
@@ -461,6 +470,28 @@ const ProductForm: React.FC<ProductFormProps> = ({
                       <option value="with_security_clip">With Security Clip</option>
                     </select>
                   </div>
+                )}
+
+                {formData.productType === "glove" && (
+                  <>
+                    <div className="form-group">
+                      <label>Glove Size *</label>
+                      <select name="gloveSize" value={formData.gloveSize} onChange={handleChange} required disabled={loading}>
+                        <option value="">Select Size</option>
+                        <option value="7">7</option>
+                        <option value="7.1/2">7½</option>
+                        <option value="8.1/2">8½</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Handedness</label>
+                      <select name="hand" value={formData.hand} onChange={handleChange} disabled={loading}>
+                        <option value="">Select Hand</option>
+                        <option value="Right">Right</option>
+                        <option value="Left">Left</option>
+                      </select>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
