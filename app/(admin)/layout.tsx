@@ -7,6 +7,7 @@ import { getCurrentUser, User } from "../lib/api/auth";
 import { getDashboardSummary, DashboardSummaryData } from "../lib/api/dashboard";
 import { motion } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
+import { Toaster } from "react-hot-toast";
 import "./dashboard.css";
 
 interface DashboardContextType {
@@ -16,6 +17,8 @@ interface DashboardContextType {
   sidebarOpen: boolean;
   dashboardData: DashboardSummaryData | null;
   refreshDashboard: () => void;
+  /** True while the dashboard data is being (re)fetched. */
+  loading: boolean;
 }
 
 const DashboardContext = React.createContext<DashboardContextType | null>(null);
@@ -69,8 +72,9 @@ export default function DashboardLayout({
     sidebarOpen,
     setSidebarOpen,
     dashboardData,
-    refreshDashboard
-  }), [user, sidebarOpen, dashboardData]);
+    refreshDashboard,
+    loading
+  }), [user, sidebarOpen, dashboardData, loading]);
 
   // Fetch current user
   useEffect(() => {
@@ -100,6 +104,11 @@ export default function DashboardLayout({
   // Handle Redirection for non-admins
   useEffect(() => {
     if (loading) return;
+
+    if (!loading && !user) {
+      router.replace("/sign-in");
+      return;
+    }
 
     const isAdmin = !!user?.roles?.includes("admin");
     const adminOnlyRoutes = ["/dashboard", "/invoices", "/wallet", "/history"];

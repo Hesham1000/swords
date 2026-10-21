@@ -93,6 +93,12 @@ export default function DashboardOverview() {
           change={15.7}
           icon={Users}
         />
+        <StatCard
+          title="Total Products"
+          value={summary.totalProducts}
+          change={4.1}
+          icon={Package}
+        />
       </div>
 
       <div className="dashboard-grid">

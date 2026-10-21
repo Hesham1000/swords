@@ -3,6 +3,7 @@
 import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import { Upload, Plus, X, Package, Shield, Settings, DollarSign, Image as ImageIcon } from "lucide-react";
 import { createProduct, updateProduct, Product } from "../lib/api/product";
+import toast from "react-hot-toast";
 
 type Brand = "pbt" | "dynamo" | "stm" | "uhlmann" | "allstar" | "folo" | "chinese";
 

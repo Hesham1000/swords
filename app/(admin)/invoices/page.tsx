@@ -7,7 +7,7 @@ import { getInvoices, updateInvoiceStatus, Invoice } from "../../lib/api/invoice
 import { useDashboard } from "../layout";
 
 export default function InvoicesPage() {
-  const { user, isAdmin } = useDashboard();
+  const { user, isAdmin, refreshDashboard } = useDashboard();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -167,6 +167,7 @@ export default function InvoicesPage() {
           onSuccess={() => {
             setShowForm(false);
             setRefresh(!refresh);
+            refreshDashboard();
           }}
           initialData={editingInvoice || undefined}
         />

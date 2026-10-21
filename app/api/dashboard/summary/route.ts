@@ -98,6 +98,7 @@ export async function GET(request: NextRequest) {
           totalOrders,
           uniqueCustomers,
           inventoryValue,
+          totalProducts: allProducts.length,
           totalInventoryCount,
           averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0
         },

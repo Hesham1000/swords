@@ -1,29 +1,45 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { Package, Plus, X, Loader2 } from "lucide-react";
 import ProductForm from "../../components/productform";
 import ProductsList from "../../components/products-list";
 import { getProducts, deleteProduct, Product } from "../../lib/api/product";
 import { useDashboard } from "../layout";
 
-export default function ProductsPage() {
+function ProductsPageInner() {
   const { user, isAdmin } = useDashboard();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
   const [refresh, setRefresh] = useState(false);
   const lastParamsRef = useRef("");
 
-  // Filters
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
-  const [filterType, setFilterType] = useState("");
-  const [filterBrand, setFilterBrand] = useState("");
+  // Filters (initialized from URL query params)
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
+  const [filterCategory, setFilterCategory] = useState(searchParams.get("category") || "");
+  const [filterType, setFilterType] = useState(searchParams.get("type") || "");
+  const [filterBrand, setFilterBrand] = useState(searchParams.get("brand") || "");
+  const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
+
+  // Sync filter state to URL query params
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set("search", searchQuery);
+    if (filterCategory) params.set("category", filterCategory);
+    if (filterType) params.set("type", filterType);
+    if (filterBrand) params.set("brand", filterBrand);
+    if (page > 1) params.set("page", String(page));
+    const queryString = params.toString();
+    router.replace(`/products${queryString ? `?${queryString}` : ""}`, { scroll: false });
+  }, [searchQuery, filterCategory, filterType, filterBrand, page, router]);
 
   useEffect(() => {
     const params = JSON.stringify({ page, searchQuery, filterCategory, filterType, filterBrand, refresh });
@@ -54,9 +70,10 @@ export default function ProductsPage() {
     if (!confirm("Are you sure you want to delete this product?")) return;
     try {
       await deleteProduct(id);
+      toast.success("Product deleted successfully");
       setRefresh(!refresh);
     } catch (err: any) {
-      alert(err.message || "Failed to delete product");
+      toast.error(err.message || "Failed to delete product");
     }
   };
 
@@ -200,5 +217,13 @@ export default function ProductsPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProductsPageInner />
+    </Suspense>
   );
 }

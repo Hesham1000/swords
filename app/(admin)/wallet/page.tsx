@@ -201,6 +201,7 @@ export default function WalletPage() {
         .tx-amount.positive { color: #10b981; }
         .tx-amount.negative { color: #3b82f6; }
         .loading-state, .empty-state { padding: 4rem; text-align: center; color: var(--text-secondary); }
+        .empty-state-sub { font-size: 13px; color: var(--text-secondary); opacity: 0.8; }
 
         .pagination-footer {
           display: flex;

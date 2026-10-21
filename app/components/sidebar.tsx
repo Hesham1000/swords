@@ -92,7 +92,7 @@ const Sidebar = ({
         onLogoutSuccess();
       }
 
-      router.push("/");
+      router.push("/sign-in");
     } catch (error) {
       console.error("Logout error:", error);
       alert("Logout failed. Please try again.");
