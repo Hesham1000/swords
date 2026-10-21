@@ -188,6 +188,15 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
             font-family: var(--font-sans);
             font-size: 14px;
             color: var(--text-primary);
+            transition: all 0.2s ease;
+          }
+          .form-group input:hover {
+            border-color: rgba(var(--accent-blue-rgb), 0.4);
+          }
+          .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(var(--accent-blue-rgb), 0.1);
           }
           .input-with-icon {
             position: relative;

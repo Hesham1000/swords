@@ -1,5 +1,5 @@
 "use client";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import {
   LayoutDashboard,
@@ -30,7 +30,6 @@ const Sidebar = ({
   onLogoutSuccess,
   user,
 }: SidebarProps) => {
-  const router = useRouter();
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -63,11 +62,11 @@ const Sidebar = ({
   const isAdmin = user?.roles?.includes("admin");
 
   const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, adminOnly: true },
-    { id: "products", label: "Products", icon: Package, adminOnly: false },
-    { id: "invoices", label: "Invoices", icon: FileText, adminOnly: true },
-    { id: "wallet", label: "Wallet", icon: Wallet, adminOnly: true },
-    { id: "history", label: "History", icon: TrendingUp, adminOnly: true },
+    { id: "dashboard", label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, adminOnly: true },
+    { id: "products", label: "Products", href: "/products", icon: Package, adminOnly: false },
+    { id: "invoices", label: "Invoices", href: "/invoices", icon: FileText, adminOnly: true },
+    { id: "wallet", label: "Wallet", href: "/wallet", icon: Wallet, adminOnly: true },
+    { id: "history", label: "History", href: "/history", icon: TrendingUp, adminOnly: true },
   ].filter(item => !item.adminOnly || isAdmin);
 
   const handleLogout = async () => {
@@ -92,7 +91,7 @@ const Sidebar = ({
         onLogoutSuccess();
       }
 
-      router.push("/");
+      window.location.assign("/");
     } catch (error) {
       console.error("Logout error:", error);
       alert("Logout failed. Please try again.");
@@ -121,31 +120,32 @@ const Sidebar = ({
 
       <nav className="sidebar-nav">
         {navItems.map((item, index) => (
-          <motion.div
+          <Link
             key={item.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}
-            whileHover={{ x: 5, backgroundColor: "var(--glass-bg)" }}
-            whileTap={{ scale: 0.95 }}
-            className={`nav-item ${currentPage === item.id ? "active" : ""}`}
-            onClick={() => {
-              const target = item.id === "dashboard" ? "/dashboard" : `/${item.id}`;
-              router.push(target);
-              onNavigation(item.id);
-            }}
+            href={item.href}
+            onClick={() => onNavigation(item.id)}
+            className="nav-link"
           >
             <motion.div
-              animate={currentPage === item.id ? {
-                scale: [1, 1.2, 1],
-                rotate: [0, 5, -5, 0]
-              } : {}}
-              transition={{ duration: 0.5 }}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+              whileHover={{ x: 5, backgroundColor: "var(--glass-bg)" }}
+              whileTap={{ scale: 0.95 }}
+              className={`nav-item ${currentPage === item.id ? "active" : ""}`}
             >
-              <item.icon size={20} />
+              <motion.div
+                animate={currentPage === item.id ? {
+                  scale: [1, 1.2, 1],
+                  rotate: [0, 5, -5, 0]
+                } : {}}
+                transition={{ duration: 0.5 }}
+              >
+                <item.icon size={20} />
+              </motion.div>
+              <span>{item.label}</span>
             </motion.div>
-            <span>{item.label}</span>
-          </motion.div>
+          </Link>
         ))}
       </nav>
 

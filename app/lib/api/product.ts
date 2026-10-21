@@ -1,6 +1,6 @@
 // lib/api/products.ts
 // Separate API service file for product operations
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
 
 export interface Product {
   id: string;

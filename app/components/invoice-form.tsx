@@ -499,6 +499,15 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
           font-family: var(--font-sans);
           font-size: 14px;
           color: var(--text-primary);
+          transition: all 0.2s ease;
+        }
+        .form-group input:hover, .form-group select:hover {
+          border-color: rgba(var(--accent-blue-rgb), 0.4);
+        }
+        .form-group input:focus, .form-group select:focus {
+          outline: none;
+          border-color: var(--accent-blue);
+          box-shadow: 0 0 0 3px rgba(var(--accent-blue-rgb), 0.1);
         }
         .input-with-icon {
           position: relative;
@@ -790,16 +799,37 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
           border-radius: 6px;
           cursor: pointer;
           text-transform: uppercase;
+          transition: all 0.2s ease;
         }
         .btn-primary {
           background: var(--accent-blue);
           color: white;
           border: none;
         }
+        .btn-primary:hover:not(:disabled) {
+          filter: brightness(1.15);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(var(--accent-blue-rgb), 0.3);
+        }
+        .btn-primary:active:not(:disabled) {
+          transform: translateY(0) scale(0.98);
+        }
+        .btn-primary:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
         .btn-secondary {
           background: transparent;
           border: 1px solid var(--border-tech);
           color: var(--text-primary);
+        }
+        .btn-secondary:hover:not(:disabled) {
+          border-color: var(--accent-blue);
+          color: var(--accent-blue);
+          background: rgba(var(--accent-blue-rgb), 0.05);
+        }
+        .btn-secondary:active:not(:disabled) {
+          transform: scale(0.98);
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         .mini-spinner.more {

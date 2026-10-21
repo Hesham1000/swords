@@ -1,5 +1,5 @@
 // lib/api/shipment.ts
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
 
 export interface Shipment {
   _id?: string;

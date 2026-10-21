@@ -25,8 +25,8 @@ export default function DashboardOverview() {
   if (!dashboardData && !error) {
     return (
       <div className="flex flex-col items-center justify-center p-20 gap-4">
-        <Loader2 className="animate-spin text-blue-500" size={40} />
-        <p className="text-slate-400 font-medium">Gathering command data...</p>
+        <Loader2 className="animate-spin" size={40} style={{ color: "var(--accent-blue)" }} />
+        <p className="font-medium" style={{ color: "var(--text-secondary)" }}>Gathering command data...</p>
       </div>
     );
   }

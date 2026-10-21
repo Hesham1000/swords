@@ -577,7 +577,9 @@ const ProductForm: React.FC<ProductFormProps> = ({
           .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
           .form-group.full-width { grid-column: span 2; }
           .form-group label { font-family: var(--font-display); font-size: 10px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
-          .form-group input, .form-group select, .form-group textarea { padding: 0.875rem 1rem; background: var(--bg-deep); border: 1px solid var(--border-tech); border-radius: 10px; font-family: var(--font-sans); font-size: 14px; color: var(--text-primary); }
+          .form-group input, .form-group select, .form-group textarea { padding: 0.875rem 1rem; background: var(--bg-deep); border: 1px solid var(--border-tech); border-radius: 10px; font-family: var(--font-sans); font-size: 14px; color: var(--text-primary); transition: all 0.2s ease; }
+          .form-group input:hover, .form-group select:hover, .form-group textarea:hover { border-color: rgba(var(--accent-blue-rgb), 0.4); }
+          .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(var(--accent-blue-rgb), 0.1); }
           .input-with-icon { position: relative; display: flex; align-items: center; }
           .input-with-icon :global(svg) { position: absolute; left: 1rem; color: var(--text-secondary); }
           .input-with-icon input { padding-left: 2.5rem !important; width: 100%; }
@@ -601,9 +603,14 @@ const ProductForm: React.FC<ProductFormProps> = ({
           .remove-media { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; background: rgba(225, 29, 72, 0.9); border: none; color: white; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
           .media-tag { position: absolute; bottom: 4px; left: 4px; padding: 2px 4px; background: rgba(0, 0, 0, 0.6); color: white; font-size: 7px; font-weight: 900; border-radius: 2px; }
           .form-actions { display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border-tech); }
-          .btn-primary, .btn-secondary { padding: 0.875rem 1.5rem; font-family: var(--font-display); font-size: 12px; font-weight: 900; border-radius: 8px; cursor: pointer; text-transform: uppercase; }
+          .btn-primary, .btn-secondary { padding: 0.875rem 1.5rem; font-family: var(--font-display); font-size: 12px; font-weight: 900; border-radius: 8px; cursor: pointer; text-transform: uppercase; transition: all 0.2s ease; }
           .btn-primary { background: var(--accent-blue); color: white; border: none; }
+          .btn-primary:hover:not(:disabled) { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(var(--accent-blue-rgb), 0.3); }
+          .btn-primary:active:not(:disabled) { transform: scale(0.98); }
+          .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
           .btn-secondary { background: transparent; border: 1px solid var(--border-tech); color: var(--text-primary); }
+          .btn-secondary:hover:not(:disabled) { border-color: var(--accent-blue); color: var(--accent-blue); background: rgba(var(--accent-blue-rgb), 0.05); }
+          .btn-secondary:active:not(:disabled) { transform: scale(0.98); }
 
           @media (max-width: 768px) {
             .product-form-container { padding: 1.25rem !important; }

@@ -3,7 +3,7 @@ import { AnalyticsData } from "./analytics";
 import { Invoice } from "./invoice";
 import { Product } from "./product";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
 
 export interface DashboardSummaryData {
   summary: {

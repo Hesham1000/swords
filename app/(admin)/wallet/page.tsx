@@ -77,6 +77,18 @@ export default function WalletPage() {
         </div>
       </div>
 
+      {error && (
+        <div className="error-banner" role="alert">
+          <span>{error}</span>
+          <button
+            className="error-retry-btn"
+            onClick={() => { setError(""); setRefresh(!refresh); }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon"><Wallet size={20} /></div>
@@ -109,9 +121,9 @@ export default function WalletPage() {
               <div key={idx} className="transaction-item">
                 <div className="tx-icon">
                   {(tx.type === "invoice" || tx.type === "deposit") ? (
-                    <ArrowUpCircle className="text-emerald-500" />
+                    <ArrowUpCircle style={{ color: "#10b981" }} />
                   ) : (
-                    <ArrowDownCircle className="text-rose-500" />
+                    <ArrowDownCircle style={{ color: "var(--accent-red)" }} />
                   )}
                 </div>
                 <div className="tx-details">
@@ -251,6 +263,7 @@ export default function WalletPage() {
         .header-actions {
           display: flex;
           gap: 0.75rem;
+          flex-wrap: wrap;
         }
 
         .deposit-btn, .withdraw-btn, .shipment-btn {
@@ -258,6 +271,8 @@ export default function WalletPage() {
           align-items: center;
           gap: 0.5rem;
           padding: 0.625rem 1.25rem;
+          flex: 1 1 auto;
+          min-width: fit-content;
           border-radius: 12px;
           font-family: var(--font-display);
           font-size: 11px;
@@ -306,6 +321,35 @@ export default function WalletPage() {
           border-color: var(--accent-blue);
           box-shadow: 0 0 20px rgba(var(--accent-blue-rgb), 0.3);
           transform: translateY(-2px);
+        }
+
+        .error-retry-btn {
+          padding: 0.375rem 0.875rem;
+          background: rgba(220, 38, 38, 0.2);
+          border: 1px solid rgba(220, 38, 38, 0.4);
+          border-radius: 8px;
+          color: #fca5a5;
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .error-retry-btn:hover {
+          background: rgba(220, 38, 38, 0.35);
+          border-color: rgba(220, 38, 38, 0.6);
+        }
+        .error-retry-btn:focus-visible {
+          outline: 2px solid var(--accent-blue);
+          outline-offset: 2px;
+        }
+
+        @media (max-width: 480px) {
+          .transaction-item { flex-wrap: wrap; }
+          .tx-amount { margin-left: auto; }
+          .pagination-footer { flex-direction: column; gap: 0.75rem; }
+          .pagination-btns { width: 100%; }
+          .pag-btn { flex: 1; }
         }
       `}</style>
     </div>
