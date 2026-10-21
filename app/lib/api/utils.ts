@@ -14,7 +14,7 @@ export function transformProduct(product: any) {
 
     const transformed = {
         ...product,
-        id: product._id.toString(),
+        id: (product._id ?? product.id).toString(),
         images: (product.images || []).map((img: string) => {
             if (img.startsWith("http")) {
                 return img;

@@ -3,7 +3,7 @@ import {
   generatePasswordSetupToken,
   PASSWORD_TOKEN_EXPIRATION_MINUTES,
 } from "../../../lib/auth/token";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { query } from "../../../lib/db";
 import { sendEmailSetPassword } from "../../../utils/email";
 import ApiError from "../../../utils/ApiError";
 import { buildErrorUrl } from "../../../lib/errors/error-builder";
@@ -21,8 +21,11 @@ export async function POST(request: NextRequest) {
       throw ApiError.badRequest("Email is required");
     }
 
-    const userCollection = await getUserCollection();
-    const existingUser = await userCollection.findOne({ email });
+    const existingResult = await query(
+      `SELECT id, username, email, is_active, use_default_github, last_email_sent FROM users WHERE email = $1 LIMIT 1`,
+      [email]
+    );
+    const existingUser = existingResult.rows[0];
 
     if (!existingUser) {
       // For security, don't reveal whether user exists
@@ -30,14 +33,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user account is inactive (registration not completed)
-    if (!existingUser.isActive) {
+    if (!existingUser.is_active) {
       throw ApiError.badRequest(
         "Your account registration is incomplete. We have sent you a password setup link during registration. Please check your email or contact support for assistance."
       );
     }
 
     // Check if this is a personal GitHub account (useDefaultGithub: false means personal GitHub account)
-    if (existingUser.useDefaultGithub === false) {
+    if (existingUser.use_default_github === false) {
       const errorUrl = buildErrorUrl({
         message:
           "This account uses GitHub authentication. Please sign in with GitHub or set up a password through your profile settings.",
@@ -58,9 +61,9 @@ export async function POST(request: NextRequest) {
 
     // Prevent too frequent email sending
     const now = new Date();
-    if (existingUser.lastEmailSent) {
+    if (existingUser.last_email_sent) {
       const timeDiff =
-        now.getTime() - new Date(existingUser.lastEmailSent).getTime();
+        now.getTime() - new Date(existingUser.last_email_sent).getTime();
       if (timeDiff < 60000) {
         console.warn("Password reset email sent too recently", {
           email,
@@ -87,9 +90,9 @@ export async function POST(request: NextRequest) {
     );
 
     // Save lastEmailSent
-    await userCollection.updateOne(
-      { _id: existingUser._id },
-      { $set: { lastEmailSent: now } }
+    await query(
+      `UPDATE users SET last_email_sent = $1, updated_at = now() WHERE id = $2`,
+      [now, existingUser.id]
     );
 
     return NextResponse.json(
@@ -106,6 +109,7 @@ export async function POST(request: NextRequest) {
         { status: error.statusCode }
       );
     }
+    console.error("Forget password error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

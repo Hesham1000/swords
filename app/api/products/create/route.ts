@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProductsCollection } from "../../../lib/mongoDB";
+import { query } from "../../../lib/db";
 import { transformProduct } from "../../../lib/api/utils";
 import { uploadImage, getRelativePathFromUrl } from "../../../lib/cloudinary";
 
@@ -28,7 +28,6 @@ interface ProductData {
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const productsCollection = await getProductsCollection();
 
     // Extract basic fields
     const name = (formData.get("name") as string)?.trim();
@@ -40,10 +39,40 @@ export async function POST(request: NextRequest) {
     const model = (formData.get("model") as string)?.trim();
     const quantity = formData.get("quantity") as string;
 
-    // Validate essential fields
-    if (!name || !category || category.length === 0 || !quantity || !productType) {
+    // Validate essential fields — collect all per-field errors
+    const details: Record<string, string> = {};
+
+    if (!name) details.name = "Name is required";
+    if (!category || category.length === 0) {
+      details.category = "Category is required";
+    } else {
+      const validCategories = ["Foil", "Sabre", "Epée"];
+      const invalid = category.filter((c) => !validCategories.includes(c));
+      if (invalid.length > 0) {
+        details.category = `Category values must be one of: ${validCategories.join(", ")}`;
+      }
+    }
+    if (!productType || typeof productType !== "string" || productType.trim() === "") {
+      details.productType = "Product type is required";
+    }
+    if (quantity === undefined || quantity === null || quantity === "") {
+      details.quantity = "Quantity is required";
+    } else {
+      const parsedQuantity = Number(quantity);
+      if (!Number.isInteger(parsedQuantity) || parsedQuantity < 0) {
+        details.quantity = "Quantity must be an integer greater than or equal to 0";
+      }
+    }
+    if (price !== undefined && price !== null && price !== "") {
+      const parsedPrice = parseFloat(price);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        details.price = "Price must be a valid number greater than or equal to 0";
+      }
+    }
+
+    if (Object.keys(details).length > 0) {
       return NextResponse.json(
-        { error: "Missing required fields (name, category, quantity, productType)" },
+        { error: "Validation failed", details },
         { status: 400 }
       );
     }
@@ -59,7 +88,7 @@ export async function POST(request: NextRequest) {
         // Convert file to buffer
         const bytes = await image.arrayBuffer();
         const buffer = Buffer.from(bytes);
-        
+
         // Upload to Cloudinary
         const result = await uploadImage(buffer, "products");
         imagePaths.push(getRelativePathFromUrl(result.url));
@@ -94,21 +123,21 @@ export async function POST(request: NextRequest) {
       if (lameColor) productData.lameColor = lameColor;
       if (material) productData.material = material;
       if (subCategory) productData.subCategory = subCategory;
-    } 
+    }
     else if (["grip", "guard", "guard_padding"].includes(productType)) {
       productData.brand = brand || "pbt";
       const subCategory = formData.get("subCategory") as string;
       const hand = formData.get("hand") as string;
       const material = formData.get("material") as string;
-      
+
       if (subCategory) productData.subCategory = subCategory;
       if (hand) productData.hand = hand;
       if (material) productData.material = material;
-      
+
       if (productType === "guard") {
         productData.isMini = formData.get("isMini") === "true";
       }
-    } 
+    }
     else if (productType === "socket") {
       productData.brand = brand || "pbt";
       const subCategory = formData.get("subCategory") as string;
@@ -117,7 +146,7 @@ export async function POST(request: NextRequest) {
     else if (productType === "glove") {
       const gloveSize = formData.get("gloveSize") as string;
       const hand = formData.get("hand") as string;
-      
+
       if (gloveSize) productData.gloveSize = gloveSize;
       if (hand) productData.hand = hand;
     }
@@ -127,14 +156,45 @@ export async function POST(request: NextRequest) {
       if (model) productData.model = model;
     }
 
-    const result = await productsCollection.insertOne(productData);
-    const insertedProduct = transformProduct({ ...productData, _id: result.insertedId });
+    // Build dynamic INSERT (only include fields that are set)
+    const columns: string[] = [];
+    const values: unknown[] = [];
+    const push = (col: string, val: unknown) => {
+      columns.push(col);
+      values.push(val);
+    };
+
+    push("name", productData.name);
+    push("description", productData.description);
+    push("price", productData.price);
+    push("category", productData.category);
+    push("product_type", productData.productType);
+    push("quantity", productData.quantity);
+    push("images", productData.images);
+    if (productData.brand !== undefined) push("brand", productData.brand);
+    if (productData.model !== undefined) push("model", productData.model);
+    if (productData.subCategory !== undefined) push("sub_category", productData.subCategory);
+    if (productData.isKings !== undefined) push("is_kings", productData.isKings);
+    if (productData.isMini !== undefined) push("is_mini", productData.isMini);
+    if (productData.lameColor !== undefined) push("lame_color", productData.lameColor);
+    if (productData.material !== undefined) push("material", productData.material);
+    if (productData.hand !== undefined) push("hand", productData.hand);
+    if (productData.gloveSize !== undefined) push("glove_size", productData.gloveSize);
+
+    const placeholders = columns.map((_, i) => `$${i + 1}`).join(", ");
+    const result = await query<{ id: string }>(
+      `INSERT INTO products (${columns.join(", ")}) VALUES (${placeholders}) RETURNING id`,
+      values
+    );
+    const insertedId = result.rows[0].id;
+
+    const insertedProduct = transformProduct({ ...productData, id: insertedId });
 
     // Log the initial stock arrival
     try {
       const { logInventoryChange } = await import("../../../lib/inventory-server");
       await logInventoryChange({
-        productId: result.insertedId.toString(),
+        productId: insertedId,
         productName: productData.name,
         changeAmount: productData.quantity,
         newQuantity: productData.quantity,

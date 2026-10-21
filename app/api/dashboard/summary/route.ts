@@ -1,37 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getInvoicesCollection, getProductsCollection } from "../../../lib/mongoDB";
+import { query } from "../../../lib/db";
 import { transformProduct } from "../../../lib/api/utils";
 
 export async function GET(request: NextRequest) {
   try {
-    const invoicesCollection = await getInvoicesCollection();
-    const productsCollection = await getProductsCollection();
-
     // 1. RECENT INVOICES (Latest 5)
-    const recentInvoices = await invoicesCollection
-      .find({})
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .toArray();
+    const recentInvoicesResult = await query(
+      `SELECT id, invoice_id AS "invoiceId", customer, amount, discount, status,
+              payment_method AS "paymentMethod", date, items, deposit,
+              deposit_currency AS "depositCurrency", created_at AS "createdAt"
+       FROM invoices
+       ORDER BY created_at DESC
+       LIMIT 5`
+    );
+    const recentInvoices = recentInvoicesResult.rows;
 
     // 2. ANALYTICS DATA (Revenue, Orders, Customers)
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-    const periodInvoices = await invoicesCollection.find({
-      date: { $gte: threeMonthsAgo.toISOString().split('T')[0] }
-    }).toArray();
+    const periodInvoicesResult = await query(
+      `SELECT id, invoice_id AS "invoiceId", customer, amount, discount, status,
+              payment_method AS "paymentMethod", date, items, deposit
+       FROM invoices
+       WHERE date >= $1`,
+      [threeMonthsAgo.toISOString().split('T')[0]]
+    );
+    const periodInvoices = periodInvoicesResult.rows;
 
-    const allInvoices = await invoicesCollection.find({}).toArray();
-    const totalRevenue = allInvoices.reduce((acc, inv) => acc + (inv.amount || 0), 0);
+    const allInvoicesResult = await query(
+      `SELECT id, customer, amount, date, items FROM invoices`
+    );
+    const allInvoices = allInvoicesResult.rows;
+    const totalRevenue = allInvoices.reduce((acc, inv) => acc + (parseFloat(inv.amount) || 0), 0);
     const totalOrders = allInvoices.length;
     const uniqueCustomers = new Set(allInvoices.map(inv => inv.customer)).size;
 
     // 3. PRODUCT SUMMARY & LOW STOCK
-    const allProducts = await productsCollection.find({}).toArray();
+    const allProductsResult = await query(
+      `SELECT id, name, description, price, category, product_type AS "productType",
+              brand, model, sub_category AS "subCategory", is_kings AS "isKings",
+              is_mini AS "isMini", lame_color AS "lameColor", material, hand,
+              glove_size AS "gloveSize", quantity, images,
+              created_at AS "createdAt", updated_at AS "updatedAt"
+       FROM products`
+    );
+    const allProducts = allProductsResult.rows;
     const totalInventoryCount = allProducts.reduce((acc, prod) => acc + (prod.quantity || 0), 0);
-    const inventoryValue = allProducts.reduce((acc, prod) => acc + ((prod.price || 0) * (prod.quantity || 0)), 0);
-    
+    const inventoryValue = allProducts.reduce((acc, prod) => acc + ((parseFloat(prod.price) || 0) * (prod.quantity || 0)), 0);
+
     const lowStockItems = allProducts
       .filter(p => (p.quantity || 0) < 3)
       .sort((a, b) => (a.quantity || 0) - (b.quantity || 0))
@@ -48,7 +65,7 @@ export async function GET(request: NextRequest) {
       const dayInvoices = periodInvoices.filter(inv => inv.date === day);
       return {
         date: day,
-        revenue: dayInvoices.reduce((acc, inv) => acc + (inv.amount || 0), 0),
+        revenue: dayInvoices.reduce((acc, inv) => acc + (parseFloat(inv.amount) || 0), 0),
         orders: dayInvoices.length
       };
     });
@@ -56,10 +73,10 @@ export async function GET(request: NextRequest) {
     // 5. CATEGORY DISTRIBUTION
     const productCategoryMap: Record<string, string> = {};
     allProducts.forEach(prod => {
-      const cat = prod.category && Array.isArray(prod.category) && prod.category.length > 0 
-        ? prod.category[0] 
+      const cat = prod.category && Array.isArray(prod.category) && prod.category.length > 0
+        ? prod.category[0]
         : (typeof prod.category === 'string' ? prod.category : "Equipment");
-      productCategoryMap[prod._id.toString()] = cat;
+      productCategoryMap[prod.id] = cat;
     });
 
     const categorySales: Record<string, number> = {};

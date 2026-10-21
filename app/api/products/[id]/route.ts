@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
-import { getProductsCollection } from "../../../lib/mongoDB";
+import { query, isUuid } from "../../../lib/db";
 import { transformProduct } from "../../../lib/api/utils";
 import { uploadImage, deleteImage, getPublicIdFromUrl, getRelativePathFromUrl } from "../../../lib/cloudinary";
+
+// Full product SELECT (same column list as GET, with aliases)
+const PRODUCT_SELECT = `SELECT id, name, description, price, category, product_type AS "productType",
+        brand, model, sub_category AS "subCategory", is_kings AS "isKings",
+        is_mini AS "isMini", lame_color AS "lameColor", material, hand,
+        glove_size AS "gloveSize", quantity, images,
+        created_at AS "createdAt", updated_at AS "updatedAt"
+ FROM products`;
 
 // GET a single product
 export async function GET(
@@ -11,12 +18,15 @@ export async function GET(
 ) {
     try {
         const { id } = await params;
-        if (!ObjectId.isValid(id)) {
+        if (!isUuid(id)) {
             return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
         }
 
-        const productsCollection = await getProductsCollection();
-        const product = await productsCollection.findOne({ _id: new ObjectId(id) });
+        const result = await query(
+            `${PRODUCT_SELECT} WHERE id = $1`,
+            [id]
+        );
+        const product = result.rows[0];
 
         if (!product) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -38,15 +48,18 @@ export async function PUT(
 ) {
     try {
         const { id } = await params;
-        if (!ObjectId.isValid(id)) {
+        if (!isUuid(id)) {
             return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
         }
 
         const formData = await request.formData();
-        const productsCollection = await getProductsCollection();
 
         // Find existing product to handle image replacement if needed
-        const existingProduct = await productsCollection.findOne({ _id: new ObjectId(id) });
+        const existingResult = await query(
+            `SELECT id, name, price, quantity FROM products WHERE id = $1`,
+            [id]
+        );
+        const existingProduct = existingResult.rows[0];
         if (!existingProduct) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
@@ -84,41 +97,46 @@ export async function PUT(
                 const result = await uploadImage(buffer, "products");
                 imagePaths.push(getRelativePathFromUrl(result.url));
 
-                // Note: In a more advanced implementation, we would track which old images 
-                // were removed and delete them from Cloudinary here. 
+                // Note: In a more advanced implementation, we would track which old images
+                // were removed and delete them from Cloudinary here.
                 // For now, we focus on making the upload work.
             }
         }
 
-        // Update document
-        const updateData = {
-            name,
-            description,
-            price: price ? parseFloat(price) : null,
-            category,
-            productType,
-            brand,
-            model,
-            quantity: parseInt(quantity),
-            isMini,
-            lameColor,
-            material,
-            subCategory,
-            isKings,
-            hand,
-            images: imagePaths,
-            updatedAt: new Date().toISOString(),
-        };
-
-        const quantityChange = parseInt(quantity) - (existingProduct.quantity || 0);
+        // Update row
+        const newQuantity = parseInt(quantity, 10);
         const newPriceValue = price ? parseFloat(price) : null;
-        const oldPriceValue = existingProduct.price;
+        const oldPriceValue = existingProduct.price !== null ? parseFloat(existingProduct.price) : null;
         const hasPriceChanged = newPriceValue !== oldPriceValue;
 
-        await productsCollection.updateOne(
-            { _id: new ObjectId(id) },
-            { $set: updateData }
+        await query(
+            `UPDATE products SET
+                name = $1, description = $2, price = $3, category = $4, product_type = $5,
+                brand = $6, model = $7, quantity = $8, is_mini = $9, lame_color = $10,
+                material = $11, sub_category = $12, is_kings = $13, hand = $14,
+                images = $15, updated_at = now()
+             WHERE id = $16`,
+            [
+                name,
+                description,
+                newPriceValue,
+                category,
+                productType,
+                brand,
+                model,
+                newQuantity,
+                isMini,
+                lameColor,
+                material,
+                subCategory,
+                isKings,
+                hand,
+                imagePaths,
+                id,
+            ]
         );
+
+        const quantityChange = newQuantity - (existingProduct.quantity || 0);
 
         // 📝 AUDIT LOGGING
         try {
@@ -130,7 +148,7 @@ export async function PUT(
                     productId: id,
                     productName: name || existingProduct.name,
                     changeAmount: quantityChange,
-                    newQuantity: parseInt(quantity),
+                    newQuantity: newQuantity,
                     reason: "Manual Adjustment",
                     note: `Quantity updated from ${existingProduct.quantity} to ${quantity}`
                 });
@@ -142,7 +160,7 @@ export async function PUT(
                     productId: id,
                     productName: name || existingProduct.name,
                     changeAmount: 0, // No stock change
-                    newQuantity: parseInt(quantity),
+                    newQuantity: newQuantity,
                     reason: "Price Update",
                     oldPrice: oldPriceValue,
                     newPrice: newPriceValue,
@@ -153,9 +171,17 @@ export async function PUT(
             console.error("Failed to log inventory update:", logError);
         }
 
+        // Re-fetch the full updated product row
+        const updatedResult = await query(
+            `${PRODUCT_SELECT} WHERE id = $1`,
+            [id]
+        );
+        const updatedProduct = updatedResult.rows[0];
+
         return NextResponse.json({
             success: true,
-            message: "Product updated successfully"
+            message: "Product updated successfully",
+            data: transformProduct(updatedProduct)
         }, { status: 200 });
 
     } catch (error) {
@@ -171,12 +197,15 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params;
-        if (!ObjectId.isValid(id)) {
+        if (!isUuid(id)) {
             return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
         }
 
-        const productsCollection = await getProductsCollection();
-        const product = await productsCollection.findOne({ _id: new ObjectId(id) });
+        const existingResult = await query(
+            `${PRODUCT_SELECT} WHERE id = $1`,
+            [id]
+        );
+        const product = existingResult.rows[0];
 
         if (!product) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -196,13 +225,17 @@ export async function DELETE(
             }
         }
 
-        const result = await productsCollection.deleteOne({ _id: new ObjectId(id) });
+        const result = await query(`DELETE FROM products WHERE id = $1`, [id]);
 
-        if (result.deletedCount === 0) {
+        if ((result.rowCount ?? 0) === 0) {
             return NextResponse.json({ error: "Could not delete product" }, { status: 500 });
         }
 
-        return NextResponse.json({ success: true, message: "Product deleted successfully" }, { status: 200 });
+        return NextResponse.json({
+            success: true,
+            message: "Product deleted successfully",
+            data: transformProduct(product)
+        }, { status: 200 });
     } catch (error) {
         console.error("Error deleting product:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

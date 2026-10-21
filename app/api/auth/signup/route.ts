@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { query } from "../../../lib/db";
 import {
   validateEmail,
   validateUsername,
@@ -18,19 +18,21 @@ export async function POST(request: NextRequest) {
     const username = body.username.trim();
     const email = body.email?.trim();
 
-    const userCollection = await getUserCollection();
-
     // Check existing user
-    const existingUser = await userCollection.findOne({ email });
+    const existingResult = await query(
+      `SELECT id, email, is_active, last_email_sent FROM users WHERE email = $1 LIMIT 1`,
+      [email]
+    );
+    const existingUser = existingResult.rows[0];
 
     if (existingUser) {
-      if (!existingUser.isActive) {
+      if (!existingUser.is_active) {
         throw ApiError.badRequest(
           "You are already registered. Please go to your email and set your password"
         );
       }
       // Check if last email was sent < 1 min ago
-      const lastEmailSent = existingUser.lastEmailSent;
+      const lastEmailSent = existingUser.last_email_sent;
       const now = new Date();
 
       if (lastEmailSent) {
@@ -56,17 +58,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new user with roles array
-    const newUser = {
-      username: username,
-      email,
-      isActive: false,
-      roles: ["user"], // 👈 roles array instead of single role
-      sessions: [],
-      dateJoined: new Date(),
-      lastEmailSent: new Date(),
-    };
-
-    await userCollection.insertOne(newUser);
+    const now = new Date();
+    await query(
+      `INSERT INTO users (username, email, is_active, roles, sessions, date_joined, last_email_sent, created_at, updated_at)
+       VALUES ($1, $2, false, '{user}', '[]'::jsonb, $3, $3, $3, $3)`,
+      [username, email, now]
+    );
 
     // Send setup email
     const token = await generatePasswordSetupToken(email);
@@ -100,6 +97,7 @@ export async function POST(request: NextRequest) {
         { status: error.statusCode }
       );
     }
+    console.error("Signup error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

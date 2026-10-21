@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getWalletTransactionsCollection } from "../../../lib/mongoDB";
+import { query } from "../../../lib/db";
 
 // GET: Return wallet transaction history
 export async function GET(request: NextRequest) {
@@ -9,24 +9,25 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
 
-    const transactionsCollection = await getWalletTransactionsCollection();
-    
-    const [transactions, totalItems] = await Promise.all([
-      transactionsCollection
-        .find({})
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .toArray(),
-      transactionsCollection.countDocuments({})
+    const [transactionsResult, countResult] = await Promise.all([
+      query(
+        `SELECT id, wallet_id AS "walletId", type, amount, currency, note, status,
+                date, reference_id AS "referenceId", created_at AS "createdAt"
+         FROM wallet_transactions
+         ORDER BY created_at DESC
+         LIMIT $1 OFFSET $2`,
+        [limit, skip]
+      ),
+      query<{ count: string }>(`SELECT COUNT(*) AS count FROM wallet_transactions`),
     ]);
 
+    const totalItems = parseInt(countResult.rows[0]?.count || "0", 10);
     const totalPages = Math.ceil(totalItems / limit);
 
     return NextResponse.json({
       message: "Wallet transactions retrieved successfully",
       success: true,
-      data: transactions,
+      data: transactionsResult.rows,
       pagination: {
         totalItems,
         totalPages,

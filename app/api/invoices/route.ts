@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getInvoicesCollection, getProductsCollection, getWalletCollection, getWalletTransactionsCollection } from "../../lib/mongoDB";
+import { query, isUuid } from "../../lib/db";
 import ApiError from "../../utils/ApiError";
-import { v4 as uuidv4 } from "uuid";
-import { ObjectId } from "mongodb";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,33 +9,37 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
-    
-    const invoicesCollection = await getInvoicesCollection();
-    
-    let query = {};
+
+    let whereClause = "";
+    const params: unknown[] = [];
     if (searchVal) {
-      query = {
-        $or: [
-          { customer: { $regex: searchVal, $options: "i" } },
-          { invoiceId: { $regex: searchVal, $options: "i" } },
-          { "items.name": { $regex: searchVal, $options: "i" } }
-        ]
-      };
+      params.push(`%${searchVal}%`);
+      const p = params.length;
+      whereClause = `WHERE customer ILIKE $${p} OR invoice_id ILIKE $${p} OR items::text ILIKE $${p}`;
     }
-    
-    const totalCount = await invoicesCollection.countDocuments(query);
+
+    const countResult = await query<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM invoices ${whereClause}`,
+      params
+    );
+    const totalCount = parseInt(countResult.rows[0]?.count || "0", 10);
     const totalPages = Math.ceil(totalCount / limit);
-    
-    const invoices = await invoicesCollection
-      .find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .toArray();
-    
+
+    const invoicesResult = await query(
+      `SELECT id, invoice_id AS "invoiceId", customer, amount, discount, status,
+              payment_method AS "paymentMethod", date, items, deposit,
+              deposit_currency AS "depositCurrency",
+              created_at AS "createdAt", updated_at AS "updatedAt"
+       FROM invoices
+       ${whereClause}
+       ORDER BY created_at DESC
+       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+      [...params, limit, skip]
+    );
+
     return NextResponse.json({
       message: "Invoices retrieved successfully",
-      data: invoices,
+      data: invoicesResult.rows,
       pagination: {
         page,
         limit,
@@ -73,24 +75,54 @@ export async function POST(request: NextRequest) {
       createdAt: new Date()
     };
 
-    const invoicesCollection = await getInvoicesCollection();
-    const result = await invoicesCollection.insertOne(invoiceData);
+    const result = await query<{ id: string }>(
+      `INSERT INTO invoices
+        (invoice_id, customer, amount, discount, status, payment_method, date, items, deposit, deposit_currency, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now(), now())
+       RETURNING id`,
+      [
+        invoiceData.invoiceId,
+        invoiceData.customer,
+        invoiceData.amount,
+        invoiceData.discount,
+        invoiceData.status,
+        invoiceData.paymentMethod,
+        invoiceData.date,
+        JSON.stringify(invoiceData.items),
+        invoiceData.deposit,
+        invoiceData.depositCurrency,
+      ]
+    );
+    const insertedId = result.rows[0].id;
 
     // Decrease product quantities in inventory
     if (items && items.length > 0) {
-      const productsCollection = await getProductsCollection();
       const { logInventoryChange } = await import("../../lib/inventory-server");
 
       for (const item of items) {
         try {
           // Get current quantity first for logging
-          const product = await productsCollection.findOne({ _id: new ObjectId(item.productId) });
+          const productResult = await query<{ quantity: number }>(
+            `SELECT quantity FROM products WHERE id = $1`,
+            [item.productId]
+          );
+          const product = productResult.rows[0];
           const newQty = (product?.quantity || 0) - item.quantity;
 
-          await productsCollection.updateOne(
-            { _id: new ObjectId(item.productId) },
-            { $inc: { quantity: -item.quantity } }
+          await query(
+            `UPDATE products SET quantity = quantity - $1, updated_at = now() WHERE id = $2`,
+            [item.quantity, item.productId]
           );
+
+          await logInventoryChange({
+            productId: item.productId,
+            productName: item.name,
+            changeAmount: -item.quantity,
+            newQuantity: newQty,
+            reason: "Sale",
+            referenceId: insertedId,
+            note: `Sold via invoice ${invoiceData.invoiceId}`
+          }).catch(() => {});
 
           console.log(`✅ Stocks updated for product: ${item.name} (-${item.quantity})`);
         } catch (updateError) {
@@ -107,28 +139,25 @@ export async function POST(request: NextRequest) {
 
     if (invoiceData.paymentMethod === "cash" && finalAmount > 0) {
       try {
-        const walletCollection = await getWalletCollection();
-        const transactionsCollection = await getWalletTransactionsCollection();
-
         // Add to wallet balance (EGP) - assuming EGP for now as per user request
-        await walletCollection.updateOne(
-          { _id: "main" as any },
-          { $inc: { balanceEGP: finalAmount } },
-          { upsert: true }
+        await query(
+          `INSERT INTO wallet (id, balance_egp, initialized) VALUES ('main', $1, true)
+           ON CONFLICT (id) DO UPDATE SET balance_egp = wallet.balance_egp + $1, updated_at = now()`,
+          [finalAmount]
         );
 
         // Log wallet transaction
-        await transactionsCollection.insertOne({
-          type: "invoice",
-          amount: finalAmount,
-          currency: "EGP",
-          note: isPaid 
-            ? `Cash invoice ${invoiceData.invoiceId} (Full Payment) — ${invoiceData.customer}`
-            : `Cash invoice ${invoiceData.invoiceId} (Deposit) — ${invoiceData.customer}`,
-          date: new Date(),
-          createdAt: new Date(),
-          referenceId: result.insertedId,
-        });
+        await query(
+          `INSERT INTO wallet_transactions (wallet_id, type, amount, currency, note, date, reference_id, created_at)
+           VALUES ('main', 'invoice', $1, 'EGP', $2, now(), $3, now())`,
+          [
+            finalAmount,
+            isPaid
+              ? `Cash invoice ${invoiceData.invoiceId} (Full Payment) — ${invoiceData.customer}`
+              : `Cash invoice ${invoiceData.invoiceId} (Deposit) — ${invoiceData.customer}`,
+            insertedId,
+          ]
+        );
 
         console.log(`💰 Wallet updated: +${finalAmount} EGP from invoice ${invoiceData.invoiceId}`);
       } catch (walletError) {
@@ -138,7 +167,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       message: "Invoice created successfully",
-      data: { ...invoiceData, _id: result.insertedId }
+      data: { ...invoiceData, _id: insertedId, id: insertedId }
     }, { status: 201 });
   } catch (error) {
     console.error("Error creating invoice:", error);
@@ -154,24 +183,31 @@ export async function PATCH(request: NextRequest) {
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
+    if (!isUuid(id)) {
+      return NextResponse.json({ error: "Invalid invoice ID" }, { status: 400 });
+    }
 
-    const invoicesCollection = await getInvoicesCollection();
-    const invoice = await invoicesCollection.findOne({ _id: new ObjectId(id) });
+    const invoiceResult = await query(
+      `SELECT id, invoice_id AS "invoiceId", customer, amount, discount, status,
+              payment_method AS "paymentMethod", date, items, deposit
+       FROM invoices WHERE id = $1`,
+      [id]
+    );
+    const invoice = invoiceResult.rows[0];
 
     if (!invoice) {
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
     const oldStatus = invoice.status;
-    const oldDeposit = invoice.deposit || 0;
+    const oldDeposit = parseFloat(invoice.deposit) || 0;
     const additionalDeposit = parseFloat(body.deposit) || 0;
-    const productsCollection = await getProductsCollection();
-    
+
     // 1. STOCK ADJUSTMENT AND HISTORY LOGGING (if items changed)
     if (items && Array.isArray(items)) {
       const { logInventoryChange } = await import("../../lib/inventory-server");
       const oldItems = invoice.items || [];
-      
+
       // Track which old items were processed
       const processedOldProductIds = new Set<string>();
 
@@ -188,9 +224,9 @@ export async function PATCH(request: NextRequest) {
         if (netChange !== 0) {
           // Adjust stock
           try {
-            await productsCollection.updateOne(
-              { _id: new ObjectId(newItem.productId) },
-              { $inc: { quantity: -netChange } }
+            await query(
+              `UPDATE products SET quantity = quantity - $1, updated_at = now() WHERE id = $2`,
+              [netChange, newItem.productId]
             );
           } catch (e) {
             console.error(`Stock update fail for ${newItem.name}:`, e);
@@ -200,12 +236,15 @@ export async function PATCH(request: NextRequest) {
         // ONLY LOG IF PRICE OR QUANTITY CHANGED
         if (netChange !== 0 || priceChanged) {
           try {
-            const product = await productsCollection.findOne({ _id: new ObjectId(newItem.productId) });
+            const productResult = await query<{ quantity: number }>(
+              `SELECT quantity FROM products WHERE id = $1`,
+              [newItem.productId]
+            );
             await logInventoryChange({
               productId: newItem.productId,
               productName: newItem.name,
               changeAmount: -netChange,
-              newQuantity: product?.quantity || 0,
+              newQuantity: productResult.rows[0]?.quantity || 0,
               reason: priceChanged && netChange === 0 ? "Price Update" : "Sale",
               oldPrice: oldPrice,
               newPrice: newItem.price,
@@ -224,18 +263,21 @@ export async function PATCH(request: NextRequest) {
         if (!processedOldProductIds.has(oldItem.productId)) {
           try {
             // Revert stock
-            await productsCollection.updateOne(
-              { _id: new ObjectId(oldItem.productId) },
-              { $inc: { quantity: oldItem.quantity } }
+            await query(
+              `UPDATE products SET quantity = quantity + $1, updated_at = now() WHERE id = $2`,
+              [oldItem.quantity, oldItem.productId]
             );
 
             // Log removal
-            const product = await productsCollection.findOne({ _id: new ObjectId(oldItem.productId) });
+            const productResult = await query<{ quantity: number }>(
+              `SELECT quantity FROM products WHERE id = $1`,
+              [oldItem.productId]
+            );
             await logInventoryChange({
               productId: oldItem.productId,
               productName: oldItem.name,
               changeAmount: oldItem.quantity,
-              newQuantity: product?.quantity || 0,
+              newQuantity: productResult.rows[0]?.quantity || 0,
               reason: "Order Cancelled",
               referenceId: id,
               note: `Item removed from invoice ${invoice.invoiceId}`
@@ -265,14 +307,34 @@ export async function PATCH(request: NextRequest) {
       updateData.deposit = updateData.amount || invoice.amount;
     }
 
-    const result = await invoicesCollection.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: updateData }
-    );
+    // Build dynamic UPDATE
+    const setClauses: string[] = [];
+    const params: unknown[] = [];
+    const colMap: Record<string, string> = {
+      status: "status",
+      customer: "customer",
+      amount: "amount",
+      discount: "discount",
+      date: "date",
+      items: "items",
+      paymentMethod: "payment_method",
+      deposit: "deposit",
+    };
+    for (const [key, col] of Object.entries(colMap)) {
+      if (updateData[key] !== undefined) {
+        params.push(key === "items" ? JSON.stringify(updateData[key]) : updateData[key]);
+        setClauses.push(`${col} = $${params.length}`);
+      }
+    }
+    if (setClauses.length > 0) {
+      params.push(id);
+      await query(
+        `UPDATE invoices SET ${setClauses.join(", ")}, updated_at = now() WHERE id = $${params.length}`,
+        params
+      );
+    }
 
     // 3. WALLET UPDATE LOGIC (Cash only)
-    const walletCollection = await getWalletCollection();
-    const transactionsCollection = await getWalletTransactionsCollection();
     const currentPaymentMethod = paymentMethod || invoice.paymentMethod;
 
     if (currentPaymentMethod === "cash") {
@@ -281,21 +343,21 @@ export async function PATCH(request: NextRequest) {
         const remainingBalance = (updateData.amount || invoice.amount) - (oldDeposit + additionalDeposit);
         if (remainingBalance > 0) {
           try {
-            await walletCollection.updateOne(
-              { _id: "main" as any },
-              { $inc: { balanceEGP: remainingBalance } },
-              { upsert: true }
+            await query(
+              `INSERT INTO wallet (id, balance_egp, initialized) VALUES ('main', $1, true)
+               ON CONFLICT (id) DO UPDATE SET balance_egp = wallet.balance_egp + $1, updated_at = now()`,
+              [remainingBalance]
             );
 
-            await transactionsCollection.insertOne({
-              type: "invoice",
-              amount: remainingBalance,
-              currency: "EGP",
-              note: `Cash invoice ${invoice.invoiceId} (Final Balance) — ${updateData.customer || invoice.customer}`,
-              date: new Date(),
-              createdAt: new Date(),
-              referenceId: new ObjectId(id),
-            });
+            await query(
+              `INSERT INTO wallet_transactions (wallet_id, type, amount, currency, note, date, reference_id, created_at)
+               VALUES ('main', 'invoice', $1, 'EGP', $2, now(), $3, now())`,
+              [
+                remainingBalance,
+                `Cash invoice ${invoice.invoiceId} (Final Balance) — ${updateData.customer || invoice.customer}`,
+                id,
+              ]
+            );
           } catch (walletError) {
             console.error("❌ Failed to update wallet for final balance:", walletError);
           }
@@ -305,30 +367,41 @@ export async function PATCH(request: NextRequest) {
       // Case: Additional deposit added
       if (additionalDeposit > 0) {
          try {
-            await walletCollection.updateOne(
-              { _id: "main" as any },
-              { $inc: { balanceEGP: additionalDeposit } },
-              { upsert: true }
+            await query(
+              `INSERT INTO wallet (id, balance_egp, initialized) VALUES ('main', $1, true)
+               ON CONFLICT (id) DO UPDATE SET balance_egp = wallet.balance_egp + $1, updated_at = now()`,
+              [additionalDeposit]
             );
 
-            await transactionsCollection.insertOne({
-              type: "invoice",
-              amount: additionalDeposit,
-              currency: "EGP",
-              note: `Cash invoice ${invoice.invoiceId} (Additional Deposit) — ${updateData.customer || invoice.customer}`,
-              date: new Date(),
-              createdAt: new Date(),
-              referenceId: new ObjectId(id),
-            });
+            await query(
+              `INSERT INTO wallet_transactions (wallet_id, type, amount, currency, note, date, reference_id, created_at)
+               VALUES ('main', 'invoice', $1, 'EGP', $2, now(), $3, now())`,
+              [
+                additionalDeposit,
+                `Cash invoice ${invoice.invoiceId} (Additional Deposit) — ${updateData.customer || invoice.customer}`,
+                id,
+              ]
+            );
           } catch (walletError) {
             console.error("❌ Failed to update wallet for additional deposit:", walletError);
           }
       }
     }
 
+    // Re-fetch the full updated invoice row (same SELECT column list as GET, with aliases)
+    const updatedResult = await query(
+      `SELECT id, invoice_id AS "invoiceId", customer, amount, discount, status,
+              payment_method AS "paymentMethod", date, items, deposit,
+              deposit_currency AS "depositCurrency",
+              created_at AS "createdAt", updated_at AS "updatedAt"
+       FROM invoices WHERE id = $1`,
+      [id]
+    );
+    const updatedRow = updatedResult.rows[0];
+
     return NextResponse.json({
       message: "Invoice updated successfully",
-      data: { id, ...updateData }
+      data: updatedRow
     }, { status: 200 });
   } catch (error) {
     console.error("Error updating invoice:", error);

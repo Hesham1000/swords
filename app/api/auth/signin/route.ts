@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyPassword } from "../../../lib/auth/password";
 import { generateToken } from "../../../lib/auth/token";
 import { v4 as uuidv4 } from "uuid";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { query } from "../../../lib/db";
 import ApiError from "../../../utils/ApiError";
 
 // Failed login attempts tracking
@@ -29,21 +29,22 @@ export async function POST(request: NextRequest) {
       throw ApiError.badRequest("Email/Username and password are required!");
     }
 
-    const userCollection = await getUserCollection();
-
     // Find user by either email or username
     let user;
     if (isEmail(identifier)) {
       // Search by email
-      user = await userCollection.findOne({ email: identifier });
+      const result = await query(`SELECT * FROM users WHERE email = $1 LIMIT 1`, [identifier]);
+      user = result.rows[0];
     } else {
       // Search by username
-      user = await userCollection.findOne({ username: identifier });
+      const result = await query(`SELECT * FROM users WHERE username = $1 LIMIT 1`, [identifier]);
+      user = result.rows[0];
     }
 
     // If not found with email, also check username for email input (fallback)
     if (!user && isEmail(identifier)) {
-      user = await userCollection.findOne({ email: identifier });
+      const result = await query(`SELECT * FROM users WHERE email = $1 LIMIT 1`, [identifier]);
+      user = result.rows[0];
     }
 
     if (!user) {
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     const lockoutKey = user.email;
 
     if (user) {
-      if (!user.isActive) {
+      if (!user.is_active) {
         throw ApiError.badRequest(
           "You do not complete the registration process. Please check your email to set your password"
         );
@@ -110,11 +111,8 @@ export async function POST(request: NextRequest) {
     // Update user login status
     const now = new Date();
 
-    // Generate tokens - adjust this based on your token generation logic
-    // You might want to pass user._id instead of "1"
-    const { accessToken, refreshToken } = await generateToken(
-      user._id.toString()
-    );
+    // Generate tokens
+    const { accessToken, refreshToken } = await generateToken(user.id);
 
     // Create new session
     const newSession = {
@@ -125,23 +123,24 @@ export async function POST(request: NextRequest) {
     };
 
     // Add session to user
-    await userCollection.updateOne(
-      { _id: user._id },
-      {
-        $push: { sessions: newSession as any },
-        $set: { lastLogin: now }, // Update last login time
-      }
+    await query(
+      `UPDATE users
+       SET sessions = COALESCE(sessions, '[]'::jsonb) || $1::jsonb,
+           last_login = $2,
+           updated_at = now()
+       WHERE id = $3`,
+      [JSON.stringify(newSession), now, user.id]
     );
 
     // Prepare user data (exclude sensitive fields)
     const userData = {
-      id: user._id.toString(),
+      id: user.id,
       username: user.username,
       email: user.email,
       roles: user.roles ?? [], // 👈 roles array
-      dateJoined: user.dateJoined,
+      dateJoined: user.date_joined,
       lastLogin: now,
-      isActive: user.isActive,
+      isActive: user.is_active,
     };
 
     // Create response with cookies
@@ -198,7 +197,6 @@ export async function POST(request: NextRequest) {
 
     // Log unexpected errors for debugging
     console.error("Login error:", error);
-
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

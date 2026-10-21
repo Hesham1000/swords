@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getShipmentsCollection, getWalletCollection, getWalletTransactionsCollection } from "../../lib/mongoDB";
+import { query } from "../../lib/db";
 
 // GET: Return all shipments
 export async function GET(request: NextRequest) {
   try {
-    const shipmentsCollection = await getShipmentsCollection();
-    const shipments = await shipmentsCollection
-      .find({})
-      .sort({ createdAt: -1 })
-      .toArray();
+    const result = await query(
+      `SELECT id, invoice_id AS "invoiceId", tracking_number AS "trackingNumber",
+              carrier, status, address, destination, cost, description, date,
+              created_at AS "createdAt", updated_at AS "updatedAt"
+       FROM shipments
+       ORDER BY created_at DESC`
+    );
 
     return NextResponse.json({
       message: "Shipments retrieved successfully",
-      data: shipments,
+      data: result.rows,
     }, { status: 200 });
   } catch (error) {
     console.error("Error fetching shipments:", error);
@@ -34,45 +36,53 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Cost must be greater than 0" }, { status: 400 });
     }
 
-    const walletCollection = await getWalletCollection();
-    const transactionsCollection = await getWalletTransactionsCollection();
-    const shipmentsCollection = await getShipmentsCollection();
+    const parsedCost = parseFloat(cost);
 
     // Deduct from wallet (EGP)
-    await walletCollection.updateOne(
-      { _id: "main" as any },
-      { $inc: { balanceEGP: -parseFloat(cost) } },
-      { upsert: true }
+    await query(
+      `INSERT INTO wallet (id, balance_egp, initialized) VALUES ('main', -$1, true)
+       ON CONFLICT (id) DO UPDATE SET balance_egp = wallet.balance_egp - $1, updated_at = now()`,
+      [parsedCost]
     );
 
     // Create shipment record
     const shipment = {
       destination: destination.toLowerCase(),
-      cost: parseFloat(cost),
+      cost: parsedCost,
       description: description || "",
       date: date || new Date().toISOString().split("T")[0],
       createdAt: new Date(),
     };
-    const result = await shipmentsCollection.insertOne(shipment);
+    const result = await query<{ id: string }>(
+      `INSERT INTO shipments (destination, cost, description, date, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, now(), now())
+       RETURNING id`,
+      [shipment.destination, shipment.cost, shipment.description, shipment.date]
+    );
+    const insertedId = result.rows[0].id;
 
     // Log wallet transaction
-    const transaction = {
-      type: "shipment",
-      amount: -parseFloat(cost),
-      currency: "EGP",
-      note: `Shipment to ${destination} — ${description || "No description"}`,
-      date: new Date(),
-      createdAt: new Date(),
-      referenceId: result.insertedId,
-    };
-    await transactionsCollection.insertOne(transaction);
+    await query(
+      `INSERT INTO wallet_transactions (wallet_id, type, amount, currency, note, date, reference_id, created_at)
+       VALUES ('main', 'shipment', $1, 'EGP', $2, now(), $3, now())`,
+      [
+        -parsedCost,
+        `Shipment to ${destination} — ${description || "No description"}`,
+        insertedId,
+      ]
+    );
 
     // Get updated balance
-    const wallet = await walletCollection.findOne({ _id: "main" as any });
+    const walletResult = await query<{ balance_egp: string }>(
+      `SELECT balance_egp FROM wallet WHERE id = 'main'`
+    );
 
     return NextResponse.json({
       message: "Shipment created successfully",
-      data: { shipment: { ...shipment, _id: result.insertedId }, balanceEGP: wallet?.balanceEGP || 0 },
+      data: {
+        shipment: { ...shipment, _id: insertedId, id: insertedId },
+        balanceEGP: parseFloat(walletResult.rows[0]?.balance_egp || "0"),
+      },
     }, { status: 201 });
   } catch (error) {
     console.error("Error creating shipment:", error);

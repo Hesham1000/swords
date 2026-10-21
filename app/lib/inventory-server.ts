@@ -1,10 +1,9 @@
-import { getInventoryLogsCollection } from "./mongoDB";
-import { ObjectId } from "mongodb";
+import { query } from "./db";
 
 export type InventoryChangeReason = "Sale" | "Initial Stock" | "Restock" | "Manual Adjustment" | "Return" | "Order Cancelled" | "Price Update";
 
 export interface InventoryLog {
-  _id?: ObjectId;
+  id?: string;
   productId: string;
   productName: string;
   changeAmount: number; // Positive for additions, negative for deductions
@@ -12,7 +11,7 @@ export interface InventoryLog {
   reason: InventoryChangeReason;
   oldPrice?: number | null;
   newPrice?: number | null;
-  referenceId?: string | ObjectId;
+  referenceId?: string;
   note?: string;
   operator?: string;
   timestamp: Date;
@@ -29,18 +28,30 @@ export async function logInventoryChange(logData: {
   reason: InventoryChangeReason;
   oldPrice?: number | null;
   newPrice?: number | null;
-  referenceId?: string | ObjectId;
+  referenceId?: string;
   note?: string;
   operator?: string;
 }) {
   try {
-    const logsCollection = await getInventoryLogsCollection();
-    const log: InventoryLog = {
-      ...logData,
-      timestamp: new Date(),
-    };
-    
-    await logsCollection.insertOne(log);
+    const now = new Date();
+    await query(
+      `INSERT INTO inventory_logs
+        (product_id, product_name, change, change_amount, new_quantity, reason, old_price, new_price, reference_id, note, operator, "timestamp", created_at)
+       VALUES ($1, $2, $3, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11)`,
+      [
+        logData.productId,
+        logData.productName,
+        logData.changeAmount,
+        logData.newQuantity,
+        logData.reason,
+        logData.oldPrice ?? null,
+        logData.newPrice ?? null,
+        logData.referenceId ?? null,
+        logData.note ?? null,
+        logData.operator ?? null,
+        now,
+      ]
+    );
     console.log(`📝 Inventory Log Created: ${logData.productName} (${logData.changeAmount > 0 ? "+" : ""}${logData.changeAmount}) - Reason: ${logData.reason}`);
     return { success: true };
   } catch (error) {

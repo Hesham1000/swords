@@ -1,9 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
-import { ObjectId } from "mongodb";
-import {
-  getUserCollection,
-  getBlacklistCollection,
-} from "../mongoDB";
+import { query, isUuid } from "../db";
 import { verifyAccessTokenEdge as verifyAccessToken } from "./edge";
 
 // export { verifyAccessToken }; // If needed by other non-edge files
@@ -64,35 +60,6 @@ export async function generateToken(
 
 export { verifyAccessToken };
 
-// Verify Refresh Token (Edge Runtime Compatible)
-// export async function verifyRefreshToken(
-//   token: string
-// ): Promise<JWTPayloadCustom | null> {
-//   try {
-//     const { payload } = await jwtVerify(token, JWT_REFRESH_SECRET);
-
-//     // Type guard for refresh token payload
-//     if (
-//       typeof payload === "object" &&
-//       payload !== null &&
-//       "userId" in payload &&
-//       typeof payload.userId === "string" &&
-//       "exp" in payload &&
-//       typeof payload.exp === "number"
-//     ) {
-//       return {
-//         userId: payload.userId as string,
-//         exp: payload.exp as number,
-//         iat: (payload.iat as number) || 0,
-//       };
-//     }
-
-//     return null;
-//   } catch {
-//     return null;
-//   }
-// }
-
 // Password Setup Token
 export async function generatePasswordSetupToken(
   email: string
@@ -128,31 +95,10 @@ export async function decodePasswordSetupToken(
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Lazy DB initialization (no top-level await)
-async function getCollections() {
-  const blacklist = await getBlacklistCollection();
-  const users = await getUserCollection();
-  return { blacklist, users };
-}
-
 // Blacklist check
 export async function isTokenBlacklisted(token: string): Promise<boolean> {
-  const { blacklist } = await getCollections();
-  return !!(await blacklist.findOne({ token }));
+  const result = await query(`SELECT 1 FROM blacklist_tokens WHERE token = $1 LIMIT 1`, [token]);
+  return result.rowCount! > 0;
 }
 
 // Revoke token and clear cookies
@@ -161,21 +107,27 @@ export async function revokeAndDeleteToken(
   userId?: string,
   refresh?: string
 ): Promise<void> {
-  const { blacklist, users } = await getCollections();
-
   // Blacklist token
   if (!(await isTokenBlacklisted(token))) {
-    await blacklist.insertOne({
-      token,
-      revoked_at: new Date(),
-      ...(userId ? { user_id: new ObjectId(userId) } : {}),
-    });
+    await query(
+      `INSERT INTO blacklist_tokens (token, user_id, revoked_at)
+       VALUES ($1, $2, now())
+       ON CONFLICT (token) DO NOTHING`,
+      [token, userId && isUuid(userId) ? userId : null]
+    );
   }
 
-  // Remove session
-  if (userId) {
-    await users.updateOne({ _id: new ObjectId(userId) }, {
-      $pull: { sessions: { token } },
-    } as any);
+  // Remove session from the user's sessions jsonb array
+  if (userId && isUuid(userId)) {
+    await query(
+      `UPDATE users
+       SET sessions = (
+         SELECT COALESCE(jsonb_agg(s), '[]'::jsonb)
+         FROM jsonb_array_elements(COALESCE(sessions, '[]'::jsonb)) s
+         WHERE s->>'token' <> $1
+       )
+       WHERE id = $2`,
+      [token, userId]
+    );
   }
 }
