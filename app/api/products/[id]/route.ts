@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import { getProductsCollection } from "../../../lib/mongoDB";
+import { getProductsCollection, getInventoryLogsCollection } from "../../../lib/mongoDB";
 import { transformProduct } from "../../../lib/api/utils";
 import { uploadImage, deleteImage, getPublicIdFromUrl, getRelativePathFromUrl } from "../../../lib/cloudinary";
+import { requireAdmin } from "../../../lib/auth/requireAuth";
 
 // GET a single product
 export async function GET(
@@ -83,10 +84,22 @@ export async function PUT(
                 // Upload to Cloudinary
                 const result = await uploadImage(buffer, "products");
                 imagePaths.push(getRelativePathFromUrl(result.url));
+            }
+        }
 
-                // Note: In a more advanced implementation, we would track which old images 
-                // were removed and delete them from Cloudinary here. 
-                // For now, we focus on making the upload work.
+        // Delete old images that were removed from Cloudinary
+        if (existingProduct.images && Array.isArray(existingProduct.images)) {
+            for (const oldImage of existingProduct.images) {
+                if (!imagePaths.includes(oldImage)) {
+                    const publicId = getPublicIdFromUrl(oldImage);
+                    if (publicId) {
+                        try {
+                            await deleteImage(publicId);
+                        } catch (err) {
+                            console.error(`Failed to delete image from Cloudinary: ${publicId}`, err);
+                        }
+                    }
+                }
             }
         }
 
@@ -170,6 +183,9 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const auth = await requireAdmin(request);
+        if ("error" in auth) return auth.error;
+
         const { id } = await params;
         if (!ObjectId.isValid(id)) {
             return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
@@ -195,6 +211,10 @@ export async function DELETE(
                 }
             }
         }
+
+        // Delete associated inventory logs
+        const logsCollection = await getInventoryLogsCollection();
+        await logsCollection.deleteMany({ productId: id });
 
         const result = await productsCollection.deleteOne({ _id: new ObjectId(id) });
 

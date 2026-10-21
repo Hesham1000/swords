@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getProductsCollection } from "../../../lib/mongoDB";
 import { transformProduct } from "../../../lib/api/utils";
 import { uploadImage, getRelativePathFromUrl } from "../../../lib/cloudinary";
+import { requireAdmin } from "../../../lib/auth/requireAuth";
 
 // Define the product data structure with optional fields
 interface ProductData {
@@ -27,6 +28,9 @@ interface ProductData {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdmin(request);
+    if ("error" in auth) return auth.error;
+
     const formData = await request.formData();
     const productsCollection = await getProductsCollection();
 
@@ -41,9 +45,9 @@ export async function POST(request: NextRequest) {
     const quantity = formData.get("quantity") as string;
 
     // Validate essential fields
-    if (!name || !category || category.length === 0 || !quantity || !productType) {
+    if (!name || !price || isNaN(parseFloat(price)) || !category || category.length === 0 || !quantity || !productType) {
       return NextResponse.json(
-        { error: "Missing required fields (name, category, quantity, productType)" },
+        { error: "Missing required fields (name, price, quantity, category, productType)" },
         { status: 400 }
       );
     }

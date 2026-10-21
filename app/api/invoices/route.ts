@@ -3,9 +3,22 @@ import { getInvoicesCollection, getProductsCollection, getWalletCollection, getW
 import ApiError from "../../utils/ApiError";
 import { v4 as uuidv4 } from "uuid";
 import { ObjectId } from "mongodb";
+import { verifyAccessToken } from "../../lib/auth/token";
 
 export async function GET(request: NextRequest) {
   try {
+    const accessToken = request.cookies.get("access_token")?.value;
+
+    if (!accessToken) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const payload = await verifyAccessToken(accessToken);
+
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const searchVal = searchParams.get("search") || searchParams.get("customer");
     const page = parseInt(searchParams.get("page") || "1");
@@ -55,6 +68,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const accessToken = request.cookies.get("access_token")?.value;
+
+    if (!accessToken) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const payload = await verifyAccessToken(accessToken);
+
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { customer, amount, status, date, items, paymentMethod, discount } = body;
 
@@ -93,6 +118,16 @@ export async function POST(request: NextRequest) {
           );
 
           console.log(`✅ Stocks updated for product: ${item.name} (-${item.quantity})`);
+
+          await logInventoryChange({
+            productId: item.productId,
+            productName: item.name,
+            changeAmount: -item.quantity,
+            newQuantity: newQty,
+            reason: "Sale",
+            referenceId: result.insertedId,
+            note: `Created via invoice ${invoiceData.invoiceId}`,
+          });
         } catch (updateError) {
           console.error(`❌ Failed to update stock for product ${item.productId}:`, updateError);
           // We continue with other items even if one fails
@@ -148,6 +183,18 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    const accessToken = request.cookies.get("access_token")?.value;
+
+    if (!accessToken) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const payload = await verifyAccessToken(accessToken);
+
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, status, customer, amount, discount, date, items, paymentMethod } = body;
 
@@ -332,6 +379,108 @@ export async function PATCH(request: NextRequest) {
     }, { status: 200 });
   } catch (error) {
     console.error("Error updating invoice:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const accessToken = request.cookies.get("access_token")?.value;
+
+    if (!accessToken) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const payload = await verifyAccessToken(accessToken);
+
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
+    const id = new URL(request.url).searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+
+    const invoicesCollection = await getInvoicesCollection();
+    const invoice = await invoicesCollection.findOne({ _id: new ObjectId(id) });
+
+    if (!invoice) {
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+    }
+
+    // Revert inventory quantities
+    if (invoice.items && invoice.items.length > 0) {
+      const productsCollection = await getProductsCollection();
+      const { logInventoryChange } = await import("../../lib/inventory-server");
+
+      for (const item of invoice.items) {
+        try {
+          const product = await productsCollection.findOne({ _id: new ObjectId(item.productId) });
+          const newQty = (product?.quantity || 0) + item.quantity;
+
+          await productsCollection.updateOne(
+            { _id: new ObjectId(item.productId) },
+            { $inc: { quantity: item.quantity } }
+          );
+
+          await logInventoryChange({
+            productId: item.productId,
+            productName: item.name,
+            changeAmount: item.quantity,
+            newQuantity: newQty,
+            reason: "Order Cancelled",
+            referenceId: id,
+            note: `Invoice ${invoice.invoiceId} deleted`,
+          });
+
+          console.log(`✅ Stock reverted for product: ${item.name} (+${item.quantity})`);
+        } catch (revertError) {
+          console.error(`❌ Failed to revert stock for product ${item.productId}:`, revertError);
+        }
+      }
+    }
+
+    // Reverse wallet credit for cash invoices
+    const isPaid = invoice.status === "paid";
+    const depositAmount = invoice.deposit || 0;
+    const creditedAmount = isPaid ? invoice.amount : depositAmount;
+
+    if (invoice.paymentMethod === "cash" && creditedAmount > 0) {
+      try {
+        const walletCollection = await getWalletCollection();
+        const transactionsCollection = await getWalletTransactionsCollection();
+
+        await walletCollection.updateOne(
+          { _id: "main" as any },
+          { $inc: { balanceEGP: -creditedAmount } },
+          { upsert: true }
+        );
+
+        await transactionsCollection.insertOne({
+          type: "invoice",
+          amount: -creditedAmount,
+          currency: "EGP",
+          note: `Invoice ${invoice.invoiceId} deleted — reversal`,
+          date: new Date(),
+          createdAt: new Date(),
+          referenceId: new ObjectId(id),
+        });
+
+        console.log(`💰 Wallet reversed: -${creditedAmount} EGP from deleted invoice ${invoice.invoiceId}`);
+      } catch (walletError) {
+        console.error("❌ Failed to reverse wallet for deleted invoice:", walletError);
+      }
+    }
+
+    await invoicesCollection.deleteOne({ _id: new ObjectId(id) });
+
+    return NextResponse.json({
+      message: "Invoice deleted successfully"
+    }, { status: 200 });
+  } catch (error) {
+    console.error("Error deleting invoice:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getInvoicesCollection, getProductsCollection } from "../../lib/mongoDB";
 import { ObjectId } from "mongodb";
+import { requireAdmin } from "../../lib/auth/requireAuth";
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireAdmin(request);
+    if ("error" in auth) return auth.error;
+
     const invoicesCollection = await getInvoicesCollection();
     const productsCollection = await getProductsCollection();
 

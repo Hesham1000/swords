@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWalletCollection, getWalletTransactionsCollection, getInvoicesCollection } from "../../lib/mongoDB";
+import { verifyAccessToken } from "../../lib/auth/token";
 
 const CURRENCIES = ["EGP", "USD", "EUR"] as const;
 type Currency = typeof CURRENCIES[number];
@@ -7,6 +8,18 @@ type Currency = typeof CURRENCIES[number];
 // GET: Return wallet balances for all currencies
 export async function GET(request: NextRequest) {
   try {
+    const accessToken = request.cookies.get("access_token")?.value;
+
+    if (!accessToken) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const payload = await verifyAccessToken(accessToken);
+
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
     const walletCollection = await getWalletCollection();
     let wallet = await walletCollection.findOne({ _id: "main" as any });
 
@@ -38,12 +51,20 @@ export async function GET(request: NextRequest) {
       wallet = { _id: wallet._id, balanceEGP: oldBalance, balanceUSD: 0, balanceEUR: 0, initialized: wallet.initialized };
     }
 
+    const transactionsCollection = await getWalletTransactionsCollection();
+    const recentTransactions = await transactionsCollection
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .toArray();
+
     return NextResponse.json({
       message: "Wallet balance retrieved successfully",
       data: {
         balanceEGP: wallet.balanceEGP || 0,
         balanceUSD: wallet.balanceUSD || 0,
         balanceEUR: wallet.balanceEUR || 0,
+        recentTransactions,
       },
     }, { status: 200 });
   } catch (error) {
@@ -55,6 +76,18 @@ export async function GET(request: NextRequest) {
 // POST: Deposit or Withdraw from wallet
 export async function POST(request: NextRequest) {
   try {
+    const accessToken = request.cookies.get("access_token")?.value;
+
+    if (!accessToken) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const payload = await verifyAccessToken(accessToken);
+
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { amount, note, currency = "EGP", type = "deposit" } = body;
 

@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWalletTransactionsCollection } from "../../../lib/mongoDB";
+import { verifyAccessToken } from "../../../lib/auth/token";
 
 // GET: Return wallet transaction history
 export async function GET(request: NextRequest) {
   try {
+    const accessToken = request.cookies.get("access_token")?.value;
+
+    if (!accessToken) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const payload = await verifyAccessToken(accessToken);
+
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");

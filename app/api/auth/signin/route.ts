@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
     response.cookies.set("access_token", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 6, // 6 hours for access token
     });
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
     response.cookies.set("refresh_token", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60, // 7 days
     });
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
     response.cookies.set("ROLES", JSON.stringify(user.roles || []), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 6, // 6 hours
     });
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
     response.cookies.set("logged_in", "true", {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 6,
     });
