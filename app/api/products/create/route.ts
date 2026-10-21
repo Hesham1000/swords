@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const name = (formData.get("name") as string)?.trim();
     const description = (formData.get("description") as string)?.trim();
     const price = formData.get("price") as string;
-    const category = formData.getAll("category") as string[];
+    const category = formData.getAll("category") as ("Foil" | "Sabre" | "Epée")[];
     const productType = formData.get("productType") as string;
     const brand = (formData.get("brand") as string)?.trim();
     const model = (formData.get("model") as string)?.trim();
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       name,
       description: description || "",
       price: price ? parseFloat(price) : null,
-      category: category as any,
+      category,
       productType: productType,
       quantity: parseInt(quantity),
       images: imagePaths,

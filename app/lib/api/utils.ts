@@ -6,7 +6,7 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
  * - Renames _id to id
  * - Prepends the API URL to image paths if they are relative
  */
-export function transformProduct(product: any) {
+export function transformProduct(product: Record<string, unknown> | null) {
     if (!product) return null;
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
@@ -14,8 +14,8 @@ export function transformProduct(product: any) {
 
     const transformed = {
         ...product,
-        id: product._id.toString(),
-        images: (product.images || []).map((img: string) => {
+        id: (product._id as { toString(): string }).toString(),
+        images: ((product.images as string[] | undefined) || []).map((img: string) => {
             if (img.startsWith("http")) {
                 return img;
             }
@@ -33,7 +33,7 @@ export function transformProduct(product: any) {
     };
 
     // Remove the raw MongoDB _id to avoid confusion on the frontend
-    delete transformed._id;
+    delete (transformed as Record<string, unknown>)._id;
 
     return transformed;
 }

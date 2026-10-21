@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getInvoicesCollection, getProductsCollection } from "../../lib/mongoDB";
-import { ObjectId } from "mongodb";
+
+interface InvoiceItem {
+  productId: string;
+  category?: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
 import { requireAdmin } from "../../lib/auth/requireAuth";
 
 export async function GET(request: NextRequest) {
@@ -59,7 +67,7 @@ export async function GET(request: NextRequest) {
 
     const categorySales: Record<string, number> = {};
     invoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
+      ((inv.items || []) as InvoiceItem[]).forEach((item) => {
         const cat = productCategoryMap[item.productId] || item.category || "General";
         categorySales[cat] = (categorySales[cat] || 0) + (item.price * item.quantity);
       });
@@ -68,7 +76,7 @@ export async function GET(request: NextRequest) {
     // 5. TOP PRODUCTS
     const productSales: Record<string, {name: string, revenue: number, quantity: number}> = {};
     invoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
+      ((inv.items || []) as InvoiceItem[]).forEach((item) => {
         if (!productSales[item.productId]) {
           productSales[item.productId] = { name: item.name, revenue: 0, quantity: 0 };
         }

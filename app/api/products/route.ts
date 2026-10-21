@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const dashboard = searchParams.get("dashboard") === "true";
 
     // Build query object
-    const query: any = {};
+    const query: Record<string, unknown> = {};
     
     if (search) {
       query.$or = [

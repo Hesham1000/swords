@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyPassword } from "../../../lib/auth/password";
 import { generateToken } from "../../../lib/auth/token";
 import { v4 as uuidv4 } from "uuid";
+import type { UpdateFilter, Document } from "mongodb";
 import { getUserCollection } from "../../../lib/mongoDB";
 import ApiError from "../../../utils/ApiError";
 
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
     await userCollection.updateOne(
       { _id: user._id },
       {
-        $push: { sessions: newSession as any },
+        $push: { sessions: newSession } as unknown as UpdateFilter<Document>,
         $set: { lastLogin: now }, // Update last login time
       }
     );

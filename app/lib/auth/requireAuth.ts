@@ -9,7 +9,7 @@ import { getUserCollection } from "../mongoDB";
  */
 export async function requireAuth(
   request: NextRequest
-): Promise<{ user: any } | { error: NextResponse }> {
+): Promise<{ user: Record<string, unknown> } | { error: NextResponse }> {
   try {
     const token = request.cookies.get("access_token")?.value;
     if (!token) {
@@ -32,7 +32,7 @@ export async function requireAuth(
     }
 
     return { user };
-  } catch (error) {
+  } catch {
     return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
   }
 }
@@ -43,11 +43,11 @@ export async function requireAuth(
  */
 export async function requireAdmin(
   request: NextRequest
-): Promise<{ user: any } | { error: NextResponse }> {
+): Promise<{ user: Record<string, unknown> } | { error: NextResponse }> {
   const auth = await requireAuth(request);
   if ("error" in auth) return auth;
 
-  const roles = (auth.user as any).roles;
+  const roles = auth.user.roles;
   if (!Array.isArray(roles) || !roles.includes("admin")) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }

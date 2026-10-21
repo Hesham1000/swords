@@ -3,14 +3,14 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Package, Plus, X, Loader2 } from "lucide-react";
+import { Plus, Package, X } from "lucide-react";
 import ProductForm from "../../components/productform";
 import ProductsList from "../../components/products-list";
-import { getProducts, deleteProduct, Product } from "../../lib/api/product";
+import { getProducts, deleteProduct, Product, ProductsResponse } from "../../lib/api/product";
 import { useDashboard } from "../layout";
 
 function ProductsPageInner() {
-  const { user, isAdmin } = useDashboard();
+  const { isAdmin } = useDashboard();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
@@ -18,7 +18,7 @@ function ProductsPageInner() {
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [pagination, setPagination] = useState<any>(null);
+  const [pagination, setPagination] = useState<ProductsResponse["pagination"] | null>(null);
   const [refresh, setRefresh] = useState(false);
   const lastParamsRef = useRef("");
 
@@ -57,8 +57,8 @@ function ProductsPageInner() {
         });
         setProducts(response.data);
         setPagination(response.pagination);
-      } catch (err: any) {
-        setError(err.message || "Failed to load products");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load products");
       } finally {
         setLoading(false);
       }
@@ -72,8 +72,8 @@ function ProductsPageInner() {
       await deleteProduct(id);
       toast.success("Product deleted successfully");
       setRefresh(!refresh);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete product");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete product");
     }
   };
 
@@ -202,7 +202,7 @@ function ProductsPageInner() {
         isAdmin={isAdmin}
         currentPage={page}
         onPageChange={setPage}
-        pagination={pagination}
+        pagination={pagination ?? undefined}
       />
 
       {showForm && (

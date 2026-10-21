@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
+import type { UpdateFilter, Document } from "mongodb";
 import {
   decodePasswordSetupToken,
   generateToken,
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
     // Add session to user
     await userCollection.updateOne(
       { _id: ObjectId.createFromHexString(userId) },
-      { $push: { sessions: newSession as any } }
+      { $push: { sessions: newSession } } as unknown as UpdateFilter<Document>
     );
 
     const res = NextResponse.json(

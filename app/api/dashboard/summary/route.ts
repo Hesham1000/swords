@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getInvoicesCollection, getProductsCollection } from "../../../lib/mongoDB";
 import { transformProduct } from "../../../lib/api/utils";
+
+interface InvoiceItem {
+  productId: string;
+  category?: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
 import { requireAdmin } from "../../../lib/auth/requireAuth";
 
 export async function GET(request: NextRequest) {
@@ -68,7 +77,7 @@ export async function GET(request: NextRequest) {
 
     const categorySales: Record<string, number> = {};
     periodInvoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
+      ((inv.items || []) as InvoiceItem[]).forEach((item) => {
         const cat = productCategoryMap[item.productId] || item.category || "General";
         categorySales[cat] = (categorySales[cat] || 0) + (item.price * item.quantity);
       });
@@ -77,7 +86,7 @@ export async function GET(request: NextRequest) {
     // 6. TOP PRODUCTS
     const productSalesMap: Record<string, {name: string, revenue: number, quantity: number}> = {};
     periodInvoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
+      ((inv.items || []) as InvoiceItem[]).forEach((item) => {
         if (!productSalesMap[item.productId]) {
           productSalesMap[item.productId] = { name: item.name, revenue: 0, quantity: 0 };
         }

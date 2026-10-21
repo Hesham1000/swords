@@ -71,8 +71,8 @@ const dbConnection = async (): Promise<Connection> => {
     }
 
     return mongoose.connection;
-  } catch (err: any) {
-    console.error("❌ Database connection error:", err.message);
+  } catch (err) {
+    console.error("❌ Database connection error:", err instanceof Error ? err.message : String(err));
     console.error("📋 Full error details:", err);
 
     // Exit process on connection failure

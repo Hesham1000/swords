@@ -30,7 +30,6 @@ export class AuthError extends Error {
 // Generate Access + Refresh Tokens
 export async function generateToken(
   userId: string,
-  timezone: string = "UTC",
   expiresIn: number = 6 * 60 * 60 // 6 hours
 ): Promise<{ accessToken: string; refreshToken: string }> {
   const now = Math.floor(Date.now() / 1000);
@@ -158,8 +157,7 @@ export async function isTokenBlacklisted(token: string): Promise<boolean> {
 // Revoke token and clear cookies
 export async function revokeAndDeleteToken(
   token: string,
-  userId?: string,
-  refresh?: string
+  userId?: string
 ): Promise<void> {
   const { blacklist, users } = await getCollections();
 
@@ -175,7 +173,7 @@ export async function revokeAndDeleteToken(
   // Remove session
   if (userId) {
     await users.updateOne({ _id: new ObjectId(userId) }, {
-      $pull: { sessions: { token } },
-    } as any);
+      $pull: { sessions: { token } as any }, // eslint-disable-line @typescript-eslint/no-explicit-any -- mongodb PullOperator typing requires any
+    });
   }
 }
