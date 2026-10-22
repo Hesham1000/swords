@@ -12,7 +12,7 @@ const dbConnection = async (): Promise<Connection> => {
   console.log("🔄 Attempting database connection...");
 
   // Check if DB_URL environment variable is set
-  if (!process.env.MONGODB_URI) {
+  if (!process.env.DATABASE_URL) {
     console.error("❌ DB_URL environment variable is not defined");
     throw new Error("Please define the DB_URL environment variable");
   }
@@ -34,7 +34,7 @@ const dbConnection = async (): Promise<Connection> => {
     console.log("🔗 Connecting to MongoDB with Mongoose...");
 
     // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI as string, options);
+    await mongoose.connect(process.env.DATABASE_URL as string, options);
 
     console.log("✅ Successful database connection");
     console.log(`📊 Connected to database: ${mongoose.connection.name}`);

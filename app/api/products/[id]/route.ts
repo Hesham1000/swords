@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import { getProductsCollection } from "../../../lib/mongoDB";
+import { getConnection } from "../../../lib/mongoDB";
 import { transformProduct } from "../../../lib/api/utils";
 import { uploadImage, deleteImage, getPublicIdFromUrl, getRelativePathFromUrl } from "../../../lib/cloudinary";
+import { ApiError, handleApiError } from "../../../lib/errors/ApiError";
 
 // GET a single product
 export async function GET(
@@ -12,22 +13,22 @@ export async function GET(
     try {
         const { id } = await params;
         if (!ObjectId.isValid(id)) {
-            return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
+            throw new ApiError("Invalid product ID", 400);
         }
 
-        const productsCollection = await getProductsCollection();
+        const connection = await getConnection();
+        const productsCollection = connection.collection("products");
         const product = await productsCollection.findOne({ _id: new ObjectId(id) });
 
         if (!product) {
-            return NextResponse.json({ error: "Product not found" }, { status: 404 });
+            throw new ApiError("Product not found", 404);
         }
 
         const transformedProduct = transformProduct(product);
 
         return NextResponse.json({ success: true, data: transformedProduct }, { status: 200 });
     } catch (error) {
-        console.error("Error fetching product:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return handleApiError(error);
     }
 }
 
@@ -39,16 +40,17 @@ export async function PUT(
     try {
         const { id } = await params;
         if (!ObjectId.isValid(id)) {
-            return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
+            throw new ApiError("Invalid product ID", 400);
         }
 
         const formData = await request.formData();
-        const productsCollection = await getProductsCollection();
+        const connection = await getConnection();
+        const productsCollection = connection.collection("products");
 
         // Find existing product to handle image replacement if needed
         const existingProduct = await productsCollection.findOne({ _id: new ObjectId(id) });
         if (!existingProduct) {
-            return NextResponse.json({ error: "Product not found" }, { status: 404 });
+            throw new ApiError("Product not found", 404);
         }
 
         // Extract fields
@@ -85,7 +87,7 @@ export async function PUT(
                 imagePaths.push(getRelativePathFromUrl(result.url));
 
                 // Note: In a more advanced implementation, we would track which old images 
-                // were removed and delete them from Cloudinary here. 
+                // were removed and deleted from Cloudinary here. 
                 // For now, we focus on making the upload work.
             }
         }
@@ -159,8 +161,7 @@ export async function PUT(
         }, { status: 200 });
 
     } catch (error) {
-        console.error("Error updating product:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return handleApiError(error);
     }
 }
 
@@ -172,14 +173,15 @@ export async function DELETE(
     try {
         const { id } = await params;
         if (!ObjectId.isValid(id)) {
-            return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
+            throw new ApiError("Invalid product ID", 400);
         }
 
-        const productsCollection = await getProductsCollection();
-        const product = await productsCollection.findOne({ _id: new ObjectId(id) });
+        const connection = await getConnection();
+        const productsCollection = connection.collection("products");
 
+        const product = await productsCollection.findOne({ _id: new ObjectId(id) });
         if (!product) {
-            return NextResponse.json({ error: "Product not found" }, { status: 404 });
+            throw new ApiError("Product not found", 404);
         }
 
         // Delete associated images from Cloudinary
@@ -196,15 +198,10 @@ export async function DELETE(
             }
         }
 
-        const result = await productsCollection.deleteOne({ _id: new ObjectId(id) });
+        await productsCollection.deleteOne({ _id: new ObjectId(id) });
 
-        if (result.deletedCount === 0) {
-            return NextResponse.json({ error: "Could not delete product" }, { status: 500 });
-        }
-
-        return NextResponse.json({ success: true, message: "Product deleted successfully" }, { status: 200 });
+        return NextResponse.json({ success: true, message: "Product deleted" }, { status: 200 });
     } catch (error) {
-        console.error("Error deleting product:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return handleApiError(error);
     }
 }

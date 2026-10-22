@@ -153,24 +153,24 @@ export async function POST(request: NextRequest) {
     // Set secure HTTP-only cookies
     response.cookies.set("access_token", accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: true,
+      sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 6, // 6 hours for access token
     });
 
     response.cookies.set("refresh_token", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: true,
+      sameSite: "lax",
       path: "/",
       maxAge: 7 * 24 * 60 * 60, // 7 days
     });
 
     response.cookies.set("ROLES", JSON.stringify(user.roles || []), {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: true,
+      sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 6, // 6 hours
     });
@@ -178,8 +178,8 @@ export async function POST(request: NextRequest) {
     // Add a non-httpOnly cookie for the client UI to check login state
     response.cookies.set("logged_in", "true", {
       httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: true,
+      sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 6,
     });

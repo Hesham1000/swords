@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProductsCollection } from "../../lib/mongoDB";
+import { getConnection } from "../../lib/mongoDB";
 import { transformProduct } from "../../lib/api/utils";
+import { ApiError, handleApiError } from "../../lib/errors/ApiError";
 
 // GET endpoint to retrieve products with pagination and filtering
 export async function GET(request: NextRequest) {
@@ -34,7 +35,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const productsCollection = await getProductsCollection();
+    const connection = await getConnection();
+    const productsCollection = connection.collection("products");
     const dashboard = searchParams.get("dashboard") === "true";
 
     // Build query object
@@ -133,10 +135,95 @@ export async function GET(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error fetching products:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
-}
+}
+
+// POST endpoint to create a product
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+
+    const name = body?.name;
+    const description = body?.description;
+    const category = body?.category;
+    const productType = body?.productType;
+    const brand = body?.brand;
+    const model = body?.model;
+    const subCategory = body?.subCategory;
+    const images = body?.images;
+    const rawPrice = body?.price;
+    const rawStock = body?.quantity ?? body?.stock;
+
+    // Validation
+    if (typeof name !== "string" || name.trim().length === 0) {
+      throw new ApiError("Name is required", 400);
+    }
+
+    const price =
+      typeof rawPrice === "string" ? parseFloat(rawPrice) : rawPrice;
+    if (
+      typeof price !== "number" ||
+      !Number.isFinite(price) ||
+      price < 0
+    ) {
+      throw new ApiError("Price must be a non-negative number", 400);
+    }
+
+    const isCategoryValid =
+      (typeof category === "string" && category.trim().length > 0) ||
+      (Array.isArray(category) && category.length > 0);
+    if (!isCategoryValid) {
+      throw new ApiError("Category is required", 400);
+    }
+
+    const stock =
+      typeof rawStock === "string" ? parseInt(rawStock, 10) : rawStock;
+    if (
+      typeof stock !== "number" ||
+      !Number.isInteger(stock) ||
+      stock < 0
+    ) {
+      throw new ApiError("Quantity/stock must be a non-negative integer", 400);
+    }
+
+    if (
+      images !== undefined &&
+      (!Array.isArray(images) ||
+        images.some((img) => typeof img !== "string"))
+    ) {
+      throw new ApiError("Images must be an array of URL strings", 400);
+    }
+
+    const connection = await getConnection();
+    const productsCollection = connection.collection("products");
+
+    const now = new Date().toISOString();
+    const doc = {
+      name: name.trim(),
+      description,
+      price,
+      category,
+      productType,
+      brand,
+      model,
+      subCategory,
+      quantity: stock,
+      images: images ?? [],
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const result = await productsCollection.insertOne(doc);
+    const inserted = await productsCollection.findOne({
+      _id: result.insertedId,
+    });
+
+    return NextResponse.json(
+      { success: true, data: transformProduct(inserted) },
+      { status: 201 }
+    );
+  } catch (error) {
+    return handleApiError(error);
+  }
+}
