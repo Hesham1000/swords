@@ -1,6 +1,17 @@
 /* Import Premium Professional Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* KINGS Theme - Deep Blue & Gold Accents */
+:root {
+  --kings-deep-blue: #0a1f44;
+  --kings-royal-blue: #12306b;
+  --kings-gold: #d4af37;
+  --kings-gold-light: #f0d67c;
+  --kings-gold-rgb: 212, 143, 55;
+  --grad-kings: linear-gradient(135deg, var(--kings-deep-blue) 0%, var(--kings-royal-blue) 100%);
+  --grad-kings-gold: linear-gradient(135deg, var(--kings-gold) 0%, var(--kings-gold-light) 100%);
+}
+
 /* PBT Professional Design System - Obsidian & Amber Redesign */
 :root {
   /* LIGHT MODE (DEFAULT) - Premium Sports Fencing Aesthetic */
@@ -1940,6 +1951,31 @@
   box-shadow: 0 8px 25px rgba(var(--accent-blue-rgb), 0.4);
 }
 
+.secondary-btn {
+  padding: 0.875rem 1.75rem;
+  background: transparent;
+  color: var(--kings-gold);
+  border: 2px solid var(--kings-gold);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 800;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 13px;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none !important;
+}
+
+.secondary-btn:hover {
+  background: var(--kings-gold);
+  color: var(--kings-deep-blue);
+  transform: scale(1.05) skewX(var(--skew-angle));
+}
+
 /* Stats Grid - Command Center Look */
 .stats-grid {
   display: grid;
@@ -2192,6 +2228,11 @@
 }
 
 .status-badge.status-overdue {
+  background: rgba(255, 51, 75, 0.1);
+  color: #ff334b;
+}
+
+.status-badge.status-failed {
   background: rgba(255, 51, 75, 0.1);
   color: #ff334b;
 }
@@ -5363,3 +5404,9 @@
   }
 }
 
+
+body {
+  background-color: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}

@@ -109,7 +109,10 @@ export default function DashboardLayout({
       pathname === route || pathname.startsWith(`${route}/`)
     );
 
-    if (!isAdmin && isProtected) {
+    if (!user) {
+      console.log("Unauthenticated user, redirecting to home...");
+      router.replace("/");
+    } else if (!isAdmin && isProtected) {
       console.log("Unauthorized access to admin route, redirecting to products...");
       router.replace("/products");
     }

@@ -106,12 +106,20 @@ export default function LandingPage() {
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}
             >
               <Link href={isAuthenticated ? "/dashboard" : "/sign-in"} style={{ textDecoration: 'none' }}>
                 <button className="primary-btn" style={{ margin: "0 auto", padding: "1.5rem 3rem", fontSize: "1.1rem", textDecoration: 'none' }}>
-                  {isAuthenticated ? "PROCEED TO DASHBOARD" : "JOIN To Kings"}
+                  {isAuthenticated ? "PROCEED TO DASHBOARD" : "Sign In"}
                 </button>
               </Link>
+              {!isAuthenticated && (
+                <Link href="/set-password" style={{ textDecoration: 'none' }}>
+                  <button className="secondary-btn" style={{ margin: "0 auto", padding: "1.5rem 3rem", fontSize: "1.1rem", textDecoration: 'none' }}>
+                    Register
+                  </button>
+                </Link>
+              )}
             </motion.div>
           </motion.div>
         </div>
