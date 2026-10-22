@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Package, Plus, X, Loader2 } from "lucide-react";
 import ProductForm from "../../components/productform";
 import ProductsList from "../../components/products-list";
-import { getProducts, deleteProduct, Product } from "../../lib/api/product";
+import { getProducts, deleteProduct, Product, ProductsResponse } from "../../lib/api/product";
 import { useDashboard } from "../layout";
 
 export default function ProductsPage() {
@@ -15,7 +15,7 @@ export default function ProductsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState<any>(null);
+  const [pagination, setPagination] = useState<NonNullable<ProductsResponse["pagination"]> | null>(null);
   const [refresh, setRefresh] = useState(false);
   const lastParamsRef = useRef("");
 
@@ -40,9 +40,10 @@ export default function ProductsPage() {
           brand: filterBrand,
         });
         setProducts(response.data);
-        setPagination(response.pagination);
-      } catch (err: any) {
-        setError(err.message || "Failed to load products");
+        setPagination(response.pagination ?? null);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "An unexpected error occurred";
+        setError(message || "Failed to load products");
       } finally {
         setLoading(false);
       }
@@ -55,8 +56,9 @@ export default function ProductsPage() {
     try {
       await deleteProduct(id);
       setRefresh(!refresh);
-    } catch (err: any) {
-      alert(err.message || "Failed to delete product");
+    } catch (err) {
+        const message = err instanceof Error ? err.message : "An unexpected error occurred";
+      alert(message || "Failed to delete product");
     }
   };
 
@@ -185,7 +187,7 @@ export default function ProductsPage() {
         isAdmin={isAdmin}
         currentPage={page}
         onPageChange={setPage}
-        pagination={pagination}
+        pagination={pagination ?? undefined}
       />
 
       {showForm && (

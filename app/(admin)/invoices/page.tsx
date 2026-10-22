@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FileText, Plus, Search, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import InvoiceForm from "../../components/invoice-form";
-import { getInvoices, updateInvoiceStatus, Invoice } from "../../lib/api/invoice";
+import { getInvoices, updateInvoiceStatus, Invoice, InvoicesResponse } from "../../lib/api/invoice";
 import { useDashboard } from "../layout";
 
 export default function InvoicesPage() {
@@ -14,7 +14,7 @@ export default function InvoicesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState<any>(null);
+  const [pagination, setPagination] = useState<NonNullable<InvoicesResponse["pagination"]> | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [refresh, setRefresh] = useState(false);
   const lastParamsRef = useRef("");
@@ -29,9 +29,10 @@ export default function InvoicesPage() {
         setLoading(true);
         const response = await getInvoices(page, 10, searchQuery);
         setInvoices(response.data);
-        setPagination(response.pagination);
-      } catch (err: any) {
-        setError(err.message || "Failed to load invoices");
+        setPagination(response.pagination ?? null);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "An unexpected error occurred";
+        setError(message || "Failed to load invoices");
       } finally {
         setLoading(false);
       }
@@ -44,8 +45,9 @@ export default function InvoicesPage() {
     try {
       await updateInvoiceStatus(id, "paid");
       setRefresh(!refresh);
-    } catch (err: any) {
-      alert(err.message || "Failed to update status");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "An unexpected error occurred";
+      alert(message || "Failed to update status");
     }
   };
 

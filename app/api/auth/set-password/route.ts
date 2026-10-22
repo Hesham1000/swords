@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     // Add session to user
     await userCollection.updateOne(
       { _id: ObjectId.createFromHexString(userId) },
-      { $push: { sessions: newSession as any } }
+      { $push: { sessions: newSession } }
     );
 
     const res = NextResponse.json(
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
       path: "/",
     });
 
-    res.cookies.set("ROLES", user.roles, {
+    res.cookies.set("ROLES", JSON.stringify(user.roles ?? []), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",

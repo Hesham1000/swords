@@ -64,21 +64,21 @@ export async function GET(request: NextRequest) {
 
     const categorySales: Record<string, number> = {};
     periodInvoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
-        const cat = productCategoryMap[item.productId] || item.category || "General";
-        categorySales[cat] = (categorySales[cat] || 0) + (item.price * item.quantity);
+      (inv.items || []).forEach((item: { productId?: string; category?: string; name?: string; price?: number | null; quantity?: number }) => {
+        const cat = productCategoryMap[item.productId ?? ""] || item.category || "General";
+        categorySales[cat] = (categorySales[cat] || 0) + ((item.price ?? 0) * (item.quantity ?? 0));
       });
     });
 
     // 6. TOP PRODUCTS
     const productSalesMap: Record<string, {name: string, revenue: number, quantity: number}> = {};
     periodInvoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
-        if (!productSalesMap[item.productId]) {
-          productSalesMap[item.productId] = { name: item.name, revenue: 0, quantity: 0 };
+      (inv.items || []).forEach((item: { productId?: string; category?: string; name?: string; price?: number | null; quantity?: number }) => {
+        if (!productSalesMap[item.productId ?? ""]) {
+          productSalesMap[item.productId ?? ""] = { name: item.name ?? "", revenue: 0, quantity: 0 };
         }
-        productSalesMap[item.productId].revenue += (item.price * item.quantity);
-        productSalesMap[item.productId].quantity += item.quantity;
+        productSalesMap[item.productId ?? ""].revenue += ((item.price ?? 0) * (item.quantity ?? 0));
+        productSalesMap[item.productId ?? ""].quantity += item.quantity ?? 0;
       });
     });
 

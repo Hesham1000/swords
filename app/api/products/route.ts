@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Filter, Document } from "mongodb";
 import { getConnection } from "../../lib/mongoDB";
 import { transformProduct } from "../../lib/api/utils";
 import { ApiError, handleApiError } from "../../lib/errors/ApiError";
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
     const dashboard = searchParams.get("dashboard") === "true";
 
     // Build query object
-    const query: any = {};
+    const query: Filter<Document> = {};
     
     if (search) {
       query.$or = [

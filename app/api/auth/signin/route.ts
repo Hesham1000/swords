@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       }
 
       // 🔑 Verify password
-      const isValidPassword = await verifyPassword(password, user.password);
+      const isValidPassword = await verifyPassword(password, user.password ?? "");
       if (!isValidPassword) {
         // Track failed attempt
         if (!failedAttempts[lockoutKey]) {
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     await userCollection.updateOne(
       { _id: user._id },
       {
-        $push: { sessions: newSession as any },
+        $push: { sessions: newSession },
         $set: { lastLogin: now }, // Update last login time
       }
     );

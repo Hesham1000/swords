@@ -176,6 +176,6 @@ export async function revokeAndDeleteToken(
   if (userId) {
     await users.updateOne({ _id: new ObjectId(userId) }, {
       $pull: { sessions: { token } },
-    } as any);
+    });
   }
 }

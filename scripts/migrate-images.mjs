@@ -1,7 +1,7 @@
-const { MongoClient } = require("mongodb");
-const cloudinary = require("cloudinary").v2;
-const fs = require("fs");
-const path = require("path");
+import { MongoClient } from "mongodb";
+import { v2 as cloudinary } from "cloudinary";
+import fs from "fs";
+import path from "path";
 
 /**
  * MIGRATION SCRIPT: Local Filesystem to Cloudinary

@@ -71,8 +71,8 @@ const dbConnection = async (): Promise<Connection> => {
     }
 
     return mongoose.connection;
-  } catch (err: any) {
-    console.error("❌ Database connection error:", err.message);
+  } catch (err) {
+    console.error("❌ Database connection error:", err instanceof Error ? err.message : err);
     console.error("📋 Full error details:", err);
 
     // Exit process on connection failure
@@ -106,11 +106,34 @@ export const getConnection = async (): Promise<Connection> => {
   return await dbConnection();
 };
 
+export interface UserSessionDoc {
+  session_id: string;
+  token: string;
+  refresh: string;
+  last_action: Date;
+}
+
+export interface UserDoc {
+  _id?: import("mongodb").ObjectId;
+  username: string;
+  email: string;
+  firstName?: string;
+  password?: string;
+  isActive?: boolean;
+  roles?: string[];
+  sessions?: UserSessionDoc[];
+  dateJoined?: Date;
+  dateUpdated?: Date;
+  lastLogin?: Date;
+  lastEmailSent?: Date | string;
+  useDefaultGithub?: boolean;
+}
+
 export const getUserCollection = async () => {
   console.log("📁 Accessing users collection...");
   try {
     const connection = await getConnection();
-    const collection = connection.collection("users");
+    const collection = connection.collection<UserDoc>("users");
     console.log("✅ Users collection accessed successfully");
     return collection;
   } catch (error) {
@@ -167,7 +190,7 @@ export const getWalletCollection = async () => {
   console.log("📁 Accessing wallet collection...");
   try {
     const connection = await getConnection();
-    const collection = connection.collection("wallet");
+    const collection = connection.collection<{ _id: string; balanceEGP?: number; balanceUSD?: number; balanceEUR?: number; balance?: number; initialized?: boolean }>("wallet");
     console.log("✅ Wallet collection accessed successfully");
     return collection;
   } catch (error) {

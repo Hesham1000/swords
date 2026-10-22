@@ -8,20 +8,20 @@ type Currency = typeof CURRENCIES[number];
 export async function GET(request: NextRequest) {
   try {
     const walletCollection = await getWalletCollection();
-    let wallet = await walletCollection.findOne({ _id: "main" as any });
+    let wallet = await walletCollection.findOne({ _id: "main" });
 
     if (!wallet || !wallet.initialized) {
       // Calculate initial EGP balance from all cash deposits
       const invoicesCollection = await getInvoicesCollection();
       const cashInvoices = await invoicesCollection.find({ paymentMethod: "cash" }).toArray();
-      const initialEGP = cashInvoices.reduce((sum: number, inv: any) => sum + (inv.deposit || 0), 0);
+      const initialEGP = cashInvoices.reduce((sum: number, inv) => sum + ((inv.deposit as number | undefined) || 0), 0);
 
       await walletCollection.updateOne(
-        { _id: "main" as any },
+        { _id: "main" },
         { $set: { balanceEGP: initialEGP, balanceUSD: 0, balanceEUR: 0, initialized: true } },
         { upsert: true }
       );
-      wallet = { _id: "main" as any, balanceEGP: initialEGP, balanceUSD: 0, balanceEUR: 0, initialized: true };
+      wallet = { _id: "main", balanceEGP: initialEGP, balanceUSD: 0, balanceEUR: 0, initialized: true };
     }
 
     if (!wallet) {
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     if (wallet.balance !== undefined && wallet.balanceEGP === undefined) {
       const oldBalance = wallet.balance || 0;
       await walletCollection.updateOne(
-        { _id: "main" as any },
+        { _id: "main" },
         { $set: { balanceEGP: oldBalance, balanceUSD: 0, balanceEUR: 0 }, $unset: { balance: "" } }
       );
       wallet = { _id: wallet._id, balanceEGP: oldBalance, balanceUSD: 0, balanceEUR: 0, initialized: wallet.initialized };
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     // Update wallet balance for the specific currency
     await walletCollection.updateOne(
-      { _id: "main" as any },
+      { _id: "main" },
       { $inc: { [balanceField]: delta } },
       { upsert: true }
     );
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     await transactionsCollection.insertOne(transaction);
 
     // Get updated balances
-    const wallet = await walletCollection.findOne({ _id: "main" as any });
+    const wallet = await walletCollection.findOne({ _id: "main" });
 
     return NextResponse.json({
       message: `${type === "deposit" ? "Deposit" : "Withdrawal"} successful`,

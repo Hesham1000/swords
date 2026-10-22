@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     // Deduct from wallet (EGP)
     await walletCollection.updateOne(
-      { _id: "main" as any },
+      { _id: "main" },
       { $inc: { balanceEGP: -parseFloat(cost) } },
       { upsert: true }
     );
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     await transactionsCollection.insertOne(transaction);
 
     // Get updated balance
-    const wallet = await walletCollection.findOne({ _id: "main" as any });
+    const wallet = await walletCollection.findOne({ _id: "main" });
 
     return NextResponse.json({
       message: "Shipment created successfully",

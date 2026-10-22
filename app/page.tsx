@@ -38,7 +38,9 @@ export default function LandingPage() {
   useEffect(() => {
     const cookies = document.cookie.split(";");
     const hasToken = cookies.some((c) => c.trim().startsWith("logged_in="));
-    setIsAuthenticated(hasToken);
+    // Defer the state update so it is not called synchronously in the effect body
+    const id = window.setTimeout(() => setIsAuthenticated(hasToken), 0);
+    return () => window.clearTimeout(id);
   }, []);
 
   const features = [

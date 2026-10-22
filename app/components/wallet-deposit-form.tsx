@@ -34,8 +34,9 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
       await walletTransaction(numAmount, mode, currency, note || undefined);
       if (onSuccess) onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "An unexpected error occurred";
+      setError(message || "An error occurred");
     } finally {
       setLoading(false);
     }
