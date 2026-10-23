@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Wallet, Plus, ArrowUpCircle, ArrowDownCircle, Truck, Loader2 } from "lucide-react";
+import { Wallet, Plus, ArrowUpCircle, ArrowDownCircle, Truck } from "lucide-react";
 import WalletDepositForm from "../../components/wallet-deposit-form";
 import ShipmentForm from "../../components/shipment-form";
 import { getWalletBalance, getWalletTransactions, WalletTransaction } from "../../lib/api/wallet";
@@ -101,7 +101,20 @@ export default function WalletPage() {
         </div>
         <div className="transaction-list">
           {loading ? (
-            <div className="loading-state"><Loader2 className="animate-spin" /></div>
+            <div className="flex flex-col gap-3 py-2" role="status" aria-label="Loading transactions">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between gap-4 animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-md bg-slate-700/50" />
+                    <div className="flex flex-col gap-2">
+                      <div className="h-3 w-1/3 rounded bg-slate-700/50" />
+                      <div className="h-2 w-1/4 rounded bg-slate-700/50" />
+                    </div>
+                  </div>
+                  <div className="h-3 w-16 rounded bg-slate-700/50" />
+                </div>
+              ))}
+            </div>
           ) : transactions.length === 0 ? (
             <div className="empty-state">No transactions recorded.</div>
           ) : (

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
-import { Menu, X, Loader2 } from "lucide-react";
+import { Menu, X, Loader2, ChevronDown, User as UserIcon, LogOut } from "lucide-react";
 import Sidebar from "../components/sidebar";
 import { getCurrentUser, User } from "../lib/api/auth";
 import { getDashboardSummary, DashboardSummaryData } from "../lib/api/dashboard";
@@ -40,6 +40,46 @@ export default function DashboardLayout({
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const fetchedRef = useRef(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
+
+  // Close user dropdown on outside click or Escape
+  useEffect(() => {
+    if (!userMenuOpen) return;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setUserMenuOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [userMenuOpen]);
+
+  const handleTopbarLogout = async () => {
+    setUserMenuOpen(false);
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      router.push("/");
+    }
+  };
 
   // Check for mobile on mount and window resize
   useEffect(() => {
@@ -183,7 +223,64 @@ export default function DashboardLayout({
             {pathname.includes("/wallet") && "Wallet Management"}
             {pathname.includes("/history") && "Inventory History"}
           </h2>
-          <div></div>
+          <div className="topbar-user" ref={userMenuRef}>
+            <button
+              className="topbar-user-btn"
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              aria-haspopup="menu"
+              aria-expanded={userMenuOpen}
+            >
+              <span className="topbar-user-avatar">
+                {user?.username?.[0]?.toUpperCase() || "U"}
+              </span>
+              <span className="topbar-user-name">
+                {user?.username || "Guest"}
+              </span>
+              <ChevronDown
+                size={16}
+                style={{
+                  transform: userMenuOpen ? "rotate(180deg)" : "none",
+                  transition: "transform 0.2s",
+                }}
+              />
+            </button>
+
+            {userMenuOpen && (
+              <motion.div
+                className="topbar-dropdown"
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.15 }}
+                role="menu"
+              >
+                <div className="dropdown-header">
+                  <div className="dropdown-user-name">
+                    {user?.username || "Guest"}
+                  </div>
+                  <div className="dropdown-user-role">
+                    {!!user?.roles?.includes("admin") ? "Administrator" : "User"}
+                  </div>
+                </div>
+                <a
+                  className="dropdown-item"
+                  href="/dashboard"
+                  role="menuitem"
+                  onClick={() => setUserMenuOpen(false)}
+                >
+                  <UserIcon size={16} />
+                  <span>Profile</span>
+                </a>
+                <button
+                  className="dropdown-item dropdown-item-danger"
+                  role="menuitem"
+                  onClick={handleTopbarLogout}
+                >
+                  <LogOut size={16} />
+                  <span>Logout</span>
+                </button>
+              </motion.div>
+            )}
+          </div>
         </div>
 
         <div className="content-wrapper">
@@ -271,6 +368,117 @@ export default function DashboardLayout({
           max-width: 1600px;
           width: 100%;
           margin: 0 auto;
+        }
+        .topbar-user {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+        .topbar-user-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.625rem;
+          background: var(--glass-bg);
+          border: 1px solid var(--border-tech);
+          border-radius: 10px;
+          padding: 0.375rem 0.75rem 0.375rem 0.375rem;
+          color: var(--text-primary);
+          cursor: pointer;
+          font-family: inherit;
+          font-size: 0.875rem;
+          font-weight: 600;
+          transition: all 0.2s;
+          max-width: 100%;
+        }
+        .topbar-user-btn:hover {
+          background: rgba(var(--accent-blue-rgb), 0.08);
+          border-color: rgba(var(--accent-blue-rgb), 0.2);
+        }
+        .topbar-user-avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--grad-amber, var(--accent-blue));
+          color: #fff;
+          font-weight: 800;
+          font-size: 0.875rem;
+          flex-shrink: 0;
+        }
+        .topbar-user-name {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 140px;
+        }
+        .topbar-dropdown {
+          position: absolute;
+          top: calc(100% + 0.5rem);
+          right: 0;
+          min-width: 200px;
+          background: var(--bg-card);
+          border: 1px solid var(--border-tech);
+          border-radius: 12px;
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+          padding: 0.5rem;
+          z-index: 50;
+          overflow: hidden;
+        }
+        .dropdown-header {
+          padding: 0.625rem 0.75rem;
+          border-bottom: 1px solid var(--border-tech);
+          margin-bottom: 0.375rem;
+        }
+        .dropdown-user-name {
+          font-weight: 700;
+          font-size: 0.9rem;
+          color: var(--text-primary);
+        }
+        .dropdown-user-role {
+          font-size: 0.75rem;
+          color: var(--accent-blue);
+          font-weight: 600;
+          letter-spacing: 0.02em;
+        }
+        .dropdown-item {
+          display: flex;
+          align-items: center;
+          gap: 0.625rem;
+          width: 100%;
+          padding: 0.625rem 0.75rem;
+          border: none;
+          border-radius: 8px;
+          background: none;
+          color: var(--text-primary);
+          font-family: inherit;
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+          text-decoration: none;
+          transition: all 0.15s;
+          text-align: left;
+        }
+        .dropdown-item:hover {
+          background: rgba(var(--accent-blue-rgb), 0.08);
+          color: var(--accent-blue);
+        }
+        .dropdown-item-danger:hover {
+          background: rgba(220, 38, 38, 0.12);
+          color: #ef4444;
+        }
+        @media (max-width: 640px) {
+          .topbar {
+            padding: 0 1rem;
+          }
+          .topbar-user-name {
+            display: none;
+          }
+          .topbar-dropdown {
+            right: -0.5rem;
+            min-width: 180px;
+          }
         }
         .sidebar-overlay {
           display: none;

@@ -8,10 +8,22 @@ import {
   ShoppingCart, 
   Package, 
   Users, 
-  Loader2, 
   AlertCircle, 
   CheckCircle 
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer
+} from "recharts";
 import { DashboardSummaryData } from "../../lib/api/dashboard";
 import { updateInvoiceStatus } from "../../lib/api/invoice";
 import { useRouter } from "next/navigation";
@@ -24,9 +36,49 @@ export default function DashboardOverview() {
 
   if (!dashboardData && !error) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 gap-4">
-        <Loader2 className="animate-spin text-blue-500" size={40} />
-        <p className="text-slate-400 font-medium">Gathering command data...</p>
+      <div className="dashboard-skeleton">
+        <div className="stats-grid">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="stat-card animate-pulse">
+              <div className="flex items-start justify-between">
+                <div className="h-10 w-10 rounded-lg bg-slate-700/50" />
+                <div className="h-5 w-14 rounded-full bg-slate-700/50" />
+              </div>
+              <div className="mt-4 h-3 w-24 rounded bg-slate-700/50" />
+              <div className="mt-2 h-7 w-32 rounded bg-slate-700/50" />
+            </div>
+          ))}
+        </div>
+        <div className="dashboard-grid">
+          <div className="chart-card wide-chart animate-pulse">
+            <div className="h-4 w-40 rounded bg-slate-700/50" />
+            <div className="mt-6 h-48 w-full rounded-lg bg-slate-700/50" />
+          </div>
+          <div className="list-card donut-card animate-pulse">
+            <div className="h-4 w-36 rounded bg-slate-700/50" />
+            <div className="mx-auto mt-6 h-40 w-40 rounded-full bg-slate-700/50" />
+          </div>
+          <div className="list-card animate-pulse">
+            <div className="h-4 w-32 rounded bg-slate-700/50" />
+            <div className="mt-6 flex flex-col gap-3">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="h-10 w-full rounded bg-slate-700/50" />
+              ))}
+            </div>
+          </div>
+          <div className="list-card animate-pulse">
+            <div className="h-4 w-32 rounded bg-slate-700/50" />
+            <div className="mt-6 flex flex-col gap-3">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="h-10 w-full rounded bg-slate-700/50" />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="chart-card animate-pulse">
+          <div className="h-4 w-44 rounded bg-slate-700/50" />
+          <div className="mt-6 h-56 w-full rounded-lg bg-slate-700/50" />
+        </div>
       </div>
     );
   }
@@ -235,6 +287,82 @@ export default function DashboardOverview() {
             );
           })}
         </div>
+      </div>
+
+      {/* Inventory by Category Bar Chart */}
+      <div className="chart-card">
+        <div className="card-header"><h2 className="card-title">Inventory by Category</h2></div>
+        <div className="bar-chart-container" style={{ width: "100%", height: 300 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={analytics.categories} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" vertical={false} />
+              <XAxis dataKey="name" tick={{ fill: "var(--text-secondary)", fontSize: 12 }} axisLine={{ stroke: "rgba(148, 163, 184, 0.2)" }} tickLine={false} />
+              <YAxis tick={{ fill: "var(--text-secondary)", fontSize: 12 }} axisLine={false} tickLine={false} allowDecimals={false} />
+              <Tooltip
+                cursor={{ fill: "rgba(148, 163, 184, 0.08)" }}
+                contentStyle={{
+                  background: "var(--bg-deep, #0f172a)",
+                  border: "1px solid rgba(148, 163, 184, 0.2)",
+                  borderRadius: "8px",
+                  color: "var(--text-primary, #e2e8f0)"
+                }}
+                labelStyle={{ color: "var(--text-primary, #e2e8f0)", fontWeight: 600 }}
+              />
+              <Bar dataKey="value" name="Quantity" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={48} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Invoice Status Distribution Pie Chart */}
+      <div className="chart-card">
+        <div className="card-header"><h2 className="card-title">Invoice Status Distribution</h2></div>
+        {recentInvoices.length === 0 ? (
+          <p className="text-slate-400 text-sm text-center py-8">No invoices yet to display status distribution.</p>
+        ) : (
+          <div className="pie-chart-container" style={{ width: "100%", height: 300 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={(["pending", "paid", "overdue"] as const)
+                    .map((status) => ({
+                      name: status,
+                      value: recentInvoices.filter((inv) => inv.status === status).length
+                    }))
+                    .filter((entry) => entry.value > 0)}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={70}
+                  outerRadius={100}
+                  paddingAngle={3}
+                  stroke="none"
+                >
+                  {(["pending", "paid", "overdue"] as const).map((status) => (
+                    <Cell
+                      key={status}
+                      fill={status === "pending" ? "#fbbf24" : status === "paid" ? "#10b981" : "#f87171"}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--bg-deep, #0f172a)",
+                    border: "1px solid rgba(148, 163, 184, 0.2)",
+                    borderRadius: "8px",
+                    color: "var(--text-primary, #e2e8f0)"
+                  }}
+                />
+                <Legend
+                  verticalAlign="bottom"
+                  iconType="circle"
+                  formatter={(value) => <span style={{ color: "var(--text-secondary, #94a3b8)", fontSize: 13 }}>{String(value).charAt(0).toUpperCase() + String(value).slice(1)}</span>}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
     </>
   );

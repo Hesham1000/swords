@@ -115,6 +115,21 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
                 CANCEL
               </button>
               <button type="submit" className={`btn-primary ${!isDeposit ? "btn-withdraw" : ""}`} disabled={loading}>
+                {loading && (
+                  <span
+                    className="wallet-spinner"
+                    style={{
+                      display: "inline-block",
+                      width: "14px",
+                      height: "14px",
+                      border: "2px solid currentColor",
+                      borderTopColor: "transparent",
+                      borderRadius: "50%",
+                      marginRight: "8px",
+                      animation: "spin 0.8s linear infinite",
+                    }}
+                  />
+                )}
                 {loading
                   ? isDeposit ? "DEPOSITING..." : "WITHDRAWING..."
                   : isDeposit ? `DEPOSIT ${currency}` : `WITHDRAW ${currency}`
@@ -143,6 +158,11 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
             border-radius: 8px;
             font-size: 13px;
             text-align: center;
+          }
+          @keyframes spin {
+            to {
+              transform: rotate(360deg);
+            }
           }
           .form-section {
             display: flex;
