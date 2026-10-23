@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
-import { Upload, Plus, X, Package, Shield, Settings, DollarSign, Image as ImageIcon } from "lucide-react";
+import { Upload, X, Package, Shield, Settings, DollarSign, Image as ImageIcon } from "lucide-react";
 import { createProduct, updateProduct, Product } from "../lib/api/product";
 
 type Brand = "pbt" | "dynamo" | "stm" | "uhlmann" | "allstar" | "folo" | "chinese";
@@ -74,12 +74,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
     brand: (initialData?.brand as Brand) || "",
     model: initialData?.model || "",
     subCategory: initialData?.subCategory || "",
-    hand: (initialData?.hand as any) || "",
+    hand: (initialData?.hand as "" | "Right" | "Left") || "",
     isKings: initialData?.isKings ?? true,
     isMini: initialData?.isMini || false,
     lameColor: initialData?.lameColor || "silver",
     material: initialData?.material || "Metal",
-    gloveSize: (initialData as any)?.gloveSize || "",
+    gloveSize: initialData?.gloveSize || "",
     quantity: initialData?.quantity?.toString() || "1",
     images: [],
   });
@@ -105,12 +105,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
       setFormData((prev) => {
         const currentCategories = [...prev.category];
         if (checked) {
-          if (!currentCategories.includes(value as any)) {
-            currentCategories.push(value as any);
+          if (!currentCategories.includes(value as "Foil" | "Sabre" | "Epée")) {
+            currentCategories.push(value as "Foil" | "Sabre" | "Epée");
           }
         } else {
           if (currentCategories.length > 1) {
-            const index = currentCategories.indexOf(value as any);
+            const index = currentCategories.indexOf(value as "Foil" | "Sabre" | "Epée");
             if (index > -1) currentCategories.splice(index, 1);
           }
         }
@@ -135,7 +135,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   };
 
   const handleProductTypeChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const productType = e.target.value as any;
+    const productType = e.target.value as Product["productType"];
     const isSimplifiedType = ["wire", "grip", "guard", "guard_padding", "french_pommel", "nut", "point", "screws", "point_contact_springs", "socket", "insulating_tube", "body_wire", "cable", "pin"].includes(productType);
     
     setFormData((prev) => ({
@@ -241,8 +241,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
       }
       if (onSuccess) onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }

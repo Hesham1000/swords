@@ -27,23 +27,23 @@ const ProductRow: React.FC<ProductRowProps> = ({
     onDelete?.(product.id);
   };
 
-  const nextImage = (e: React.MouseEvent) => {
+  const nextImage = (e: { stopPropagation: () => void }) => {
     e.stopPropagation();
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
   };
 
-  const prevImage = (e: React.MouseEvent) => {
+  const prevImage = (e: { stopPropagation: () => void }) => {
     e.stopPropagation();
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  const handleDragEnd = (_: any, info: any) => {
+  const handleDragEnd = (_: unknown, info: { offset: { x: number } }) => {
     if (!hasMultipleImages) return;
     const swipeThreshold = 50;
     if (info.offset.x < -swipeThreshold) {
-      nextImage({ stopPropagation: () => {} } as any);
+      nextImage({ stopPropagation: () => {} });
     } else if (info.offset.x > swipeThreshold) {
-      prevImage({ stopPropagation: () => {} } as any);
+      prevImage({ stopPropagation: () => {} });
     }
   };
 

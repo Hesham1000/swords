@@ -6,10 +6,13 @@ export const API_URL = "";
  * - Renames _id to id
  * - Prepends the API URL to image paths if they are relative
  */
-export function transformProduct(product: any) {
+export function transformProduct(product: {
+    id?: string;
+    images?: string[] | null;
+    [key: string]: unknown;
+} | null) {
     if (!product) return null;
 
-    const apiUrl = "";
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
 
     const transformed = {
@@ -34,7 +37,7 @@ export function transformProduct(product: any) {
     };
 
     // Remove the raw MongoDB _id to avoid confusion on the frontend
-    delete transformed._id;
+    delete (transformed as Record<string, unknown>)._id;
 
     return transformed;
 }

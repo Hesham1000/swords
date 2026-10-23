@@ -11,7 +11,7 @@ type Currency = typeof CURRENCIES[number];
 // GET: Return wallet balances for all currencies
 export async function GET(request: NextRequest) {
   try {
-    let rows = await db.select().from(wallet).where(eq(wallet.id, MAIN_WALLET_ID)).limit(1);
+    const rows = await db.select().from(wallet).where(eq(wallet.id, MAIN_WALLET_ID)).limit(1);
     let walletRow = rows[0];
 
     if (!walletRow || !walletRow.initialized) {

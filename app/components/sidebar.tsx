@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
+import type { User } from "../lib/api/auth";
 import {
   LayoutDashboard,
   Package,
@@ -11,7 +12,6 @@ import {
   Moon,
   Wallet,
   TrendingUp,
-  PieChart,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -20,7 +20,7 @@ interface SidebarProps {
   onNavigation: (page: string) => void;
   sidebarOpen: boolean;
   onLogoutSuccess?: () => void; // Optional callback after successful logout
-  user?: any; // Added user prop
+  user?: User | null; // Added user prop
 }
 
 const Sidebar = ({

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Wallet, Plus, ArrowUpCircle, ArrowDownCircle, Truck, Loader2, Search } from "lucide-react";
+import { Wallet, Plus, ArrowUpCircle, ArrowDownCircle, Truck, Search } from "lucide-react";
 import WalletDepositForm from "../../components/wallet-deposit-form";
 import ShipmentForm from "../../components/shipment-form";
 import { getWalletBalance, getWalletTransactions, WalletTransaction } from "../../lib/api/wallet";
@@ -51,8 +51,8 @@ export default function WalletPage() {
         if (transactionsRes.pagination) {
           setPagination(transactionsRes.pagination);
         }
-      } catch (err: any) {
-        setError(err.message || "Failed to load wallet data");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Failed to load wallet data");
       } finally {
         setLoading(false);
       }
@@ -125,7 +125,7 @@ export default function WalletPage() {
           <select
             className="filter-select"
             value={typeFilter}
-            onChange={(e) => { setTypeFilter(e.target.value as any); setPage(1); }}
+            onChange={(e) => { setTypeFilter(e.target.value as "all" | "deposit" | "purchase" | "refund"); setPage(1); }}
             aria-label="Filter by type"
           >
             <option value="all">All Types</option>

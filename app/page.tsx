@@ -36,9 +36,12 @@ export default function LandingPage() {
   const { scrollYProgress } = useScroll();
 
   useEffect(() => {
-    const cookies = document.cookie.split(";");
-    const hasToken = cookies.some((c) => c.trim().startsWith("logged_in="));
-    setIsAuthenticated(hasToken);
+    // Defer to a microtask so we don't call setState synchronously in the effect body
+    queueMicrotask(() => {
+      const cookies = document.cookie.split(";");
+      const hasToken = cookies.some((c) => c.trim().startsWith("logged_in="));
+      setIsAuthenticated(hasToken);
+    });
   }, []);
 
   const features = [
