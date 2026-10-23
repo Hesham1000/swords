@@ -32,6 +32,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
   const [loading, setLoading] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [fieldErrors, setFieldErrors] = useState<{ customer?: string; amount?: string; items?: string }>({});
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -156,10 +157,24 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setError("");
+
+    const errors: { customer?: string; amount?: string; items?: string } = {};
+    if (!formData.customer.trim()) {
+      errors.customer = "Customer name is required.";
+    }
+    const total = calculateTotal();
+    if (isNaN(total) || total <= 0) {
+      errors.amount = "Invoice amount must be greater than 0.";
+    }
     if (items.length === 0) {
-      setError("Please add at least one product.");
+      errors.items = "Please add at least one product.";
+    }
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
       return;
     }
+
     setLoading(true);
     setError("");
 
@@ -180,8 +195,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
       
       if (onSuccess) onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+    } catch (err) {
+      setError((err as Error).message || "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -197,6 +212,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
         <div className="invoice-form-container">
           <form onSubmit={handleSubmit} className="invoice-form">
             {error && <div className="error-message">{error}</div>}
+            {fieldErrors.items && <p className="text-red-500 text-sm">{fieldErrors.items}</p>}
 
         <div className="form-section">
           <div className="section-header">
@@ -216,6 +232,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
                 disabled={loading}
               />
             </div>
+            {fieldErrors.customer && <p className="text-red-500 text-sm">{fieldErrors.customer}</p>}
           </div>
         </div>
 
@@ -389,6 +406,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
             <span className="total-label">Total Amount:</span>
             <span className="total-value">{calculateTotal().toLocaleString()} EGP</span>
           </div>
+          {fieldErrors.amount && <p className="text-red-500 text-sm">{fieldErrors.amount}</p>}
         </div>
 
         <div className="form-section">

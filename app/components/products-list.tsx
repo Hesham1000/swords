@@ -35,9 +35,25 @@ const ProductsList: React.FC<ProductsListProps> = ({
 }) => {
   if (loading) {
     return (
-      <div className="products-loading">
-        <div className="spinner"></div>
-        <p>Loading products...</p>
+      <div
+        className="products-loading grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+        role="status"
+        aria-label="Loading products"
+      >
+        {Array.from({ length: 8 }, (_, i) => (
+          <div
+            key={i}
+            className="animate-pulse rounded-lg overflow-hidden bg-slate-800/50 border border-slate-700/50"
+            aria-hidden="true"
+          >
+            <div className="h-32 bg-slate-700/50 rounded-t" />
+            <div className="p-4 space-y-2">
+              <div className="h-3 bg-slate-700/50 rounded w-3/4" />
+              <div className="h-2 bg-slate-700/50 rounded w-1/2" />
+              <div className="h-2 bg-slate-700/50 rounded w-2/3" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -57,7 +73,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
       <div className="no-products">
         <Package size={64} />
         <h3>No products found</h3>
-        <p>Try adjusting your search or filters to find what you're looking for.</p>
+        <p>Try adjusting your search or filters to find what you&apos;re looking for.</p>
       </div>
     );
   }

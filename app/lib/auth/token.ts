@@ -1,9 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
-import { ObjectId } from "mongodb";
-import {
-  getUserCollection,
-  getBlacklistCollection,
-} from "../mongoDB";
+import { db } from "../db";
+import { tokenBlacklist, users } from "../schema";
+import { eq } from "drizzle-orm";
 import { verifyAccessTokenEdge as verifyAccessToken } from "./edge";
 
 // export { verifyAccessToken }; // If needed by other non-edge files
@@ -142,17 +140,13 @@ export async function decodePasswordSetupToken(
 
 
 
-// Lazy DB initialization (no top-level await)
-async function getCollections() {
-  const blacklist = await getBlacklistCollection();
-  const users = await getUserCollection();
-  return { blacklist, users };
-}
-
 // Blacklist check
 export async function isTokenBlacklisted(token: string): Promise<boolean> {
-  const { blacklist } = await getCollections();
-  return !!(await blacklist.findOne({ token }));
+  const rows = await db
+    .select()
+    .from(tokenBlacklist)
+    .where(eq(tokenBlacklist.token, token));
+  return rows.length > 0;
 }
 
 // Revoke token and clear cookies
@@ -161,21 +155,28 @@ export async function revokeAndDeleteToken(
   userId?: string,
   refresh?: string
 ): Promise<void> {
-  const { blacklist, users } = await getCollections();
-
   // Blacklist token
   if (!(await isTokenBlacklisted(token))) {
-    await blacklist.insertOne({
+    await db.insert(tokenBlacklist).values({
       token,
-      revoked_at: new Date(),
-      ...(userId ? { user_id: new ObjectId(userId) } : {}),
+      ...(userId ? { userId } : {}),
     });
   }
 
-  // Remove session
+  // Remove session (jsonb array read-modify-write)
   if (userId) {
-    await users.updateOne({ _id: new ObjectId(userId) }, {
-      $pull: { sessions: { token } },
-    } as any);
+    const rows = await db.select().from(users).where(eq(users.id, userId));
+    const user = rows[0];
+    if (user) {
+      const currentSessions = Array.isArray(user.sessions)
+        ? (user.sessions as { token?: string }[])
+        : [];
+      await db
+        .update(users)
+        .set({
+          sessions: currentSessions.filter((s) => s.token !== token) as never,
+        })
+        .where(eq(users.id, userId));
+    }
   }
 }

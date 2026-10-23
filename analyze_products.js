@@ -1,4 +1,4 @@
-const { MongoClient } = require('mongodb');
+import { MongoClient } from 'mongodb';
 
 async function main() {
   const uri = "mongodb+srv://Misho:xnWAC4rY2XoiERkw@musica.b2yy0uu.mongodb.net/Musica?retryWrites=true&w=majority";

@@ -33,8 +33,8 @@ export default function HistoryPage() {
         if (response.pagination) {
           setPagination(response.pagination);
         }
-      } catch (err: any) {
-        setError(err.message || "Failed to load history");
+      } catch (err) {
+        setError((err as Error).message || "Failed to load history");
       } finally {
         setLoading(false);
       }

@@ -6,7 +6,14 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
  * - Renames _id to id
  * - Prepends the API URL to image paths if they are relative
  */
-export function transformProduct(product: any) {
+interface ProductDoc {
+    id?: string | number;
+    _id?: string | number;
+    images?: string[] | null;
+    [key: string]: unknown;
+}
+
+export function transformProduct(product: ProductDoc | null | undefined) {
     if (!product) return null;
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
@@ -14,7 +21,7 @@ export function transformProduct(product: any) {
 
     const transformed = {
         ...product,
-        id: product._id.toString(),
+        id: String(product.id ?? product._id),
         images: (product.images || []).map((img: string) => {
             if (img.startsWith("http")) {
                 return img;

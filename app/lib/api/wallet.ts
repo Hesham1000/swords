@@ -1,5 +1,5 @@
 // lib/api/wallet.ts
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const apiUrl = "";
 
 export type Currency = "EGP" | "USD" | "EUR";
 

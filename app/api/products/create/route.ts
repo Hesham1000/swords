@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProductsCollection } from "../../../lib/mongoDB";
+import { db } from "../../../lib/db";
+import { products } from "../../../lib/schema";
 import { transformProduct } from "../../../lib/api/utils";
 import { uploadImage, getRelativePathFromUrl } from "../../../lib/cloudinary";
 
@@ -21,14 +22,11 @@ interface ProductData {
   gloveSize?: string;
   quantity: number;
   images: string[];
-  createdAt: string;
-  updatedAt: string;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const productsCollection = await getProductsCollection();
 
     // Extract basic fields
     const name = (formData.get("name") as string)?.trim();
@@ -71,12 +69,10 @@ export async function POST(request: NextRequest) {
       name,
       description: description || "",
       price: price ? parseFloat(price) : null,
-      category: category as any,
+      category: category as ("Foil" | "Sabre" | "Epée")[],
       productType: productType,
       quantity: parseInt(quantity),
       images: imagePaths,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     };
 
     // Add type-specific fields conditionally — only include what's relevant
@@ -127,14 +123,17 @@ export async function POST(request: NextRequest) {
       if (model) productData.model = model;
     }
 
-    const result = await productsCollection.insertOne(productData);
-    const insertedProduct = transformProduct({ ...productData, _id: result.insertedId });
+    const insertedRows = await db.insert(products).values({
+      ...productData,
+      price: productData.price != null ? String(productData.price) : null,
+    }).returning();
+    const insertedProduct = transformProduct(insertedRows[0]);
 
     // Log the initial stock arrival
     try {
       const { logInventoryChange } = await import("../../../lib/inventory-server");
       await logInventoryChange({
-        productId: result.insertedId.toString(),
+        productId: insertedRows[0].id,
         productName: productData.name,
         changeAmount: productData.quantity,
         newQuantity: productData.quantity,

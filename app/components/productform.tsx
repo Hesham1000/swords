@@ -74,18 +74,20 @@ const ProductForm: React.FC<ProductFormProps> = ({
     brand: (initialData?.brand as Brand) || "",
     model: initialData?.model || "",
     subCategory: initialData?.subCategory || "",
-    hand: (initialData?.hand as any) || "",
+    hand: (initialData?.hand as "Right" | "Left" | "") || "",
     isKings: initialData?.isKings ?? true,
     isMini: initialData?.isMini || false,
     lameColor: initialData?.lameColor || "silver",
     material: initialData?.material || "Metal",
-    gloveSize: (initialData as any)?.gloveSize || "",
+    gloveSize: (initialData as { gloveSize?: string } | undefined)?.gloveSize || "",
     quantity: initialData?.quantity?.toString() || "1",
     images: [],
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; price?: string; quantity?: string }>({});
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>(initialData?.images || []);
 
@@ -105,12 +107,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
       setFormData((prev) => {
         const currentCategories = [...prev.category];
         if (checked) {
-          if (!currentCategories.includes(value as any)) {
-            currentCategories.push(value as any);
+          if (!currentCategories.includes(value as "Foil" | "Sabre" | "Epée")) {
+            currentCategories.push(value as "Foil" | "Sabre" | "Epée");
           }
         } else {
           if (currentCategories.length > 1) {
-            const index = currentCategories.indexOf(value as any);
+            const index = currentCategories.indexOf(value as "Foil" | "Sabre" | "Epée");
             if (index > -1) currentCategories.splice(index, 1);
           }
         }
@@ -135,7 +137,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   };
 
   const handleProductTypeChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const productType = e.target.value as any;
+    const productType = e.target.value as ProductFormData["productType"];
     const isSimplifiedType = ["wire", "grip", "guard", "guard_padding", "french_pommel", "nut", "point", "screws", "point_contact_springs", "socket", "insulating_tube", "body_wire", "cable", "pin"].includes(productType);
     
     setFormData((prev) => ({
@@ -195,8 +197,27 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
+    setSuccess("");
+
+    const errors: { name?: string; price?: string; quantity?: string } = {};
+    if (!formData.name.trim()) {
+      errors.name = "Product name is required.";
+    }
+    const numPrice = parseFloat(formData.price);
+    if (!formData.price || isNaN(numPrice) || numPrice <= 0) {
+      errors.price = "Price must be greater than 0.";
+    }
+    const numQuantity = parseFloat(formData.quantity);
+    if (!formData.quantity || isNaN(numQuantity) || numQuantity <= 0) {
+      errors.quantity = "Quantity must be greater than 0.";
+    }
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const formDataToSend = new FormData();
@@ -239,10 +260,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
       } else {
         await createProduct(formDataToSend);
       }
+      setSuccess(isEdit ? "Product updated successfully." : "Product created successfully.");
       if (onSuccess) onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+    } catch (err) {
+      setError((err as Error).message || "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -258,6 +280,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
         <div className="product-form-container">
           <form onSubmit={handleSubmit} className="product-form">
             {error && <div className="error-message">{error}</div>}
+            {success && (
+              <div className="success-message text-green-600 text-sm">
+                {success}
+              </div>
+            )}
 
             <div className="form-section">
               <div className="section-header">
@@ -297,6 +324,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     required
                     disabled={loading}
                   />
+                  {fieldErrors.name && <p className="text-red-500 text-sm">{fieldErrors.name}</p>}
                 </div>
                 <div className="form-group full-width">
                   <label>Disciplines (Select all that apply) *</label>
@@ -508,6 +536,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     <Package size={14} />
                     <input type="number" name="quantity" value={formData.quantity} onChange={handleChange} min="1" required disabled={loading} />
                   </div>
+                  {fieldErrors.quantity && <p className="text-red-500 text-sm">{fieldErrors.quantity}</p>}
                 </div>
                 <div className="form-group">
                   <label>Unit Price (EGP)</label>
@@ -515,6 +544,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     <span className="currency-label">EGP</span>
                     <input type="number" name="price" value={formData.price} onChange={handleChange} placeholder="0.00" min="0" step="0.01" disabled={loading} />
                   </div>
+                  {fieldErrors.price && <p className="text-red-500 text-sm">{fieldErrors.price}</p>}
                 </div>
               </div>
             </div>

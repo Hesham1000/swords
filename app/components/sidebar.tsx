@@ -15,12 +15,17 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
+interface DashboardUser {
+  username?: string;
+  roles?: string[];
+}
+
 interface SidebarProps {
   currentPage: string;
   onNavigation: (page: string) => void;
   sidebarOpen: boolean;
   onLogoutSuccess?: () => void; // Optional callback after successful logout
-  user?: any; // Added user prop
+  user?: DashboardUser | null; // Added user prop
 }
 
 const Sidebar = ({
@@ -74,9 +79,7 @@ const Sidebar = ({
     try {
       setIsLoggingOut(true);
 
-      const baseUrl =
-        process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(`${baseUrl}/api/auth/logout`, {
+      const response = await fetch("/api/auth/logout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

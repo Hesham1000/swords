@@ -15,7 +15,20 @@ export default function ProductsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState<any>(null);
+  interface PaginationInfo {
+    page: number;
+    limit?: number;
+    totalPages: number;
+    totalItems?: number;
+    totalCount: number;
+    currentPage?: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+    nextPage?: number | null;
+    prevPage?: number | null;
+  }
+
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [refresh, setRefresh] = useState(false);
   const lastParamsRef = useRef("");
 
@@ -40,9 +53,9 @@ export default function ProductsPage() {
           brand: filterBrand,
         });
         setProducts(response.data);
-        setPagination(response.pagination);
-      } catch (err: any) {
-        setError(err.message || "Failed to load products");
+        setPagination(response.pagination ?? null);
+      } catch (err) {
+        setError((err as Error).message || "Failed to load products");
       } finally {
         setLoading(false);
       }
@@ -55,8 +68,8 @@ export default function ProductsPage() {
     try {
       await deleteProduct(id);
       setRefresh(!refresh);
-    } catch (err: any) {
-      alert(err.message || "Failed to delete product");
+    } catch (err) {
+      alert((err as Error).message || "Failed to delete product");
     }
   };
 
@@ -185,7 +198,7 @@ export default function ProductsPage() {
         isAdmin={isAdmin}
         currentPage={page}
         onPageChange={setPage}
-        pagination={pagination}
+        pagination={pagination ?? undefined}
       />
 
       {showForm && (

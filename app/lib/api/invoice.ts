@@ -1,6 +1,6 @@
 // lib/api/invoice.ts
 import { Currency } from "./wallet";
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const apiUrl = "";
 
 export interface InvoiceItem {
   productId: string;
@@ -100,7 +100,7 @@ export async function createInvoice(invoiceData: Partial<Invoice>): Promise<Invo
 /**
  * Update invoice status or add deposit
  */
-export async function updateInvoiceStatus(id: string, status?: string, deposit?: number): Promise<any> {
+export async function updateInvoiceStatus(id: string, status?: string, deposit?: number): Promise<unknown> {
   try {
     const response = await fetch(`${apiUrl}/api/invoices`, {
       method: "PATCH",
