@@ -56,8 +56,8 @@ export async function GET(request: NextRequest) {
 
     const categorySales: Record<string, number> = {};
     periodRows.forEach((inv) => {
-      ((inv.items as any[]) || []).forEach((item) => {
-        const cat = productCategoryMap[item.productId] || item.category || "General";
+      ((inv.items as Array<{ productId?: string; category?: string; name?: string; price?: number; quantity?: number }>) || []).forEach((item) => {
+        const cat = (item.productId ? productCategoryMap[item.productId] : undefined) || item.category || "General";
         categorySales[cat] = (categorySales[cat] || 0) + (item.price || 0) * (item.quantity || 0);
       });
     });
@@ -65,10 +65,10 @@ export async function GET(request: NextRequest) {
     // 5. TOP PRODUCTS
     const productSales: Record<string, { name: string; revenue: number; quantity: number }> = {};
     periodRows.forEach((inv) => {
-      ((inv.items as any[]) || []).forEach((item) => {
+      ((inv.items as Array<{ productId?: string; category?: string; name?: string; price?: number; quantity?: number }>) || []).forEach((item) => {
         if (!item.productId) return;
         if (!productSales[item.productId]) {
-          productSales[item.productId] = { name: item.name, revenue: 0, quantity: 0 };
+          productSales[item.productId] = { name: item.name || "", revenue: 0, quantity: 0 };
         }
         productSales[item.productId].revenue += (item.price || 0) * (item.quantity || 0);
         productSales[item.productId].quantity += item.quantity || 0;

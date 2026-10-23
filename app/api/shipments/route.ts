@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Filter, Document } from "mongodb";
 import { getShipmentsCollection, getWalletCollection, getWalletTransactionsCollection } from "../../lib/mongoDB";
 
 // GET: Return all shipments
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     // Deduct from wallet (EGP)
     await walletCollection.updateOne(
-      { _id: "main" as any },
+      { _id: "main" } as unknown as Filter<Document>,
       { $inc: { balanceEGP: -parseFloat(cost) } },
       { upsert: true }
     );
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
     await transactionsCollection.insertOne(transaction);
 
     // Get updated balance
-    const wallet = await walletCollection.findOne({ _id: "main" as any });
+    const wallet = await walletCollection.findOne({ _id: "main" } as unknown as Filter<Document>);
 
     return NextResponse.json({
       message: "Shipment created successfully",

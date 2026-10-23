@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { ObjectId } from "mongodb";
+import type { UpdateFilter } from "mongodb";
 import {
   getUserCollection,
   getBlacklistCollection,
@@ -176,6 +177,6 @@ export async function revokeAndDeleteToken(
   if (userId) {
     await users.updateOne({ _id: new ObjectId(userId) }, {
       $pull: { sessions: { token } },
-    } as any);
+    } as unknown as Parameters<typeof users.updateOne>[1]);
   }
 }

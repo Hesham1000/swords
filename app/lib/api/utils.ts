@@ -6,7 +6,14 @@ export const API_URL = "";
  * - Renames _id to id
  * - Prepends the API URL to image paths if they are relative
  */
-export function transformProduct(product: any) {
+interface MongoProduct {
+    id?: string;
+    _id?: { toString(): string };
+    images?: string[] | null;
+    [key: string]: unknown;
+}
+
+export function transformProduct(product: MongoProduct | null) {
     if (!product) return null;
 
     const apiUrl = API_URL;

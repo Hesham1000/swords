@@ -85,8 +85,8 @@ export async function GET(request: NextRequest) {
 
     const categorySales: Record<string, number> = {};
     periodInvoices.forEach((inv) => {
-      ((inv.items as any[]) || []).forEach((item) => {
-        const cat = productCategoryMap[item.productId] || item.category || "General";
+      ((inv.items as Array<{ productId?: string; category?: string; name?: string; price?: number; quantity?: number }>) || []).forEach((item) => {
+        const cat = (item.productId ? productCategoryMap[item.productId] : undefined) || item.category || "General";
         categorySales[cat] = (categorySales[cat] || 0) + (item.price || 0) * (item.quantity || 0);
       });
     });
@@ -94,10 +94,10 @@ export async function GET(request: NextRequest) {
     // 6. TOP PRODUCTS
     const productSalesMap: Record<string, { name: string; revenue: number; quantity: number }> = {};
     periodInvoices.forEach((inv) => {
-      ((inv.items as any[]) || []).forEach((item) => {
+      ((inv.items as Array<{ productId?: string; category?: string; name?: string; price?: number; quantity?: number }>) || []).forEach((item) => {
         if (!item.productId) return;
         if (!productSalesMap[item.productId]) {
-          productSalesMap[item.productId] = { name: item.name, revenue: 0, quantity: 0 };
+          productSalesMap[item.productId] = { name: item.name || "", revenue: 0, quantity: 0 };
         }
         productSalesMap[item.productId].revenue += (item.price || 0) * (item.quantity || 0);
         productSalesMap[item.productId].quantity += item.quantity || 0;
