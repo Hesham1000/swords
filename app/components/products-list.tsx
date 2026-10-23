@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Package } from "lucide-react";
+import { Package, ArrowUp, ArrowDown, Plus } from "lucide-react";
 import { Product } from "../lib/api/product";
 import ProductRow from "./products";
 

@@ -16,6 +16,7 @@ interface DashboardContextType {
   sidebarOpen: boolean;
   dashboardData: DashboardSummaryData | null;
   refreshDashboard: () => void;
+  loading: boolean;
 }
 
 const DashboardContext = React.createContext<DashboardContextType | null>(null);
@@ -69,8 +70,9 @@ export default function DashboardLayout({
     sidebarOpen,
     setSidebarOpen,
     dashboardData,
-    refreshDashboard
-  }), [user, sidebarOpen, dashboardData]);
+    refreshDashboard,
+    loading
+  }), [user, sidebarOpen, dashboardData, loading]);
 
   // Fetch current user
   useEffect(() => {
@@ -151,6 +153,15 @@ export default function DashboardLayout({
 
   return (
     <div className="admin-layout">
+      {/* Global loading indicator (non-blocking, sits above everything) */}
+      {loading && (
+        <div
+          className="global-loading-bar"
+          role="progressbar"
+          aria-label="Loading dashboard data"
+        />
+      )}
+
       {/* Sidebar Overlay for Mobile */}
       <div
         className={`sidebar-overlay ${sidebarOpen ? "visible" : ""}`}

@@ -18,11 +18,25 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
 
   const isDeposit = mode === "deposit";
 
+  const MAX_AMOUNT = 1_000_000;
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const numAmount = parseFloat(amount);
-    if (!numAmount || numAmount <= 0) {
-      setError("Please enter a valid amount.");
+    if (Number.isNaN(numAmount)) {
+      setError("Please enter a valid number.");
+      return;
+    }
+    if (numAmount <= 0) {
+      setError("Amount must be greater than 0.");
+      return;
+    }
+    if (!/^\d+(\.\d{1,2})?$/.test(amount.trim())) {
+      setError("Amount can have at most 2 decimal places.");
+      return;
+    }
+    if (numAmount > MAX_AMOUNT) {
+      setError(`Amount cannot exceed ${MAX_AMOUNT.toLocaleString()} ${currency}.`);
       return;
     }
 
@@ -94,6 +108,9 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
                     disabled={loading}
                   />
                 </div>
+                <p className="amount-helper">
+                  Allowed range: 0.01 – {MAX_AMOUNT.toLocaleString()} {currency}
+                </p>
               </div>
               <div className="form-group full-width">
                 <label>Note (optional)</label>
@@ -143,6 +160,13 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
             border-radius: 8px;
             font-size: 13px;
             text-align: center;
+          }
+          .amount-helper {
+            font-size: 10px;
+            color: var(--text-secondary);
+            opacity: 0.8;
+            margin: 0.25rem 0 0;
+            font-style: italic;
           }
           .form-section {
             display: flex;

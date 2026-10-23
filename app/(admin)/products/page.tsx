@@ -24,6 +24,7 @@ export default function ProductsPage() {
   const [filterCategory, setFilterCategory] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
+  const [sort, setSort] = useState("newest");
 
   useEffect(() => {
     const params = JSON.stringify({ page, searchQuery, filterCategory, filterType, filterBrand, refresh });
