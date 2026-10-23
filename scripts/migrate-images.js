@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { MongoClient } = require("mongodb");
 const cloudinary = require("cloudinary").v2;
 const fs = require("fs");

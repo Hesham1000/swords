@@ -190,17 +190,17 @@ export async function PATCH(request: NextRequest) {
     // 1. STOCK ADJUSTMENT AND HISTORY LOGGING (if items changed)
     if (items && Array.isArray(items)) {
       const { logInventoryChange } = await import("../../lib/inventory-server");
-      const oldItems = (invoice.items as any[]) || [];
+      const oldItems = (invoice.items as { productId?: string; quantity?: number; price?: number; name?: string }[]) || [];
 
       // Track which old items were processed
       const processedOldProductIds = new Set<string>();
 
       // Process new items (Updates and Additions)
       for (const newItem of items) {
-        const oldItem = oldItems.find((oi: any) => oi.productId === newItem.productId);
+        const oldItem = oldItems.find((oi) => oi.productId === newItem.productId);
         processedOldProductIds.add(newItem.productId);
 
-        const oldQty = oldItem ? oldItem.quantity : 0;
+        const oldQty = oldItem ? (oldItem.quantity ?? 0) : 0;
         const netChange = newItem.quantity - oldQty;
         const oldPrice = oldItem ? oldItem.price : null;
         const priceChanged = oldPrice !== newItem.price;
@@ -244,23 +244,23 @@ export async function PATCH(request: NextRequest) {
 
       // Process removed items (Deletions)
       for (const oldItem of oldItems) {
-        if (!processedOldProductIds.has(oldItem.productId)) {
+        if (!processedOldProductIds.has(oldItem.productId as string)) {
           try {
             // Revert stock
             await db
               .update(products)
-              .set({ quantity: sql`${products.quantity} + ${oldItem.quantity}` })
-              .where(eq(products.id, oldItem.productId));
+              .set({ quantity: sql`${products.quantity} + ${oldItem.quantity ?? 0}` })
+              .where(eq(products.id, oldItem.productId as string));
 
             // Log removal
             const productRows = await db
               .select()
               .from(products)
-              .where(eq(products.id, oldItem.productId));
+              .where(eq(products.id, oldItem.productId as string));
             await logInventoryChange({
-              productId: oldItem.productId,
-              productName: oldItem.name,
-              changeAmount: oldItem.quantity,
+              productId: oldItem.productId as string,
+              productName: oldItem.name as string,
+              changeAmount: oldItem.quantity as number,
               newQuantity: productRows[0]?.quantity || 0,
               reason: "Order Cancelled",
               referenceId: id,

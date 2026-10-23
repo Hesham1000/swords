@@ -14,7 +14,20 @@ export default function InvoicesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState<any>(null);
+  interface PaginationInfo {
+    page?: number;
+    limit?: number;
+    totalPages?: number;
+    totalItems?: number;
+    totalCount?: number;
+    currentPage?: number;
+    hasNextPage?: boolean;
+    hasPrevPage?: boolean;
+    nextPage?: number | null;
+    prevPage?: number | null;
+  }
+
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [refresh, setRefresh] = useState(false);
   const lastParamsRef = useRef("");
@@ -29,9 +42,9 @@ export default function InvoicesPage() {
         setLoading(true);
         const response = await getInvoices(page, 10, searchQuery);
         setInvoices(response.data);
-        setPagination(response.pagination);
-      } catch (err: any) {
-        setError(err.message || "Failed to load invoices");
+        setPagination(response.pagination ?? null);
+      } catch (err) {
+        setError((err as Error).message || "Failed to load invoices");
       } finally {
         setLoading(false);
       }
@@ -44,8 +57,8 @@ export default function InvoicesPage() {
     try {
       await updateInvoiceStatus(id, "paid");
       setRefresh(!refresh);
-    } catch (err: any) {
-      alert(err.message || "Failed to update status");
+    } catch (err) {
+      alert((err as Error).message || "Failed to update status");
     }
   };
 
@@ -136,7 +149,7 @@ export default function InvoicesPage() {
           )}
         </div>
         
-        {pagination && pagination.totalPages > 1 && (
+        {pagination && (pagination.totalPages ?? 0) > 1 && (
           <div className="pagination-container">
             <div className="pagination-controls">
               <button 

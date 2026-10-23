@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if this is a personal GitHub account (useDefaultGithub: false means personal GitHub account)
-    if ((existingUser as any).useDefaultGithub === false) {
+    if ((existingUser as { useDefaultGithub?: boolean }).useDefaultGithub === false) {
       const errorUrl = buildErrorUrl({
         message:
           "This account uses GitHub authentication. Please sign in with GitHub or set up a password through your profile settings.",

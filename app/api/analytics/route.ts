@@ -3,6 +3,14 @@ import { db } from "../../lib/db";
 import { invoices, products } from "../../lib/schema";
 import { gte, sql } from "drizzle-orm";
 
+interface InvoiceItem {
+  productId?: string;
+  category?: string;
+  name?: string;
+  price?: number;
+  quantity?: number;
+}
+
 export async function GET(request: NextRequest) {
   try {
     // 1. GET ALL INVOICES FOR PROCESSING
@@ -54,21 +62,21 @@ export async function GET(request: NextRequest) {
 
     const categorySales: Record<string, number> = {};
     invoicesRows.forEach(inv => {
-      ((inv.items as any[]) || []).forEach((item: any) => {
-        const cat = productCategoryMap[item.productId] || item.category || "General";
-        categorySales[cat] = (categorySales[cat] || 0) + (item.price * item.quantity);
+      ((inv.items as InvoiceItem[]) || []).forEach((item) => {
+        const cat = productCategoryMap[item.productId as string] || item.category || "General";
+        categorySales[cat] = (categorySales[cat] || 0) + ((item.price || 0) * (item.quantity || 0));
       });
     });
 
     // 5. TOP PRODUCTS
     const productSales: Record<string, {name: string, revenue: number, quantity: number}> = {};
     invoicesRows.forEach(inv => {
-      ((inv.items as any[]) || []).forEach((item: any) => {
-        if (!productSales[item.productId]) {
-          productSales[item.productId] = { name: item.name, revenue: 0, quantity: 0 };
+      ((inv.items as InvoiceItem[]) || []).forEach((item) => {
+        if (!productSales[item.productId as string]) {
+          productSales[item.productId as string] = { name: item.name as string, revenue: 0, quantity: 0 };
         }
-        productSales[item.productId].revenue += (item.price * item.quantity);
-        productSales[item.productId].quantity += item.quantity;
+        productSales[item.productId as string].revenue += ((item.price || 0) * (item.quantity || 0));
+        productSales[item.productId as string].quantity += (item.quantity || 0);
       });
     });
 

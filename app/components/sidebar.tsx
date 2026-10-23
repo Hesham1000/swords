@@ -15,12 +15,17 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
+interface DashboardUser {
+  username?: string;
+  roles?: string[];
+}
+
 interface SidebarProps {
   currentPage: string;
   onNavigation: (page: string) => void;
   sidebarOpen: boolean;
   onLogoutSuccess?: () => void; // Optional callback after successful logout
-  user?: any; // Added user prop
+  user?: DashboardUser | null; // Added user prop
 }
 
 const Sidebar = ({

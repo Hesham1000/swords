@@ -4,6 +4,14 @@ import { invoices, products } from "../../../lib/schema";
 import { asc, desc, gte, lt, sql } from "drizzle-orm";
 import { transformProduct } from "../../../lib/api/utils";
 
+interface InvoiceItem {
+  productId?: string;
+  category?: string;
+  name?: string;
+  price?: number;
+  quantity?: number;
+}
+
 export async function GET(request: NextRequest) {
   try {
     // 1. RECENT INVOICES (Latest 5)
@@ -66,21 +74,21 @@ export async function GET(request: NextRequest) {
 
     const categorySales: Record<string, number> = {};
     periodInvoices.forEach(inv => {
-      ((inv.items as any[]) || []).forEach((item: any) => {
-        const cat = productCategoryMap[item.productId] || item.category || "General";
-        categorySales[cat] = (categorySales[cat] || 0) + (item.price * item.quantity);
+      ((inv.items as InvoiceItem[]) || []).forEach((item) => {
+        const cat = productCategoryMap[item.productId as string] || item.category || "General";
+        categorySales[cat] = (categorySales[cat] || 0) + ((item.price || 0) * (item.quantity || 0));
       });
     });
 
     // 6. TOP PRODUCTS
     const productSalesMap: Record<string, {name: string, revenue: number, quantity: number}> = {};
     periodInvoices.forEach(inv => {
-      ((inv.items as any[]) || []).forEach((item: any) => {
-        if (!productSalesMap[item.productId]) {
-          productSalesMap[item.productId] = { name: item.name, revenue: 0, quantity: 0 };
+      ((inv.items as InvoiceItem[]) || []).forEach((item) => {
+        if (!productSalesMap[item.productId as string]) {
+          productSalesMap[item.productId as string] = { name: item.name as string, revenue: 0, quantity: 0 };
         }
-        productSalesMap[item.productId].revenue += (item.price * item.quantity);
-        productSalesMap[item.productId].quantity += item.quantity;
+        productSalesMap[item.productId as string].revenue += ((item.price || 0) * (item.quantity || 0));
+        productSalesMap[item.productId as string].quantity += (item.quantity || 0);
       });
     });
 

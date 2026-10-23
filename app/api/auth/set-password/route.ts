@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     // ✅ Validate password
     const validationError = validatePassword(
       password,
-      (user as any).firstName,
+      (user as { firstName?: string }).firstName,
       user.email,
       ""
     );
