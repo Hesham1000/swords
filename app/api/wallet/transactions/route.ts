@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getWalletTransactionsCollection } from "../../../lib/mongoDB";
+import { db } from "../../../lib/db";
+import { walletTransactions } from "../../../lib/schema";
+import { desc, sql } from "drizzle-orm";
 
 // GET: Return wallet transaction history
 export async function GET(request: NextRequest) {
@@ -9,17 +11,17 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
 
-    const transactionsCollection = await getWalletTransactionsCollection();
-    
-    const [transactions, totalItems] = await Promise.all([
-      transactionsCollection
-        .find({})
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .toArray(),
-      transactionsCollection.countDocuments({})
-    ]);
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(walletTransactions);
+    const totalItems = Number(countResult[0]?.count ?? 0);
+
+    const transactions = await db
+      .select()
+      .from(walletTransactions)
+      .orderBy(desc(walletTransactions.createdAt))
+      .limit(limit)
+      .offset(skip);
 
     const totalPages = Math.ceil(totalItems / limit);
 

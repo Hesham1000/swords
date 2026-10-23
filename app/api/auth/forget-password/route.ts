@@ -3,7 +3,9 @@ import {
   generatePasswordSetupToken,
   PASSWORD_TOKEN_EXPIRATION_MINUTES,
 } from "../../../lib/auth/token";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { db } from "../../../lib/db";
+import { users } from "../../../lib/schema";
+import { eq } from "drizzle-orm";
 import { sendEmailSetPassword } from "../../../utils/email";
 import ApiError from "../../../utils/ApiError";
 import { buildErrorUrl } from "../../../lib/errors/error-builder";
@@ -21,8 +23,8 @@ export async function POST(request: NextRequest) {
       throw ApiError.badRequest("Email is required");
     }
 
-    const userCollection = await getUserCollection();
-    const existingUser = await userCollection.findOne({ email });
+    const existingRows = await db.select().from(users).where(eq(users.email, email));
+    const existingUser = existingRows[0];
 
     if (!existingUser) {
       // For security, don't reveal whether user exists
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if this is a personal GitHub account (useDefaultGithub: false means personal GitHub account)
-    if (existingUser.useDefaultGithub === false) {
+    if ((existingUser as any).useDefaultGithub === false) {
       const errorUrl = buildErrorUrl({
         message:
           "This account uses GitHub authentication. Please sign in with GitHub or set up a password through your profile settings.",
@@ -87,10 +89,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Save lastEmailSent
-    await userCollection.updateOne(
-      { _id: existingUser._id },
-      { $set: { lastEmailSent: now } }
-    );
+    await db.update(users).set({ lastEmailSent: now }).where(eq(users.id, existingUser.id));
 
     return NextResponse.json(
       { message: "A reset link has been sent." },
