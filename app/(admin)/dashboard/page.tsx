@@ -88,7 +88,12 @@ export default function DashboardOverview() {
     return <div className="error-banner">{error}</div>;
   }
 
-  const { summary, recentInvoices, lowStockItems, analytics } = dashboardData!;
+  const { summary, recentInvoices, lowStockItems } = dashboardData!;
+  const analytics = dashboardData?.analytics ?? {
+    trends: [],
+    categories: [],
+    topProducts: []
+  };
 
   return (
     <>
@@ -132,7 +137,7 @@ export default function DashboardOverview() {
                </button>
             </div>
           </div>
-          {analytics.trends.length === 0 ? (
+          {analytics?.trends.length === 0 ? (
             <div className="empty-state" role="status">
               <div className="empty-state-icon"><TrendingUp size={24} /></div>
               <p className="empty-state-title">No trend data yet</p>
@@ -148,18 +153,18 @@ export default function DashboardOverview() {
                 </linearGradient>
               </defs>
               <path
-                d={`M 0 200 ${analytics.trends.map((t, i) => {
-                  const maxRev = Math.max(...analytics.trends.map(d => d.revenue), 1);
-                  const x = (i / (analytics.trends.length - 1)) * 800;
+                d={`M 0 200 ${analytics?.trends?.map((t, i) => {
+                  const maxRev = Math.max(...analytics?.trends?.map(d => d.revenue), 1);
+                  const x = (i / (analytics?.trends.length - 1)) * 800;
                   const y = 200 - (t.revenue / maxRev) * 150;
                   return `L ${x} ${y}`;
                 }).join(' ')} L 800 200 Z`}
                 fill="url(#areaGradient)"
               />
               <path
-                d={analytics.trends.map((t, i) => {
-                  const maxRev = Math.max(...analytics.trends.map(d => d.revenue), 1);
-                  const x = (i / (analytics.trends.length - 1)) * 800;
+                d={analytics?.trends?.map((t, i) => {
+                  const maxRev = Math.max(...analytics?.trends?.map(d => d.revenue), 1);
+                  const x = (i / (analytics?.trends.length - 1)) * 800;
                   const y = 200 - (t.revenue / maxRev) * 150;
                   return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
                 }).join(' ')}
@@ -170,8 +175,8 @@ export default function DashboardOverview() {
               />
             </svg>
             <div className="chart-labels">
-              <span>{analytics.trends[0]?.date}</span>
-              <span>{analytics.trends[analytics.trends.length-1]?.date}</span>
+              <span>{analytics?.trends[0]?.date}</span>
+              <span>{analytics?.trends[analytics?.trends.length-1]?.date}</span>
             </div>
           </div>
           )}
@@ -182,9 +187,9 @@ export default function DashboardOverview() {
           <div className="card-header"><h2 className="card-title">Sales by Category</h2></div>
           <div className="donut-container">
             <svg viewBox="0 0 200 200" className="svg-donut">
-              {analytics.categories.map((cat, i) => {
-                const total = analytics.categories.reduce((sum, c) => sum + c.value, 0);
-                const startAngle = (analytics.categories.slice(0, i).reduce((sum, c) => sum + c.value, 0) / (total || 1)) * 360;
+              {analytics?.categories?.map((cat, i) => {
+                const total = analytics?.categories.reduce((sum, c) => sum + c.value, 0);
+                const startAngle = (analytics?.categories.slice(0, i).reduce((sum, c) => sum + c.value, 0) / (total || 1)) * 360;
                 const angle = (cat.value / (total || 1)) * 360;
                 const x1 = 100 + 70 * Math.cos((startAngle - 90) * Math.PI / 180);
                 const y1 = 100 + 70 * Math.sin((startAngle - 90) * Math.PI / 180);
@@ -196,12 +201,12 @@ export default function DashboardOverview() {
               })}
               <circle cx="100" cy="100" r="50" fill="var(--bg-deep)" />
               <text x="100" y="105" textAnchor="middle" className="donut-center-text" fill="var(--text-primary)" style={{ fontSize: '12px', fontWeight: 'bold' }}>
-                {analytics.categories.length} CATS
+                {analytics?.categories.length} CATS
               </text>
             </svg>
             <div className="donut-legend">
-              {analytics.categories.map((cat, i) => {
-                const total = analytics.categories.reduce((sum, c) => sum + c.value, 0);
+              {analytics?.categories?.map((cat, i) => {
+                const total = analytics?.categories.reduce((sum, c) => sum + c.value, 0);
                 const percentage = Math.round((cat.value / (total || 1)) * 100);
                 return (
                   <div key={cat.name} className="legend-item">
@@ -277,7 +282,7 @@ export default function DashboardOverview() {
       {/* Top Selling Products */}
       <div className="chart-card">
         <div className="card-header"><h2 className="card-title">Top Selling Products</h2></div>
-        {analytics.topProducts.length === 0 ? (
+        {analytics?.topProducts.length === 0 ? (
           <div className="empty-state" role="status">
             <div className="empty-state-icon"><Package size={24} /></div>
             <p className="empty-state-title">No products sold yet</p>
@@ -285,8 +290,8 @@ export default function DashboardOverview() {
           </div>
         ) : (
         <div className="products-leaderboard">
-          {analytics.topProducts.map((product, idx) => {
-            const maxRev = Math.max(...analytics.topProducts.map(p => p.revenue), 1);
+          {analytics?.topProducts?.map((product, idx) => {
+            const maxRev = Math.max(...analytics?.topProducts?.map(p => p.revenue), 1);
             const progressWidth = (product.revenue / maxRev) * 100;
             return (
               <div key={idx} className="leaderboard-item">
