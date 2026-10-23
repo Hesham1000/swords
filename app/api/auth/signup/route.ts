@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { db } from "../../../lib/db";
+import { users } from "../../../lib/db/schema";
+import { eq } from "drizzle-orm";
 import {
   validateEmail,
   validateUsername,
@@ -18,10 +20,9 @@ export async function POST(request: NextRequest) {
     const username = body.username.trim();
     const email = body.email?.trim();
 
-    const userCollection = await getUserCollection();
-
     // Check existing user
-    const existingUser = await userCollection.findOne({ email });
+    const existingRows = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    const existingUser = existingRows[0];
 
     if (existingUser) {
       if (!existingUser.isActive) {
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
       lastEmailSent: new Date(),
     };
 
-    await userCollection.insertOne(newUser);
+    await db.insert(users).values(newUser);
 
     // Send setup email
     const token = await generatePasswordSetupToken(email);
@@ -100,6 +101,7 @@ export async function POST(request: NextRequest) {
         { status: error.statusCode }
       );
     }
+    console.error("Signup error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

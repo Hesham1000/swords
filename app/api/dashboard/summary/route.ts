@@ -1,37 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getInvoicesCollection, getProductsCollection } from "../../../lib/mongoDB";
+import { db } from "../../../lib/db";
+import { invoices, products } from "../../../lib/db/schema";
+import { desc, gte } from "drizzle-orm";
 import { transformProduct } from "../../../lib/api/utils";
 
 export async function GET(request: NextRequest) {
   try {
-    const invoicesCollection = await getInvoicesCollection();
-    const productsCollection = await getProductsCollection();
-
     // 1. RECENT INVOICES (Latest 5)
-    const recentInvoices = await invoicesCollection
-      .find({})
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .toArray();
+    const recentInvoices = await db
+      .select()
+      .from(invoices)
+      .orderBy(desc(invoices.createdAt))
+      .limit(5);
 
     // 2. ANALYTICS DATA (Revenue, Orders, Customers)
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-    const periodInvoices = await invoicesCollection.find({
-      date: { $gte: threeMonthsAgo.toISOString().split('T')[0] }
-    }).toArray();
+    const periodInvoices = await db
+      .select()
+      .from(invoices)
+      .where(gte(invoices.date, threeMonthsAgo.toISOString().split('T')[0]));
 
-    const allInvoices = await invoicesCollection.find({}).toArray();
-    const totalRevenue = allInvoices.reduce((acc, inv) => acc + (inv.amount || 0), 0);
+    const allInvoices = await db.select().from(invoices);
+    const totalRevenue = allInvoices.reduce((acc, inv) => acc + (parseFloat(inv.amount || "0") || 0), 0);
     const totalOrders = allInvoices.length;
     const uniqueCustomers = new Set(allInvoices.map(inv => inv.customer)).size;
 
     // 3. PRODUCT SUMMARY & LOW STOCK
-    const allProducts = await productsCollection.find({}).toArray();
+    const allProducts = await db.select().from(products);
     const totalInventoryCount = allProducts.reduce((acc, prod) => acc + (prod.quantity || 0), 0);
-    const inventoryValue = allProducts.reduce((acc, prod) => acc + ((prod.price || 0) * (prod.quantity || 0)), 0);
-    
+    const inventoryValue = allProducts.reduce((acc, prod) => acc + ((parseFloat(prod.price || "0") || 0) * (prod.quantity || 0)), 0);
+
     const lowStockItems = allProducts
       .filter(p => (p.quantity || 0) < 3)
       .sort((a, b) => (a.quantity || 0) - (b.quantity || 0))
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       const dayInvoices = periodInvoices.filter(inv => inv.date === day);
       return {
         date: day,
-        revenue: dayInvoices.reduce((acc, inv) => acc + (inv.amount || 0), 0),
+        revenue: dayInvoices.reduce((acc, inv) => acc + (parseFloat(inv.amount || "0") || 0), 0),
         orders: dayInvoices.length
       };
     });
@@ -56,29 +56,29 @@ export async function GET(request: NextRequest) {
     // 5. CATEGORY DISTRIBUTION
     const productCategoryMap: Record<string, string> = {};
     allProducts.forEach(prod => {
-      const cat = prod.category && Array.isArray(prod.category) && prod.category.length > 0 
-        ? prod.category[0] 
+      const cat = prod.category && Array.isArray(prod.category) && prod.category.length > 0
+        ? prod.category[0]
         : (typeof prod.category === 'string' ? prod.category : "Equipment");
-      productCategoryMap[prod._id.toString()] = cat;
+      productCategoryMap[prod.id] = cat ?? "Equipment";
     });
 
     const categorySales: Record<string, number> = {};
     periodInvoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
-        const cat = productCategoryMap[item.productId] || item.category || "General";
-        categorySales[cat] = (categorySales[cat] || 0) + (item.price * item.quantity);
+      ((inv.items as Array<Record<string, unknown>>) || []).forEach((item) => {
+        const cat = productCategoryMap[String(item.productId)] || (item.category as string) || "General";
+        categorySales[cat] = (categorySales[cat] || 0) + (Number(item.price) * Number(item.quantity));
       });
     });
 
     // 6. TOP PRODUCTS
     const productSalesMap: Record<string, {name: string, revenue: number, quantity: number}> = {};
     periodInvoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
-        if (!productSalesMap[item.productId]) {
-          productSalesMap[item.productId] = { name: item.name, revenue: 0, quantity: 0 };
+      ((inv.items as Array<Record<string, unknown>>) || []).forEach((item) => {
+        if (!productSalesMap[String(item.productId)]) {
+          productSalesMap[String(item.productId)] = { name: String(item.name ?? ""), revenue: 0, quantity: 0 };
         }
-        productSalesMap[item.productId].revenue += (item.price * item.quantity);
-        productSalesMap[item.productId].quantity += item.quantity;
+        productSalesMap[String(item.productId)].revenue += (Number(item.price) * Number(item.quantity));
+        productSalesMap[String(item.productId)].quantity += Number(item.quantity);
       });
     });
 

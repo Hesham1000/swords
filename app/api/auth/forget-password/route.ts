@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { db } from "../../../lib/db";
+import { users } from "../../../lib/db/schema";
+import { eq } from "drizzle-orm";
 import {
   generatePasswordSetupToken,
   PASSWORD_TOKEN_EXPIRATION_MINUTES,
 } from "../../../lib/auth/token";
-import { getUserCollection } from "../../../lib/mongoDB";
 import { sendEmailSetPassword } from "../../../utils/email";
 import ApiError from "../../../utils/ApiError";
 import { buildErrorUrl } from "../../../lib/errors/error-builder";
@@ -21,8 +23,8 @@ export async function POST(request: NextRequest) {
       throw ApiError.badRequest("Email is required");
     }
 
-    const userCollection = await getUserCollection();
-    const existingUser = await userCollection.findOne({ email });
+    const existingRows = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    const existingUser = existingRows[0];
 
     if (!existingUser) {
       // For security, don't reveal whether user exists
@@ -81,16 +83,13 @@ export async function POST(request: NextRequest) {
     // Send email
     await sendEmailSetPassword(
       email,
-      existingUser.username,
+      existingUser.username ?? "",
       resetLink,
       PASSWORD_TOKEN_EXPIRATION_MINUTES
     );
 
     // Save lastEmailSent
-    await userCollection.updateOne(
-      { _id: existingUser._id },
-      { $set: { lastEmailSent: now } }
-    );
+    await db.update(users).set({ lastEmailSent: now }).where(eq(users.id, existingUser.id));
 
     return NextResponse.json(
       { message: "A reset link has been sent." },
@@ -106,6 +105,7 @@ export async function POST(request: NextRequest) {
         { status: error.statusCode }
       );
     }
+    console.error("Forget password error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

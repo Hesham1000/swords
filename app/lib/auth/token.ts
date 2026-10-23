@@ -1,9 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
-import { ObjectId } from "mongodb";
-import {
-  getUserCollection,
-  getBlacklistCollection,
-} from "../mongoDB";
+import { db } from "../db";
+import { users, blacklistTokens } from "../db/schema";
+import { eq } from "drizzle-orm";
 import { verifyAccessTokenEdge as verifyAccessToken } from "./edge";
 
 // export { verifyAccessToken }; // If needed by other non-edge files
@@ -64,35 +62,6 @@ export async function generateToken(
 
 export { verifyAccessToken };
 
-// Verify Refresh Token (Edge Runtime Compatible)
-// export async function verifyRefreshToken(
-//   token: string
-// ): Promise<JWTPayloadCustom | null> {
-//   try {
-//     const { payload } = await jwtVerify(token, JWT_REFRESH_SECRET);
-
-//     // Type guard for refresh token payload
-//     if (
-//       typeof payload === "object" &&
-//       payload !== null &&
-//       "userId" in payload &&
-//       typeof payload.userId === "string" &&
-//       "exp" in payload &&
-//       typeof payload.exp === "number"
-//     ) {
-//       return {
-//         userId: payload.userId as string,
-//         exp: payload.exp as number,
-//         iat: (payload.iat as number) || 0,
-//       };
-//     }
-
-//     return null;
-//   } catch {
-//     return null;
-//   }
-// }
-
 // Password Setup Token
 export async function generatePasswordSetupToken(
   email: string
@@ -128,31 +97,14 @@ export async function decodePasswordSetupToken(
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Lazy DB initialization (no top-level await)
-async function getCollections() {
-  const blacklist = await getBlacklistCollection();
-  const users = await getUserCollection();
-  return { blacklist, users };
-}
-
 // Blacklist check
 export async function isTokenBlacklisted(token: string): Promise<boolean> {
-  const { blacklist } = await getCollections();
-  return !!(await blacklist.findOne({ token }));
+  const rows = await db
+    .select()
+    .from(blacklistTokens)
+    .where(eq(blacklistTokens.token, token))
+    .limit(1);
+  return rows.length > 0;
 }
 
 // Revoke token and clear cookies
@@ -161,21 +113,31 @@ export async function revokeAndDeleteToken(
   userId?: string,
   refresh?: string
 ): Promise<void> {
-  const { blacklist, users } = await getCollections();
-
   // Blacklist token
   if (!(await isTokenBlacklisted(token))) {
-    await blacklist.insertOne({
+    await db.insert(blacklistTokens).values({
       token,
-      revoked_at: new Date(),
-      ...(userId ? { user_id: new ObjectId(userId) } : {}),
+      revokedAt: new Date(),
+      ...(userId ? { userId } : {}),
     });
   }
 
   // Remove session
   if (userId) {
-    await users.updateOne({ _id: new ObjectId(userId) }, {
-      $pull: { sessions: { token } },
-    } as any);
+    const rows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    const user = rows[0];
+    if (user) {
+      const existingSessions = Array.isArray(user.sessions)
+        ? (user.sessions as Array<Record<string, unknown>>)
+        : [];
+      await db
+        .update(users)
+        .set({
+          sessions: existingSessions.filter(
+            (s) => s.token !== token
+          ),
+        })
+        .where(eq(users.id, userId));
+    }
   }
 }
