@@ -1,28 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 import {
   generatePasswordSetupToken,
   PASSWORD_TOKEN_EXPIRATION_MINUTES,
 } from "../../../lib/auth/token";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { db } from "../../../lib/db";
+import { users } from "../../../lib/db/schema";
 import { sendEmailSetPassword } from "../../../utils/email";
 import ApiError from "../../../utils/ApiError";
 import { buildErrorUrl } from "../../../lib/errors/error-builder";
 
-
 export async function POST(request: NextRequest) {
   try {
-
     const body = await request.json();
-    console.log("Received forget-password request for email:", body.email);
     const email = body.email.trim();
-    console.log("Processed email:", email);
 
     if (!email) {
       throw ApiError.badRequest("Email is required");
     }
 
-    const userCollection = await getUserCollection();
-    const existingUser = await userCollection.findOne({ email });
+    const [existingUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
 
     if (!existingUser) {
       // For security, don't reveal whether user exists
@@ -33,26 +34,6 @@ export async function POST(request: NextRequest) {
     if (!existingUser.isActive) {
       throw ApiError.badRequest(
         "Your account registration is incomplete. We have sent you a password setup link during registration. Please check your email or contact support for assistance."
-      );
-    }
-
-    // Check if this is a personal GitHub account (useDefaultGithub: false means personal GitHub account)
-    if (existingUser.useDefaultGithub === false) {
-      const errorUrl = buildErrorUrl({
-        message:
-          "This account uses GitHub authentication. Please sign in with GitHub or set up a password through your profile settings.",
-        type: "auth",
-        source: "github-auth",
-      });
-      return NextResponse.json(
-        {
-          error: "GitHub account detected",
-          message:
-            "This account uses GitHub authentication. Please sign in with GitHub.",
-          redirectUrl: errorUrl,
-          statusCode: 400,
-        },
-        { status: 400 }
       );
     }
 
@@ -87,10 +68,10 @@ export async function POST(request: NextRequest) {
     );
 
     // Save lastEmailSent
-    await userCollection.updateOne(
-      { _id: existingUser._id },
-      { $set: { lastEmailSent: now } }
-    );
+    await db
+      .update(users)
+      .set({ lastEmailSent: now })
+      .where(eq(users.id, existingUser.id));
 
     return NextResponse.json(
       { message: "A reset link has been sent." },
@@ -106,8 +87,10 @@ export async function POST(request: NextRequest) {
         { status: error.statusCode }
       );
     }
+
+    console.error("Forget password error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", statusCode: 500 },
       { status: 500 }
     );
   }

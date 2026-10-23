@@ -1,5 +1,5 @@
 // lib/api/wallet.ts
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const apiUrl = "";
 
 export type Currency = "EGP" | "USD" | "EUR";
 
@@ -111,7 +111,7 @@ export async function withdrawFromWallet(amount: number, note?: string, currency
  */
 export async function getWalletTransactions(page: number = 1, limit: number = 10): Promise<WalletTransactionsResponse> {
   try {
-    const url = new URL(`${apiUrl}/api/wallet/transactions`);
+    const url = new URL(`${apiUrl}/api/wallet/transactions`, typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
 

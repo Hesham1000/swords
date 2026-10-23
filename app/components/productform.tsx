@@ -74,18 +74,19 @@ const ProductForm: React.FC<ProductFormProps> = ({
     brand: (initialData?.brand as Brand) || "",
     model: initialData?.model || "",
     subCategory: initialData?.subCategory || "",
-    hand: (initialData?.hand as any) || "",
+    hand: (initialData?.hand as ProductFormData["hand"]) || "",
     isKings: initialData?.isKings ?? true,
     isMini: initialData?.isMini || false,
     lameColor: initialData?.lameColor || "silver",
     material: initialData?.material || "Metal",
-    gloveSize: (initialData as any)?.gloveSize || "",
+    gloveSize: (initialData as Product | undefined)?.gloveSize || "",
     quantity: initialData?.quantity?.toString() || "1",
     images: [],
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>(initialData?.images || []);
 
@@ -105,12 +106,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
       setFormData((prev) => {
         const currentCategories = [...prev.category];
         if (checked) {
-          if (!currentCategories.includes(value as any)) {
-            currentCategories.push(value as any);
+          if (!currentCategories.includes(value as "Foil" | "Sabre" | "Epée")) {
+            currentCategories.push(value as "Foil" | "Sabre" | "Epée");
           }
         } else {
           if (currentCategories.length > 1) {
-            const index = currentCategories.indexOf(value as any);
+            const index = currentCategories.indexOf(value as "Foil" | "Sabre" | "Epée");
             if (index > -1) currentCategories.splice(index, 1);
           }
         }
@@ -123,6 +124,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    // Clear the field-level error as the user edits the field
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
   };
 
   const handleBrandChange = (e: ChangeEvent<HTMLSelectElement>) => {
@@ -132,10 +140,17 @@ const ProductForm: React.FC<ProductFormProps> = ({
       brand,
       model: "",
     }));
+    setFieldErrors((prev) => {
+      if (!prev.brand && !prev.model) return prev;
+      const next = { ...prev };
+      delete next.brand;
+      delete next.model;
+      return next;
+    });
   };
 
   const handleProductTypeChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const productType = e.target.value as any;
+    const productType = e.target.value as ProductFormData["productType"];
     const isSimplifiedType = ["wire", "grip", "guard", "guard_padding", "french_pommel", "nut", "point", "screws", "point_contact_springs", "socket", "insulating_tube", "body_wire", "cable", "pin"].includes(productType);
     
     setFormData((prev) => ({
@@ -167,6 +182,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
       }
     }
     setFormData((prev) => ({ ...prev, model, isKings }));
+    setFieldErrors((prev) => {
+      if (!prev.model) return prev;
+      const next = { ...prev };
+      delete next.model;
+      return next;
+    });
   };
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -241,8 +262,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
       }
       if (onSuccess) onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -336,8 +357,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   </div>
                 </div>
                 <div className="form-group">
-                  <label>Manufacturer *</label>
-                  <select name="brand" value={formData.brand} onChange={handleBrandChange} required disabled={loading || ["wire", "grip", "guard_padding", "french_pommel", "nut", "point", "screws", "point_contact_springs", "socket", "insulating_tube", "body_wire", "cable", "pin", "glove"].includes(formData.productType)}>
+                  <label htmlFor="product-brand">Manufacturer *</label>
+                  <select id="product-brand" name="brand" value={formData.brand} onChange={handleBrandChange} required disabled={loading || ["wire", "grip", "guard_padding", "french_pommel", "nut", "point", "screws", "point_contact_springs", "socket", "insulating_tube", "body_wire", "cable", "pin", "glove"].includes(formData.productType)} className={fieldErrors.brand ? "input-invalid" : ""} aria-invalid={!!fieldErrors.brand} aria-describedby={fieldErrors.brand ? "product-brand-error" : undefined}>
                     <option value="">Select Brand</option>
                     {formData.productType === "guard" ? (
                       <>
@@ -351,6 +372,9 @@ const ProductForm: React.FC<ProductFormProps> = ({
                       ))
                     )}
                   </select>
+                  {fieldErrors.brand && (
+                    <small className="field-error" id="product-brand-error" role="alert">{fieldErrors.brand}</small>
+                  )}
                 </div>
               </div>
             </div>
@@ -365,13 +389,16 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   <>
                     {formData.brand && LAME_MODELS[formData.brand]?.length > 0 && (
                       <div className="form-group">
-                        <label>Model Series *</label>
-                        <select name="model" value={formData.model} onChange={handleModelChange} required disabled={loading}>
+                        <label htmlFor="product-model">Model Series *</label>
+                        <select id="product-model" name="model" value={formData.model} onChange={handleModelChange} required disabled={loading} className={fieldErrors.model ? "input-invalid" : ""} aria-invalid={!!fieldErrors.model} aria-describedby={fieldErrors.model ? "product-model-error" : undefined}>
                           <option value="">Select Series</option>
                           {LAME_MODELS[formData.brand].map((m) => (
                             <option key={m} value={m}>{m === "FIE" ? "FIE" : m}</option>
                           ))}
                         </select>
+                        {fieldErrors.model && (
+                          <small className="field-error" id="product-model-error" role="alert">{fieldErrors.model}</small>
+                        )}
                       </div>
                     )}
                     {(formData.productType === "lame" && (formData.brand === "pbt" || formData.brand === "uhlmann") && formData.model === "FIE" && !formData.category.includes("Sabre")) && (
@@ -604,6 +631,9 @@ const ProductForm: React.FC<ProductFormProps> = ({
           .btn-primary, .btn-secondary { padding: 0.875rem 1.5rem; font-family: var(--font-display); font-size: 12px; font-weight: 900; border-radius: 8px; cursor: pointer; text-transform: uppercase; }
           .btn-primary { background: var(--accent-blue); color: white; border: none; }
           .btn-secondary { background: transparent; border: 1px solid var(--border-tech); color: var(--text-primary); }
+          .field-error { color: var(--accent-red); font-size: 11px; margin-top: 2px; }
+          .form-group input.input-invalid, .form-group select.input-invalid { border-color: var(--accent-red); }
+          .form-actions .btn-primary:disabled, .form-actions .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
           @media (max-width: 768px) {
             .product-form-container { padding: 1.25rem !important; }

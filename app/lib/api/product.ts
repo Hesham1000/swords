@@ -1,6 +1,6 @@
 // lib/api/products.ts
 // Separate API service file for product operations
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const apiUrl = "";
 
 export interface Product {
   id: string;
@@ -73,7 +73,7 @@ export async function getProducts(
   } = {}
 ): Promise<ProductsResponse> {
   try {
-    const url = new URL(`${apiUrl}/api/products`);
+    const url = new URL(`${apiUrl}/api/products`, typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
     

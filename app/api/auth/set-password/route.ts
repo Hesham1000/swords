@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
+import { eq, sql } from "drizzle-orm";
 import {
   decodePasswordSetupToken,
   generateToken,
 } from "../../../lib/auth/token";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { db } from "../../../lib/db";
+import { users } from "../../../lib/db/schema";
 import { hashPassword } from "../../../lib/auth/password";
 import { v4 as uuidv4 } from "uuid";
 import { validatePassword } from "../../../utils/validation";
@@ -28,22 +29,20 @@ export async function POST(req: NextRequest) {
       throw ApiError.unauthorized("Invalid or expired token");
     }
 
-    const userCollection = await getUserCollection();
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
 
-    const user = await userCollection.findOne({ email });
     if (!user) {
       throw ApiError.notFound("User is not found");
     }
 
-    const userId = user._id.toString();
+    const userId = user.id;
 
     // ✅ Validate password
-    const validationError = validatePassword(
-      password,
-      user.firstName,
-      user.email,
-      ""
-    );
+    const validationError = validatePassword(password, "", user.email, "");
     if (validationError) {
       throw ApiError.badRequest(validationError);
     }
@@ -53,18 +52,6 @@ export async function POST(req: NextRequest) {
     }
 
     const hashedPassword = await hashPassword(password.trim());
-
-    await userCollection.updateOne(
-      { _id: ObjectId.createFromHexString(userId) },
-      {
-        $set: {
-          password: hashedPassword,
-          isActive: true,
-          dateUpdated: new Date(),
-          lastLogin: new Date(),
-        },
-      }
-    );
 
     // Generate new auth tokens
     const { accessToken, refreshToken } = await generateToken(userId);
@@ -78,11 +65,15 @@ export async function POST(req: NextRequest) {
       last_action: now,
     };
 
-    // Add session to user
-    await userCollection.updateOne(
-      { _id: ObjectId.createFromHexString(userId) },
-      { $push: { sessions: newSession as any } }
-    );
+    // Set password, activate account, and append new session (jsonb array concat)
+    await db
+      .update(users)
+      .set({
+        password: hashedPassword,
+        isActive: true,
+        sessions: sql`${users.sessions} || ${JSON.stringify([newSession])}::jsonb`,
+      })
+      .where(eq(users.id, userId));
 
     const res = NextResponse.json(
       {
@@ -103,18 +94,9 @@ export async function POST(req: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 60 * 60 * 6, // 6 hours for access token
-      path: "/",
-    });
-
-    res.cookies.set("ROLES", user.roles, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
       maxAge: 60 * 60 * 6, // 6 hours
+      path: "/",
     });
-
 
     return res;
   } catch (error) {
@@ -127,8 +109,10 @@ export async function POST(req: NextRequest) {
         { status: error.statusCode }
       );
     }
+
+    console.error("Set password error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", statusCode: 500 },
       { status: 500 }
     );
   }

@@ -1,21 +1,21 @@
-import { getInventoryLogsCollection } from "./mongoDB";
-import { ObjectId } from "mongodb";
+import { db } from "./db";
+import { inventoryLogs } from "./db/schema";
 
 export type InventoryChangeReason = "Sale" | "Initial Stock" | "Restock" | "Manual Adjustment" | "Return" | "Order Cancelled" | "Price Update";
 
 export interface InventoryLog {
-  _id?: ObjectId;
+  id?: string;
   productId: string;
-  productName: string;
+  productName?: string;
   changeAmount: number; // Positive for additions, negative for deductions
-  newQuantity: number;
+  newQuantity?: number;
   reason: InventoryChangeReason;
   oldPrice?: number | null;
   newPrice?: number | null;
-  referenceId?: string | ObjectId;
+  referenceId?: string;
   note?: string;
   operator?: string;
-  timestamp: Date;
+  createdAt: Date;
 }
 
 /**
@@ -23,25 +23,30 @@ export interface InventoryLog {
  */
 export async function logInventoryChange(logData: {
   productId: string;
-  productName: string;
+  productName?: string;
   changeAmount: number;
-  newQuantity: number;
+  newQuantity?: number;
   reason: InventoryChangeReason;
   oldPrice?: number | null;
   newPrice?: number | null;
-  referenceId?: string | ObjectId;
+  referenceId?: string;
   note?: string;
   operator?: string;
 }) {
   try {
-    const logsCollection = await getInventoryLogsCollection();
     const log: InventoryLog = {
       ...logData,
-      timestamp: new Date(),
+      createdAt: new Date(),
     };
-    
-    await logsCollection.insertOne(log);
-    console.log(`📝 Inventory Log Created: ${logData.productName} (${logData.changeAmount > 0 ? "+" : ""}${logData.changeAmount}) - Reason: ${logData.reason}`);
+
+    await db.insert(inventoryLogs).values({
+      productId: logData.productId,
+      change: logData.changeAmount,
+      reason: logData.reason,
+      createdAt: log.createdAt,
+    });
+
+    console.log(`📝 Inventory Log Created: ${logData.productName ?? logData.productId} (${logData.changeAmount > 0 ? "+" : ""}${logData.changeAmount}) - Reason: ${logData.reason}`);
     return { success: true };
   } catch (error) {
     console.error("❌ Failed to create inventory log:", error);

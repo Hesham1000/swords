@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, ChangeEvent, FormEvent, useEffect, useRef, useCallback } from "react";
-import { DollarSign, User, Calendar, FileText, CheckCircle, Clock, AlertCircle, Plus, Trash2, Package, Percent, X } from "lucide-react";
+import { DollarSign, User, Calendar, FileText, CheckCircle, Clock, AlertCircle, Plus, Trash2, Package, Percent, X, Mail } from "lucide-react";
 import { createInvoice, updateInvoice, Invoice, InvoiceItem } from "../lib/api/invoice";
 import { getProducts, Product } from "../lib/api/product";
 
 interface InvoiceFormData {
   customer: string;
+  customerEmail: string;
   status: "paid" | "pending" | "overdue";
   paymentMethod: "cash" | "visa";
   date: string;
@@ -21,6 +22,7 @@ interface InvoiceFormProps {
 const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialData }) => {
   const [formData, setFormData] = useState<InvoiceFormData>({
     customer: initialData?.customer || "",
+    customerEmail: initialData?.customerEmail || "",
     status: initialData?.status || "pending",
     paymentMethod: initialData?.paymentMethod || "cash",
     date: initialData?.date || new Date().toISOString().split('T')[0],
@@ -32,6 +34,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
   const [loading, setLoading] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [fieldErrors, setFieldErrors] = useState<{ customer?: string; customerEmail?: string; items?: string; deposit?: string; date?: string }>({});
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -152,20 +155,48 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
       ...prev,
       [name]: value,
     }));
+    // Clear the field-level error as the user edits the field
+    setFieldErrors((prev) => (prev[name as keyof typeof prev] ? { ...prev, [name]: undefined } : prev));
   };
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    const errors: { customer?: string; customerEmail?: string; items?: string; deposit?: string; date?: string } = {};
+
+    if (!formData.customer || formData.customer.trim().length < 2) {
+      errors.customer = "Customer name is required (minimum 2 characters).";
+    }
+    const email = formData.customerEmail.trim();
+    if (email && !EMAIL_REGEX.test(email)) {
+      errors.customerEmail = "Please enter a valid email address.";
+    }
     if (items.length === 0) {
-      setError("Please add at least one product.");
+      errors.items = "Please add at least one product.";
+    }
+    const depositNum = parseFloat(deposit);
+    if (deposit.trim() === "" || isNaN(depositNum) || depositNum < 0) {
+      errors.deposit = "Deposit must be a non-negative number.";
+    }
+    if (!formData.date) {
+      errors.date = "Invoice date is required.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError("Please fix the highlighted fields before submitting.");
       return;
     }
+
     setLoading(true);
     setError("");
+    setFieldErrors({});
 
     try {
       const invoiceData: Partial<Invoice> = {
         ...formData,
+        ...(formData.customerEmail.trim() ? { customerEmail: formData.customerEmail.trim() } : {}),
         items,
         amount: calculateTotal(),
         discount: calculateTotalDiscount(),
@@ -180,8 +211,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
       
       if (onSuccess) onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -204,18 +235,43 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
             <h3>CUSTOMER INFORMATION</h3>
           </div>
           <div className="form-group full-width">
-            <label>Customer Name / Reference</label>
+            <label htmlFor="invoice-customer">Customer Name / Reference *</label>
             <div className="input-with-icon">
               <User size={14} />
               <input
+                id="invoice-customer"
                 type="text"
                 name="customer"
                 value={formData.customer}
                 onChange={handleChange}
-                placeholder="Optional: e.g. Elite Fencing Club"
+                placeholder="e.g. Elite Fencing Club"
                 disabled={loading}
+                aria-invalid={!!fieldErrors.customer}
+                aria-describedby={fieldErrors.customer ? "customer-error" : undefined}
               />
             </div>
+            {fieldErrors.customer && (
+              <p className="field-error" id="customer-error" role="alert">{fieldErrors.customer}</p>
+            )}
+          </div>
+          <div className="form-group full-width">
+            <label>Customer Email (optional)</label>
+            <div className="input-with-icon">
+              <Mail size={14} />
+              <input
+                type="email"
+                name="customerEmail"
+                value={formData.customerEmail}
+                onChange={handleChange}
+                placeholder="Optional: e.g. billing@elitefencing.com"
+                disabled={loading}
+                aria-invalid={!!fieldErrors.customerEmail}
+                aria-describedby={fieldErrors.customerEmail ? "customerEmail-error" : undefined}
+              />
+            </div>
+            {fieldErrors.customerEmail && (
+              <p className="field-error" id="customerEmail-error" role="alert">{fieldErrors.customerEmail}</p>
+            )}
           </div>
         </div>
 
@@ -398,18 +454,25 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
           </div>
           <div className="form-grid">
             <div className="form-group">
-              <label>Invoice Date *</label>
+              <label htmlFor="invoice-date">Invoice Date *</label>
               <div className="input-with-icon">
                 <Calendar size={14} />
                 <input
+                  id="invoice-date"
                   type="date"
                   name="date"
                   value={formData.date}
                   onChange={handleChange}
                   required
                   disabled={loading}
+                  className={fieldErrors.date ? "input-invalid" : ""}
+                  aria-invalid={!!fieldErrors.date}
+                  aria-describedby={fieldErrors.date ? "date-error" : undefined}
                 />
               </div>
+              {fieldErrors.date && (
+                <small className="field-error" id="date-error" role="alert">{fieldErrors.date}</small>
+              )}
             </div>
           </div>
         </div>
@@ -490,6 +553,26 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
           color: var(--text-secondary);
           opacity: 0.8;
           font-style: italic;
+        }
+        .field-error {
+          font-size: 11px;
+          color: #e11d48;
+          margin: 0;
+          font-weight: 600;
+        }
+        .form-group input.input-invalid,
+        .form-group select.input-invalid {
+          border-color: var(--accent-red);
+        }
+        .form-actions .btn-primary:disabled,
+        .form-actions .btn-secondary:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+        .input-with-icon input[type="email"] {
+          padding-left: 2.5rem !important;
+          width: 100%;
         }
         .form-group input, .form-group select {
           padding: 0.75rem 1rem;

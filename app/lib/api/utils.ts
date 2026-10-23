@@ -1,20 +1,27 @@
 // app/lib/api/utils.ts
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+export const API_URL = "";
 
 /**
  * Transforms a MongoDB product document into the format expected by the frontend.
  * - Renames _id to id
  * - Prepends the API URL to image paths if they are relative
  */
-export function transformProduct(product: any) {
+interface MongoProduct {
+    id?: string;
+    _id?: { toString(): string };
+    images?: string[] | null;
+    [key: string]: unknown;
+}
+
+export function transformProduct(product: MongoProduct | null) {
     if (!product) return null;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+    const apiUrl = API_URL;
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
 
     const transformed = {
         ...product,
-        id: product._id.toString(),
+        id: product.id ?? product._id?.toString(),
         images: (product.images || []).map((img: string) => {
             if (img.startsWith("http")) {
                 return img;

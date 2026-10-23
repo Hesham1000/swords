@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Package } from "lucide-react";
+import { Package, ArrowUp, ArrowDown, Plus } from "lucide-react";
 import { Product } from "../lib/api/product";
 import ProductRow from "./products";
 
@@ -57,7 +57,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
       <div className="no-products">
         <Package size={64} />
         <h3>No products found</h3>
-        <p>Try adjusting your search or filters to find what you're looking for.</p>
+        <p>Try adjusting your search or filters to find what you&apos;re looking for.</p>
       </div>
     );
   }

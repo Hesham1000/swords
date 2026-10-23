@@ -20,7 +20,7 @@ interface SidebarProps {
   onNavigation: (page: string) => void;
   sidebarOpen: boolean;
   onLogoutSuccess?: () => void; // Optional callback after successful logout
-  user?: any; // Added user prop
+  user?: { name?: string; username?: string; email?: string; role?: string; roles?: string[] } | null; // Added user prop
 }
 
 const Sidebar = ({
@@ -62,6 +62,10 @@ const Sidebar = ({
 
   const isAdmin = user?.roles?.includes("admin");
 
+  // Normalize both sides so "/Dashboard" and "dashboard" both match
+  const normalizedCurrentPage = currentPage.replace(/^\//, "").toLowerCase();
+  const isActive = (id: string) => normalizedCurrentPage === id;
+
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, adminOnly: true },
     { id: "products", label: "Products", icon: Package, adminOnly: false },
@@ -74,8 +78,7 @@ const Sidebar = ({
     try {
       setIsLoggingOut(true);
 
-      const baseUrl =
-        process.env.NEXT_PUBLIC_API_URL;
+      const baseUrl = "";
       const response = await fetch(`${baseUrl}/api/auth/logout`, {
         method: "POST",
         headers: {
@@ -184,6 +187,33 @@ const Sidebar = ({
           <span>{isLoggingOut ? "Logging out..." : "Logout"}</span>
         </button>
       </div>
+      <style jsx global>{`
+        .nav-item {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
+        }
+        .nav-item:hover {
+          transform: translateX(5px);
+          background: var(--glass-bg);
+        }
+        .nav-item.active {
+          background: var(--glass-bg);
+          border-left: 3px solid var(--accent-blue);
+          color: var(--accent-blue);
+        }
+        .nav-item span {
+          transition: color 0.3s ease;
+        }
+        .theme-btn,
+        .logout-btn {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .theme-btn:hover,
+        .logout-btn:hover {
+          filter: brightness(1.15);
+          transform: translateY(-1px);
+        }
+      `}</style>
     </aside>
   );
 };

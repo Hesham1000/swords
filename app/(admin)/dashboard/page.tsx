@@ -17,39 +17,22 @@ import { updateInvoiceStatus } from "../../lib/api/invoice";
 import { useRouter } from "next/navigation";
 import { useDashboard } from "../layout";
 
-export default function DashboardOverview() {
-  const { user, isAdmin, dashboardData, refreshDashboard } = useDashboard();
-  const router = useRouter();
-  const [error, setError] = useState("");
+interface StatCardProps {
+  title: string;
+  value: number;
+  change: number;
+  icon: React.ElementType;
+  prefix?: string;
+}
 
-  if (!dashboardData && !error) {
-    return (
-      <div className="flex flex-col items-center justify-center p-20 gap-4">
-        <Loader2 className="animate-spin text-blue-500" size={40} />
-        <p className="text-slate-400 font-medium">Gathering command data...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return <div className="error-banner">{error}</div>;
-  }
-
-  const { summary, recentInvoices, lowStockItems, analytics } = dashboardData!;
-
-  const StatCard = ({
-    title,
-    value,
-    change,
-    icon: Icon,
-    prefix = ""
-  }: {
-    title: string;
-    value: number;
-    change: number;
-    icon: React.ElementType;
-    prefix?: string;
-  }) => (
+function StatCard({
+  title,
+  value,
+  change,
+  icon: Icon,
+  prefix = ""
+}: StatCardProps) {
+  return (
     <div className="stat-card">
       <div className="stat-icon">
         <Icon size={20} />
@@ -64,6 +47,53 @@ export default function DashboardOverview() {
       </p>
     </div>
   );
+}
+
+export default function DashboardOverview() {
+  const { user, isAdmin, dashboardData, refreshDashboard } = useDashboard();
+  const router = useRouter();
+  const [error, setError] = useState("");
+
+  if (!dashboardData && !error) {
+    return (
+      <div className="dashboard-skeleton" role="status" aria-live="polite" aria-label="Loading dashboard">
+        <div className="skeleton-stats-grid">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="skeleton-stat-card">
+              <div className="skeleton-block skeleton-icon-block" />
+              <div className="skeleton-block skeleton-line w-2/3" />
+              <div className="skeleton-block skeleton-line w-1/2" />
+            </div>
+          ))}
+        </div>
+        <div className="skeleton-charts-grid">
+          <div className="skeleton-chart-card wide">
+            <div className="skeleton-block skeleton-line w-1/3" />
+            <div className="skeleton-block skeleton-chart-area" />
+          </div>
+          <div className="skeleton-chart-card">
+            <div className="skeleton-block skeleton-line w-1/3" />
+            <div className="skeleton-block skeleton-chart-area" />
+          </div>
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="animate-spin text-blue-500" size={20} />
+          <p className="text-slate-400 font-medium text-sm">Gathering command data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="error-banner">{error}</div>;
+  }
+
+  const { summary, recentInvoices, lowStockItems } = dashboardData!;
+  const analytics = dashboardData?.analytics ?? {
+    trends: [],
+    categories: [],
+    topProducts: []
+  };
 
   return (
     <>
@@ -107,6 +137,13 @@ export default function DashboardOverview() {
                </button>
             </div>
           </div>
+          {analytics?.trends.length === 0 ? (
+            <div className="empty-state" role="status">
+              <div className="empty-state-icon"><TrendingUp size={24} /></div>
+              <p className="empty-state-title">No trend data yet</p>
+              <p className="empty-state-desc">Revenue trends will appear as orders come in.</p>
+            </div>
+          ) : (
           <div className="area-chart-container">
             <svg viewBox="0 0 800 200" className="svg-area-chart">
               <defs>
@@ -116,18 +153,18 @@ export default function DashboardOverview() {
                 </linearGradient>
               </defs>
               <path
-                d={`M 0 200 ${analytics.trends.map((t, i) => {
-                  const maxRev = Math.max(...analytics.trends.map(d => d.revenue), 1);
-                  const x = (i / (analytics.trends.length - 1)) * 800;
+                d={`M 0 200 ${analytics?.trends?.map((t, i) => {
+                  const maxRev = Math.max(...analytics?.trends?.map(d => d.revenue), 1);
+                  const x = (i / (analytics?.trends.length - 1)) * 800;
                   const y = 200 - (t.revenue / maxRev) * 150;
                   return `L ${x} ${y}`;
                 }).join(' ')} L 800 200 Z`}
                 fill="url(#areaGradient)"
               />
               <path
-                d={analytics.trends.map((t, i) => {
-                  const maxRev = Math.max(...analytics.trends.map(d => d.revenue), 1);
-                  const x = (i / (analytics.trends.length - 1)) * 800;
+                d={analytics?.trends?.map((t, i) => {
+                  const maxRev = Math.max(...analytics?.trends?.map(d => d.revenue), 1);
+                  const x = (i / (analytics?.trends.length - 1)) * 800;
                   const y = 200 - (t.revenue / maxRev) * 150;
                   return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
                 }).join(' ')}
@@ -138,10 +175,11 @@ export default function DashboardOverview() {
               />
             </svg>
             <div className="chart-labels">
-              <span>{analytics.trends[0]?.date}</span>
-              <span>{analytics.trends[analytics.trends.length-1]?.date}</span>
+              <span>{analytics?.trends[0]?.date}</span>
+              <span>{analytics?.trends[analytics?.trends.length-1]?.date}</span>
             </div>
           </div>
+          )}
         </div>
 
         {/* Category Distribution Donut */}
@@ -149,9 +187,9 @@ export default function DashboardOverview() {
           <div className="card-header"><h2 className="card-title">Sales by Category</h2></div>
           <div className="donut-container">
             <svg viewBox="0 0 200 200" className="svg-donut">
-              {analytics.categories.map((cat, i) => {
-                const total = analytics.categories.reduce((sum, c) => sum + c.value, 0);
-                const startAngle = (analytics.categories.slice(0, i).reduce((sum, c) => sum + c.value, 0) / (total || 1)) * 360;
+              {analytics?.categories?.map((cat, i) => {
+                const total = analytics?.categories.reduce((sum, c) => sum + c.value, 0);
+                const startAngle = (analytics?.categories.slice(0, i).reduce((sum, c) => sum + c.value, 0) / (total || 1)) * 360;
                 const angle = (cat.value / (total || 1)) * 360;
                 const x1 = 100 + 70 * Math.cos((startAngle - 90) * Math.PI / 180);
                 const y1 = 100 + 70 * Math.sin((startAngle - 90) * Math.PI / 180);
@@ -163,12 +201,12 @@ export default function DashboardOverview() {
               })}
               <circle cx="100" cy="100" r="50" fill="var(--bg-deep)" />
               <text x="100" y="105" textAnchor="middle" className="donut-center-text" fill="var(--text-primary)" style={{ fontSize: '12px', fontWeight: 'bold' }}>
-                {analytics.categories.length} CATS
+                {analytics?.categories.length} CATS
               </text>
             </svg>
             <div className="donut-legend">
-              {analytics.categories.map((cat, i) => {
-                const total = analytics.categories.reduce((sum, c) => sum + c.value, 0);
+              {analytics?.categories?.map((cat, i) => {
+                const total = analytics?.categories.reduce((sum, c) => sum + c.value, 0);
                 const percentage = Math.round((cat.value / (total || 1)) * 100);
                 return (
                   <div key={cat.name} className="legend-item">
@@ -205,14 +243,38 @@ export default function DashboardOverview() {
         {/* Recent Invoices */}
         <div className="list-card">
           <div className="card-header"><h2 className="card-title">Recent Invoices</h2></div>
-          <div className="invoice-list">
-            {recentInvoices.map((invoice) => (
-              <div key={invoice._id || invoice.invoiceId} className={`invoice-item status-${invoice.status}`}>
-                <div className="invoice-id-col"><div className="invoice-id">{invoice.invoiceId}</div><div className="invoice-customer">{invoice.customer}</div></div>
-                <div className="invoice-amount-col"><div className="invoice-amount">{invoice.amount.toLocaleString()} EGP</div><div className="invoice-date">{invoice.date}</div></div>
+          {recentInvoices.length === 0 ? (
+            <div className="empty-state" role="status">
+              <div className="empty-state-icon"><DollarSign size={24} /></div>
+              <p className="empty-state-title">No invoices yet</p>
+              <p className="empty-state-desc">Invoices will appear here once customers are billed.</p>
+            </div>
+          ) : (
+            <>
+              <div className="invoice-bar-chart" role="img" aria-label="Bar chart of recent invoice amounts">
+                {recentInvoices.slice(0, 8).map((invoice) => {
+                  const maxAmount = Math.max(...recentInvoices.map(i => i.amount), 1);
+                  const heightPct = Math.max((invoice.amount / maxAmount) * 100, 4);
+                  return (
+                    <div
+                      key={`bar-${invoice._id || invoice.invoiceId}`}
+                      className="invoice-bar"
+                      style={{ height: `${heightPct}%` }}
+                      title={`${invoice.invoiceId} — ${invoice.amount.toLocaleString()} EGP`}
+                    />
+                  );
+                })}
               </div>
-            ))}
-          </div>
+              <div className="invoice-list">
+                {recentInvoices.map((invoice) => (
+                  <div key={invoice._id || invoice.invoiceId} className={`invoice-item status-${invoice.status}`}>
+                    <div className="invoice-id-col"><div className="invoice-id">{invoice.invoiceId}</div><div className="invoice-customer">{invoice.customer}</div></div>
+                    <div className="invoice-amount-col"><div className="invoice-amount">{invoice.amount.toLocaleString()} EGP</div><div className="invoice-date">{invoice.date}</div></div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
           <button className="view-all-btn" onClick={() => router.push("/invoices")}>View All Invoices</button>
         </div>
       </div>
@@ -220,9 +282,16 @@ export default function DashboardOverview() {
       {/* Top Selling Products */}
       <div className="chart-card">
         <div className="card-header"><h2 className="card-title">Top Selling Products</h2></div>
+        {analytics?.topProducts.length === 0 ? (
+          <div className="empty-state" role="status">
+            <div className="empty-state-icon"><Package size={24} /></div>
+            <p className="empty-state-title">No products sold yet</p>
+            <p className="empty-state-desc">Top sellers will be ranked here once sales are recorded.</p>
+          </div>
+        ) : (
         <div className="products-leaderboard">
-          {analytics.topProducts.map((product, idx) => {
-            const maxRev = Math.max(...analytics.topProducts.map(p => p.revenue), 1);
+          {analytics?.topProducts?.map((product, idx) => {
+            const maxRev = Math.max(...analytics?.topProducts?.map(p => p.revenue), 1);
             const progressWidth = (product.revenue / maxRev) * 100;
             return (
               <div key={idx} className="leaderboard-item">
@@ -235,6 +304,7 @@ export default function DashboardOverview() {
             );
           })}
         </div>
+        )}
       </div>
     </>
   );

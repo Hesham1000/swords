@@ -1,6 +1,6 @@
 // lib/api/invoice.ts
 import { Currency } from "./wallet";
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const apiUrl = "";
 
 export interface InvoiceItem {
   productId: string;
@@ -14,6 +14,7 @@ export interface Invoice {
   _id?: string;
   invoiceId: string;
   customer: string;
+  customerEmail?: string;
   amount: number;
   discount: number; // total discount amount in EGP
   status: "paid" | "pending" | "overdue";
@@ -50,7 +51,7 @@ export interface InvoiceResponse {
  */
 export async function getInvoices(page: number = 1, limit: number = 10, search?: string): Promise<InvoicesResponse> {
   try {
-    const url = new URL(`${apiUrl}/api/invoices`);
+    const url = new URL(`${apiUrl}/api/invoices`, typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
     if (search) url.searchParams.append("search", search);
@@ -100,7 +101,7 @@ export async function createInvoice(invoiceData: Partial<Invoice>): Promise<Invo
 /**
  * Update invoice status or add deposit
  */
-export async function updateInvoiceStatus(id: string, status?: string, deposit?: number): Promise<any> {
+export async function updateInvoiceStatus(id: string, status?: string, deposit?: number): Promise<unknown> {
   try {
     const response = await fetch(`${apiUrl}/api/invoices`, {
       method: "PATCH",
