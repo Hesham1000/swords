@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Wallet, Plus, ArrowUpCircle, ArrowDownCircle, Truck, Loader2 } from "lucide-react";
+import { Wallet, Plus, ArrowUpCircle, ArrowDownCircle, Truck, Loader2, Search } from "lucide-react";
 import WalletDepositForm from "../../components/wallet-deposit-form";
 import ShipmentForm from "../../components/shipment-form";
 import { getWalletBalance, getWalletTransactions, WalletTransaction } from "../../lib/api/wallet";
@@ -18,6 +18,9 @@ export default function WalletPage() {
   const [showShipmentForm, setShowShipmentForm] = useState(false);
   const [refresh, setRefresh] = useState(false);
   const [page, setPage] = useState(1);
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"all" | "deposit" | "purchase" | "refund">("all");
   const [pagination, setPagination] = useState<{
     totalPages: number;
     totalItems: number;
@@ -28,7 +31,7 @@ export default function WalletPage() {
   const lastParamsRef = useRef("");
 
   useEffect(() => {
-    const params = JSON.stringify({ refresh, page });
+    const params = JSON.stringify({ refresh, page, sortOrder, search, typeFilter });
     if (params === lastParamsRef.current) return;
     lastParamsRef.current = params;
 
@@ -37,7 +40,7 @@ export default function WalletPage() {
         setLoading(true);
         const [balanceRes, transactionsRes] = await Promise.all([
           getWalletBalance(),
-          getWalletTransactions(page),
+          getWalletTransactions(page, 10, sortOrder, search, typeFilter),
         ]);
         setBalance({
           EGP: balanceRes.data.balanceEGP,
@@ -55,7 +58,7 @@ export default function WalletPage() {
       }
     };
     fetchWalletData();
-  }, [refresh, page]);
+  }, [refresh, page, search, typeFilter]);
 
   return (
     <div className="page-content">
@@ -96,14 +99,63 @@ export default function WalletPage() {
       </div>
 
       <div className="list-card full-width">
-        <div className="card-header">
+        <div className="card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h2 className="card-title">Transaction History</h2>
+          <select
+            className="filter-select"
+            value={sortOrder}
+            onChange={(e) => { setSortOrder(e.target.value as "newest" | "oldest"); setPage(1); }}
+            aria-label="Sort transactions"
+          >
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+          </select>
+        </div>
+        <div className="filter-bar">
+          <div className="search-wrapper">
+            <Search size={18} className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search transactions..."
+              value={search}
+              className="search-input"
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            />
+          </div>
+          <select
+            className="filter-select"
+            value={typeFilter}
+            onChange={(e) => { setTypeFilter(e.target.value as any); setPage(1); }}
+            aria-label="Filter by type"
+          >
+            <option value="all">All Types</option>
+            <option value="deposit">Deposit</option>
+            <option value="purchase">Purchase</option>
+            <option value="refund">Refund</option>
+          </select>
         </div>
         <div className="transaction-list">
           {loading ? (
-            <div className="loading-state"><Loader2 className="animate-spin" /></div>
+            <div className="flex flex-col gap-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+                  <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                  <div className="flex-1 flex flex-col gap-2">
+                    <div className="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                    <div className="h-3 w-1/3 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                  </div>
+                  <div className="h-5 w-20 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                </div>
+              ))}
+            </div>
           ) : transactions.length === 0 ? (
-            <div className="empty-state">No transactions recorded.</div>
+            <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+              <div className="h-16 w-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                <Wallet size={32} className="text-slate-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200">No transactions yet</h3>
+              <p className="text-sm text-slate-400">Your wallet activity will appear here.</p>
+            </div>
           ) : (
             transactions.map((tx, idx) => (
               <div key={idx} className="transaction-item">

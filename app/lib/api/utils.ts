@@ -1,5 +1,5 @@
 // app/lib/api/utils.ts
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+export const API_URL = "";
 
 /**
  * Transforms a MongoDB product document into the format expected by the frontend.
@@ -9,7 +9,7 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 export function transformProduct(product: any) {
     if (!product) return null;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+    const apiUrl = "";
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
 
     const transformed = {
@@ -20,7 +20,8 @@ export function transformProduct(product: any) {
                 return img;
             }
             if (img.startsWith("/uploads")) {
-                return `${apiUrl}${img}`;
+                // apiUrl is now "" — relative paths work in Next.js as-is
+                return img;
             }
             // If it starts with 'v' followed by numbers, it's likely a Cloudinary path
             // e.g., v1744646400/products/my-image.jpg
@@ -28,7 +29,7 @@ export function transformProduct(product: any) {
                 return `https://res.cloudinary.com/${cloudName}/image/upload/${img}`;
             }
             // Fallback for any other local relative paths
-            return img.startsWith("/") ? `${apiUrl}${img}` : img;
+            return img;
         }),
     };
 

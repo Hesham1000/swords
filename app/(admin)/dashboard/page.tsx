@@ -7,6 +7,7 @@ import {
   DollarSign, 
   ShoppingCart, 
   Package, 
+  BarChart3,
   Users, 
   Loader2, 
   AlertCircle, 
@@ -21,12 +22,39 @@ export default function DashboardOverview() {
   const { user, isAdmin, dashboardData, refreshDashboard } = useDashboard();
   const router = useRouter();
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  if (!dashboardData && !error) {
+  useEffect(() => {
+    if (dashboardData || error) setLoading(false);
+  }, [dashboardData, error]);
+
+  if (loading && !dashboardData && !error) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 gap-4">
-        <Loader2 className="animate-spin text-blue-500" size={40} />
-        <p className="text-slate-400 font-medium">Gathering command data...</p>
+      <div className="stats-grid">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="stat-card">
+            <div className="flex items-center justify-between">
+              <div className="h-10 w-10 rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse" />
+              <div className="h-5 w-14 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            </div>
+            <div className="h-4 w-24 rounded bg-gray-200 dark:bg-gray-700 animate-pulse mt-4" />
+            <div className="h-8 w-32 rounded bg-gray-200 dark:bg-gray-700 animate-pulse mt-2" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (!loading && !dashboardData && !error) {
+    return (
+      <div className="flex flex-col items-center justify-center p-20 gap-3 text-center">
+        <div className="h-16 w-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+          <BarChart3 size={32} className="text-slate-400" />
+        </div>
+        <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200">No data available</h3>
+        <p className="text-sm text-slate-400 max-w-sm">
+          Once you add products and transactions, your dashboard will populate here.
+        </p>
       </div>
     );
   }

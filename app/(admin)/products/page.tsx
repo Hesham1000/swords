@@ -24,9 +24,11 @@ export default function ProductsPage() {
   const [filterCategory, setFilterCategory] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
+  const [sortField, setSortField] = useState<"name" | "price" | "quantity">("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
-    const params = JSON.stringify({ page, searchQuery, filterCategory, filterType, filterBrand, refresh });
+    const params = JSON.stringify({ page, searchQuery, filterCategory, filterType, filterBrand, sortField, sortOrder, refresh });
     if (params === lastParamsRef.current) return;
     lastParamsRef.current = params;
 
@@ -38,6 +40,8 @@ export default function ProductsPage() {
           category: filterCategory,
           productType: filterType,
           brand: filterBrand,
+          sort: sortField,
+          order: sortOrder,
         });
         setProducts(response.data);
         setPagination(response.pagination);
@@ -48,7 +52,7 @@ export default function ProductsPage() {
       }
     };
     fetchProducts();
-  }, [page, searchQuery, filterCategory, filterType, filterBrand, refresh]);
+  }, [page, searchQuery, filterCategory, filterType, filterBrand, sortField, sortOrder, refresh]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this product?")) return;
@@ -155,6 +159,25 @@ export default function ProductsPage() {
             <option value="allstar">Allstar</option>
             <option value="folo">Folo</option>
             <option value="chinese">Chinese</option>
+          </select>
+
+          <select
+            value={`${sortField}-${sortOrder}`}
+            onChange={(e) => {
+              const [field, ord] = e.target.value.split("-");
+              setSortField(field as "name" | "price" | "quantity");
+              setSortOrder(ord as "asc" | "desc");
+              setPage(1);
+            }}
+            className="filter-select"
+            aria-label="Sort products"
+          >
+            <option value="name-asc">Name (A-Z)</option>
+            <option value="name-desc">Name (Z-A)</option>
+            <option value="price-asc">Price (Low-High)</option>
+            <option value="price-desc">Price (High-Low)</option>
+            <option value="quantity-asc">Quantity (Low-High)</option>
+            <option value="quantity-desc">Quantity (High-Low)</option>
           </select>
 
           {(searchQuery || filterCategory || filterType || filterBrand) && (

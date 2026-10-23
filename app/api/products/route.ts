@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category");
     const productType = searchParams.get("productType");
     const brand = searchParams.get("brand");
+    const sort = searchParams.get("sort") || "createdAt";
+    const order = searchParams.get("order") || "desc";
 
     const skip = (page - 1) * limit;
 
@@ -116,12 +118,21 @@ export async function GET(request: NextRequest) {
       totalQuantity = Number(result[0]?.total ?? 0);
     }
 
+    const sortColumn =
+      sort === "name"
+        ? products.name
+        : sort === "price"
+          ? products.price
+          : sort === "quantity"
+            ? products.quantity
+            : products.createdAt;
+
     // Fetch paginated products
     const rows = await db
       .select()
       .from(products)
       .where(whereClause)
-      .orderBy(desc(products.createdAt))
+      .orderBy(order === "asc" ? asc(sortColumn) : desc(sortColumn))
       .offset(skip)
       .limit(limit);
 

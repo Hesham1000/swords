@@ -13,7 +13,7 @@ const connectionString = (process.env.DATABASE_URL || "").replace(
 
 const client = postgres(connectionString, {
   ssl: { rejectUnauthorized: false },
-  connectionTimeoutMillis: 8000,
+  connect_timeout: 8,
 });
 
 export const db = drizzle(client, { schema });

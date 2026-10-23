@@ -35,9 +35,14 @@ const ProductsList: React.FC<ProductsListProps> = ({
 }) => {
   if (loading) {
     return (
-      <div className="products-loading">
-        <div className="spinner"></div>
-        <p>Loading products...</p>
+      <div className="products-grid">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="rounded-xl border border-gray-100 dark:border-gray-800 p-4">
+            <div className="h-40 w-full rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            <div className="h-5 w-3/4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse mt-4" />
+            <div className="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700 animate-pulse mt-2" />
+          </div>
+        ))}
       </div>
     );
   }

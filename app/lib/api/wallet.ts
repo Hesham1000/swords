@@ -109,11 +109,24 @@ export async function withdrawFromWallet(amount: number, note?: string, currency
 /**
  * Fetch wallet transaction history
  */
-export async function getWalletTransactions(page: number = 1, limit: number = 10): Promise<WalletTransactionsResponse> {
+export async function getWalletTransactions(
+  page: number = 1,
+  limit: number = 10,
+  order: "newest" | "oldest" = "newest",
+  search: string = "",
+  type: string = "all"
+): Promise<WalletTransactionsResponse> {
   try {
     const url = new URL(`${apiUrl}/api/wallet/transactions`);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
+    url.searchParams.append("order", order);
+    if (search) {
+      url.searchParams.append("search", search);
+    }
+    if (type !== "all") {
+      url.searchParams.append("type", type);
+    }
 
     const response = await fetch(url.toString(), {
       method: "GET",
