@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProductsCollection } from "../../../lib/mongoDB";
+import { db } from "../../../lib/db";
+import { products } from "../../../lib/db/schema";
 import { transformProduct } from "../../../lib/api/utils";
 import { uploadImage, getRelativePathFromUrl } from "../../../lib/cloudinary";
 
@@ -7,8 +8,8 @@ import { uploadImage, getRelativePathFromUrl } from "../../../lib/cloudinary";
 interface ProductData {
   name: string;
   description: string;
-  price: number | null;
-  category: ("Foil" | "Sabre" | "Epée")[];
+  price: string | null;
+  category: string[];
   productType: string;
   brand?: string;
   model?: string;
@@ -21,14 +22,13 @@ interface ProductData {
   gloveSize?: string;
   quantity: number;
   images: string[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const productsCollection = await getProductsCollection();
 
     // Extract basic fields
     const name = (formData.get("name") as string)?.trim();
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         // Convert file to buffer
         const bytes = await image.arrayBuffer();
         const buffer = Buffer.from(bytes);
-        
+
         // Upload to Cloudinary
         const result = await uploadImage(buffer, "products");
         imagePaths.push(getRelativePathFromUrl(result.url));
@@ -70,13 +70,13 @@ export async function POST(request: NextRequest) {
     const productData: ProductData = {
       name,
       description: description || "",
-      price: price ? parseFloat(price) : null,
-      category: category as any,
+      price: price ? price : null,
+      category: category as string[],
       productType: productType,
       quantity: parseInt(quantity),
       images: imagePaths,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     // Add type-specific fields conditionally — only include what's relevant
@@ -94,21 +94,21 @@ export async function POST(request: NextRequest) {
       if (lameColor) productData.lameColor = lameColor;
       if (material) productData.material = material;
       if (subCategory) productData.subCategory = subCategory;
-    } 
+    }
     else if (["grip", "guard", "guard_padding"].includes(productType)) {
       productData.brand = brand || "pbt";
       const subCategory = formData.get("subCategory") as string;
       const hand = formData.get("hand") as string;
       const material = formData.get("material") as string;
-      
+
       if (subCategory) productData.subCategory = subCategory;
       if (hand) productData.hand = hand;
       if (material) productData.material = material;
-      
+
       if (productType === "guard") {
         productData.isMini = formData.get("isMini") === "true";
       }
-    } 
+    }
     else if (productType === "socket") {
       productData.brand = brand || "pbt";
       const subCategory = formData.get("subCategory") as string;
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
     else if (productType === "glove") {
       const gloveSize = formData.get("gloveSize") as string;
       const hand = formData.get("hand") as string;
-      
+
       if (gloveSize) productData.gloveSize = gloveSize;
       if (hand) productData.hand = hand;
     }
@@ -127,14 +127,14 @@ export async function POST(request: NextRequest) {
       if (model) productData.model = model;
     }
 
-    const result = await productsCollection.insertOne(productData);
-    const insertedProduct = transformProduct({ ...productData, _id: result.insertedId });
+    // Insert the product into PostgreSQL and return the created row
+    const [created] = await db.insert(products).values(productData).returning();
 
     // Log the initial stock arrival
     try {
       const { logInventoryChange } = await import("../../../lib/inventory-server");
       await logInventoryChange({
-        productId: result.insertedId.toString(),
+        productId: created.id,
         productName: productData.name,
         changeAmount: productData.quantity,
         newQuantity: productData.quantity,
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         message: "Product created successfully",
-        data: insertedProduct,
+        data: transformProduct(created),
       },
       { status: 201 }
     );

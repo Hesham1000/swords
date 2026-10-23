@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
-import { getProductsCollection } from "../../../lib/mongoDB";
+import { eq } from "drizzle-orm";
+import { db } from "../../../lib/db";
+import { products } from "../../../lib/db/schema";
 import { transformProduct } from "../../../lib/api/utils";
 import { uploadImage, deleteImage, getPublicIdFromUrl, getRelativePathFromUrl } from "../../../lib/cloudinary";
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // GET a single product
 export async function GET(
@@ -11,12 +14,12 @@ export async function GET(
 ) {
     try {
         const { id } = await params;
-        if (!ObjectId.isValid(id)) {
+        if (!UUID_REGEX.test(id)) {
             return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
         }
 
-        const productsCollection = await getProductsCollection();
-        const product = await productsCollection.findOne({ _id: new ObjectId(id) });
+        const rows = await db.select().from(products).where(eq(products.id, id)).limit(1);
+        const product = rows[0];
 
         if (!product) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -38,15 +41,15 @@ export async function PUT(
 ) {
     try {
         const { id } = await params;
-        if (!ObjectId.isValid(id)) {
+        if (!UUID_REGEX.test(id)) {
             return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
         }
 
         const formData = await request.formData();
-        const productsCollection = await getProductsCollection();
 
         // Find existing product to handle image replacement if needed
-        const existingProduct = await productsCollection.findOne({ _id: new ObjectId(id) });
+        const existingRows = await db.select().from(products).where(eq(products.id, id)).limit(1);
+        const existingProduct = existingRows[0];
         if (!existingProduct) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
@@ -90,11 +93,11 @@ export async function PUT(
             }
         }
 
-        // Update document
+        // Update data
         const updateData = {
             name,
             description,
-            price: price ? parseFloat(price) : null,
+            price: price ? price : null,
             category,
             productType,
             brand,
@@ -107,18 +110,15 @@ export async function PUT(
             isKings,
             hand,
             images: imagePaths,
-            updatedAt: new Date().toISOString(),
+            updatedAt: new Date(),
         };
 
         const quantityChange = parseInt(quantity) - (existingProduct.quantity || 0);
-        const newPriceValue = price ? parseFloat(price) : null;
+        const newPriceValue = price ? price : null;
         const oldPriceValue = existingProduct.price;
         const hasPriceChanged = newPriceValue !== oldPriceValue;
 
-        await productsCollection.updateOne(
-            { _id: new ObjectId(id) },
-            { $set: updateData }
-        );
+        await db.update(products).set(updateData).where(eq(products.id, id));
 
         // 📝 AUDIT LOGGING
         try {
@@ -144,9 +144,9 @@ export async function PUT(
                     changeAmount: 0, // No stock change
                     newQuantity: parseInt(quantity),
                     reason: "Price Update",
-                    oldPrice: oldPriceValue,
-                    newPrice: newPriceValue,
-                    note: `Price adjusted from EGP ${oldPriceValue?.toLocaleString() || 0} to EGP ${newPriceValue?.toLocaleString() || 0}`
+                    oldPrice: oldPriceValue ? parseFloat(oldPriceValue) : null,
+                    newPrice: newPriceValue ? parseFloat(newPriceValue) : null,
+                    note: `Price adjusted from EGP ${oldPriceValue ? parseFloat(oldPriceValue).toLocaleString() : 0} to EGP ${newPriceValue ? parseFloat(newPriceValue).toLocaleString() : 0}`
                 });
             }
         } catch (logError) {
@@ -171,12 +171,12 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params;
-        if (!ObjectId.isValid(id)) {
+        if (!UUID_REGEX.test(id)) {
             return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
         }
 
-        const productsCollection = await getProductsCollection();
-        const product = await productsCollection.findOne({ _id: new ObjectId(id) });
+        const rows = await db.select().from(products).where(eq(products.id, id)).limit(1);
+        const product = rows[0];
 
         if (!product) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -196,11 +196,7 @@ export async function DELETE(
             }
         }
 
-        const result = await productsCollection.deleteOne({ _id: new ObjectId(id) });
-
-        if (result.deletedCount === 0) {
-            return NextResponse.json({ error: "Could not delete product" }, { status: 500 });
-        }
+        await db.delete(products).where(eq(products.id, id));
 
         return NextResponse.json({ success: true, message: "Product deleted successfully" }, { status: 200 });
     } catch (error) {

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { eq } from "drizzle-orm";
+import { db } from "../../../lib/db";
+import { users } from "../../../lib/db/schema";
 import {
   validateEmail,
   validateUsername,
@@ -18,10 +20,12 @@ export async function POST(request: NextRequest) {
     const username = body.username.trim();
     const email = body.email?.trim();
 
-    const userCollection = await getUserCollection();
-
     // Check existing user
-    const existingUser = await userCollection.findOne({ email });
+    const [existingUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
 
     if (existingUser) {
       if (!existingUser.isActive) {
@@ -59,14 +63,16 @@ export async function POST(request: NextRequest) {
     const newUser = {
       username: username,
       email,
+      // Password is set later via the setup link; placeholder satisfies NOT NULL
+      password: "",
       isActive: false,
-      roles: ["user"], // 👈 roles array instead of single role
+      roles: ["user"], // roles array instead of single role
       sessions: [],
       dateJoined: new Date(),
       lastEmailSent: new Date(),
     };
 
-    await userCollection.insertOne(newUser);
+    await db.insert(users).values(newUser).returning();
 
     // Send setup email
     const token = await generatePasswordSetupToken(email);
@@ -100,8 +106,10 @@ export async function POST(request: NextRequest) {
         { status: error.statusCode }
       );
     }
+
+    console.error("Signup error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", statusCode: 500 },
       { status: 500 }
     );
   }
