@@ -7,6 +7,7 @@ import { getProducts, Product } from "../lib/api/product";
 
 interface InvoiceFormData {
   customer: string;
+  customerEmail: string;
   status: "paid" | "pending" | "overdue";
   paymentMethod: "cash" | "visa";
   date: string;
@@ -21,6 +22,7 @@ interface InvoiceFormProps {
 const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialData }) => {
   const [formData, setFormData] = useState<InvoiceFormData>({
     customer: initialData?.customer || "",
+    customerEmail: initialData?.customerEmail || "",
     status: initialData?.status || "pending",
     paymentMethod: initialData?.paymentMethod || "cash",
     date: initialData?.date || new Date().toISOString().split('T')[0],
@@ -32,6 +34,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
   const [loading, setLoading] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -125,6 +129,12 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
 
   const updateQuantity = (productId: string, quantity: number) => {
     if (quantity < 1) return;
+    setErrors((prev) => {
+      if (!prev[`qty-${productId}`]) return prev;
+      const next = { ...prev };
+      delete next[`qty-${productId}`];
+      return next;
+    });
     setItems((prev) =>
       prev.map((i) => (i.productId === productId ? { ...i, quantity } : i))
     );
@@ -132,6 +142,12 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
 
   const updatePrice = (productId: string, price: number) => {
     if (price < 0) return;
+    setErrors((prev) => {
+      if (!prev[`price-${productId}`]) return prev;
+      const next = { ...prev };
+      delete next[`price-${productId}`];
+      return next;
+    });
     setItems((prev) =>
       prev.map((i) => (i.productId === productId ? { ...i, price } : i))
     );
@@ -152,14 +168,44 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
       ...prev,
       [name]: value,
     }));
+    setErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setSubmitAttempted(true);
+
+    const validationErrors: Record<string, string> = {};
+    if (!formData.customer.trim() || formData.customer.trim().length < 2) {
+      validationErrors.customer = "Customer name must be at least 2 characters";
+    }
+    if (!formData.customerEmail.trim()) {
+      validationErrors.customerEmail = "Please enter a valid email address";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.customerEmail.trim())) {
+      validationErrors.customerEmail = "Please enter a valid email address";
+    }
     if (items.length === 0) {
-      setError("Please add at least one product.");
+      validationErrors.items = "Please add at least one product.";
+    }
+    items.forEach((item) => {
+      if (!(item.quantity > 0)) {
+        validationErrors[`qty-${item.productId}`] = "Quantity must be greater than 0";
+      }
+      if (!((item.price ?? 0) >= 0)) {
+        validationErrors[`price-${item.productId}`] = "Price must be 0 or more";
+      }
+    });
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       return;
     }
+    setErrors({});
     setLoading(true);
     setError("");
 
@@ -204,7 +250,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
             <h3>CUSTOMER INFORMATION</h3>
           </div>
           <div className="form-group full-width">
-            <label>Customer Name / Reference</label>
+            <label>Customer Name / Reference *</label>
             <div className="input-with-icon">
               <User size={14} />
               <input
@@ -212,10 +258,27 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
                 name="customer"
                 value={formData.customer}
                 onChange={handleChange}
-                placeholder="Optional: e.g. Elite Fencing Club"
+                placeholder="e.g. Elite Fencing Club"
                 disabled={loading}
+                className={errors.customer ? "input-error" : ""}
               />
             </div>
+            {errors.customer && <p className="field-error">{errors.customer}</p>}
+          </div>
+          <div className="form-group full-width">
+            <label>Email *</label>
+            <div className="input-with-icon">
+              <input
+                type="text"
+                name="customerEmail"
+                value={formData.customerEmail}
+                onChange={handleChange}
+                placeholder="e.g. customer@example.com"
+                disabled={loading}
+                className={errors.customerEmail ? "input-error" : ""}
+              />
+            </div>
+            {errors.customerEmail && <p className="field-error">{errors.customerEmail}</p>}
           </div>
         </div>
 
@@ -268,6 +331,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
 
             <div className="selected-items">
               <label className="sub-label">Selected Items</label>
+              {errors.items && <p className="field-error">{errors.items}</p>}
               <div className="items-list">
                 {items.length === 0 ? (
                   <div className="empty-items-placeholder">
@@ -280,16 +344,19 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
                       <div className="item-info">
                         <span className="item-name">{item.name}</span>
                         <div className="item-price-edit">
-                          <input 
-                            type="number" 
-                            value={item.price ?? ""} 
+                          <input
+                            type="number"
+                            value={item.price ?? ""}
                             onChange={(e) => updatePrice(item.productId, parseFloat(e.target.value) || 0)}
-                            className="price-input"
+                            className={`price-input ${errors[`price-${item.productId}`] ? "input-error" : ""}`}
                             min="0"
                             step="0.01"
                           />
                           <span className="unit-label">EGP</span>
                         </div>
+                        {errors[`price-${item.productId}`] && (
+                          <p className="field-error">{errors[`price-${item.productId}`]}</p>
+                        )}
                         <div className="item-discount-edit">
                           <DollarSign size={10} />
                           <input 
@@ -310,6 +377,9 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
                           <span>{item.quantity}</span>
                           <button type="button" onClick={() => updateQuantity(item.productId, item.quantity + 1)}>+</button>
                         </div>
+                        {errors[`qty-${item.productId}`] && (
+                          <p className="field-error">{errors[`qty-${item.productId}`]}</p>
+                        )}
                         <button type="button" className="remove-btn" onClick={() => removeItem(item.productId)}>
                           <Trash2 size={14} />
                         </button>
@@ -811,6 +881,14 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
           padding-bottom: 0.5rem;
         }
 
+        .field-error {
+          color: #e11d48;
+          font-size: 12px;
+          margin: 0;
+        }
+        .input-error {
+          border-color: #e11d48 !important;
+        }
         @media (max-width: 768px) {
           .invoice-form-container {
             padding: 1.25rem !important;

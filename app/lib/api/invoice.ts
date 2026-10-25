@@ -14,6 +14,7 @@ export interface Invoice {
   _id?: string;
   invoiceId: string;
   customer: string;
+  customerEmail?: string;
   amount: number;
   discount: number; // total discount amount in EGP
   status: "paid" | "pending" | "overdue";
@@ -118,6 +119,27 @@ export async function updateInvoiceStatus(id: string, status?: string, deposit?:
     return await response.json();
   } catch (error) {
     console.error("Error updating invoice:", error);
+    throw error;
+  }
+}
+
+/**
+ * Delete an invoice by id
+ */
+export async function deleteInvoice(id: string): Promise<any> {
+  try {
+    const response = await fetch(`${apiUrl}/api/invoices/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to delete invoice");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error deleting invoice:", error);
     throw error;
   }
 }
