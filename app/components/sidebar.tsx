@@ -1,5 +1,5 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import {
   LayoutDashboard,
@@ -10,10 +10,11 @@ import {
   Sun,
   Moon,
   Wallet,
-  TrendingUp,
+  History,
   PieChart,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useDashboard } from "../(admin)/layout";
 
 interface SidebarProps {
   currentPage: string;
@@ -31,6 +32,15 @@ const Sidebar = ({
   user,
 }: SidebarProps) => {
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Safe fallback context: useDashboard throws outside the provider
+  let ctx: { user?: any; isAdmin?: boolean } | null = null;
+  try {
+    ctx = useDashboard();
+  } catch {
+    ctx = null;
+  }
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -62,13 +72,21 @@ const Sidebar = ({
 
   const isAdmin = user?.roles?.includes("admin");
 
+  const displayUser = user ?? ctx?.user ?? null;
+  const displayIsAdmin = isAdmin || !!ctx?.isAdmin;
+
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, adminOnly: true },
     { id: "products", label: "Products", icon: Package, adminOnly: false },
     { id: "invoices", label: "Invoices", icon: FileText, adminOnly: true },
     { id: "wallet", label: "Wallet", icon: Wallet, adminOnly: true },
-    { id: "history", label: "History", icon: TrendingUp, adminOnly: true },
-  ].filter(item => !item.adminOnly || isAdmin);
+    { id: "history", label: "History", icon: History, adminOnly: true },
+  ].filter(item => !item.adminOnly || displayIsAdmin);
+
+  const isActiveRoute = (id: string) => {
+    const href = id === "dashboard" ? "/dashboard" : `/${id}`;
+    return pathname === href || pathname.startsWith(href + "/");
+  };
 
   const handleLogout = async () => {
     try {
@@ -127,7 +145,7 @@ const Sidebar = ({
             transition={{ delay: index * 0.1 }}
             whileHover={{ x: 5, backgroundColor: "var(--glass-bg)" }}
             whileTap={{ scale: 0.95 }}
-            className={`nav-item ${currentPage === item.id ? "active" : ""}`}
+            className={`nav-item ${isActiveRoute(item.id) ? "active bg-blue-50 text-blue-700 font-semibold" : ""}`}
             onClick={() => {
               const target = item.id === "dashboard" ? "/dashboard" : `/${item.id}`;
               router.push(target);
@@ -135,7 +153,7 @@ const Sidebar = ({
             }}
           >
             <motion.div
-              animate={currentPage === item.id ? {
+              animate={isActiveRoute(item.id) ? {
                 scale: [1, 1.2, 1],
                 rotate: [0, 5, -5, 0]
               } : {}}
@@ -150,11 +168,11 @@ const Sidebar = ({
 
       <div className="sidebar-footer">
         <div className="user-info">
-          <div className="user-avatar">{user?.username?.[0]?.toUpperCase() || "U"}</div>
+          <div className="user-avatar">{displayUser?.username?.[0]?.toUpperCase() || "U"}</div>
           <div className="user-details">
-            <div className="user-name">{user?.username || "Guest"}</div>
+            <div className="user-name">{displayUser?.username || "Guest"}</div>
             <div className="user-role">
-              {isAdmin ? "Administrator" : "User"}
+              {displayIsAdmin ? "Administrator" : "User"}
             </div>
           </div>
         </div>

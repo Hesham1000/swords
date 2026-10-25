@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
-import { Menu, X, Loader2 } from "lucide-react";
+import { Menu, X, Loader2, AlertTriangle } from "lucide-react";
+import Link from "next/link";
 import Sidebar from "../components/sidebar";
 import { getCurrentUser, User } from "../lib/api/auth";
 import { getDashboardSummary, DashboardSummaryData } from "../lib/api/dashboard";
@@ -39,6 +40,7 @@ export default function DashboardLayout({
   const [dashboardData, setDashboardData] = useState<DashboardSummaryData | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const fetchedRef = useRef(false);
 
   // Check for mobile on mount and window resize
@@ -169,6 +171,27 @@ export default function DashboardLayout({
       />
 
       <main className={`main-content ${sidebarOpen ? "" : "expanded"}`}>
+        {!bannerDismissed && (dashboardData?.summary?.lowStockCount ?? 0) > 0 && (
+          <div className="flex items-center justify-between gap-4 bg-amber-50 border-b border-amber-200 text-amber-800 px-6 py-3 text-sm">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={18} />
+              <span>
+                {dashboardData?.summary?.lowStockCount} product(s) are low on stock
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link href="/products" className="font-semibold underline hover:text-amber-900">
+                View products
+              </Link>
+              <button
+                onClick={() => setBannerDismissed(true)}
+                aria-label="Dismiss notification"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+        )}
         <div className="topbar">
           <button
             className="menu-toggle"

@@ -5363,3 +5363,19 @@
   }
 }
 
+
+/* Utility classes */
+.skeleton-card { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; background-color: #e2e8f0; border-radius: 0.5rem; }
+.skeleton-row { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; background-color: #e2e8f0; border-radius: 0.25rem; height: 1rem; }
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem; gap: 1rem; color: #94a3b8; }
+.modal-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); z-index: 50; display: flex; align-items: center; justify-content: center; }
+.modal-content { background-color: #ffffff; border-radius: 0.75rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); max-width: 32rem; width: 100%; padding: 1.5rem; max-height: 80vh; overflow-y: auto; }
+.sort-header { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 0.25rem; }
+.sort-header:hover { color: #2563eb; }
+.filter-dropdown { border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.875rem; background-color: #ffffff; }
+.validation-error { color: #ef4444; font-size: 0.75rem; margin-top: 0.25rem; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}

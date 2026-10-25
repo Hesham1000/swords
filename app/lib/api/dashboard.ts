@@ -12,6 +12,7 @@ export interface DashboardSummaryData {
     uniqueCustomers: number;
     inventoryValue: number;
     totalInventoryCount: number;
+    lowStockCount: number;
     averageOrderValue: number;
   };
   recentInvoices: Invoice[];
