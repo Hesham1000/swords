@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, ChangeEvent, FormEvent, useEffect, useRef, useCallback } from "react";
-import { DollarSign, User, Calendar, FileText, CheckCircle, Clock, AlertCircle, Plus, Trash2, Package, Percent, X } from "lucide-react";
+import { DollarSign, User, Calendar, Plus, Trash2, Package, X } from "lucide-react";
 import { createInvoice, updateInvoice, Invoice, InvoiceItem } from "../lib/api/invoice";
 import { getProducts, Product } from "../lib/api/product";
 
@@ -22,7 +22,7 @@ interface InvoiceFormProps {
 const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialData }) => {
   const [formData, setFormData] = useState<InvoiceFormData>({
     customer: initialData?.customer || "",
-    customerEmail: (initialData as any)?.customerEmail || "",
+    customerEmail: (initialData as { customerEmail?: string } | null)?.customerEmail || "",
     status: initialData?.status || "pending",
     paymentMethod: initialData?.paymentMethod || "cash",
     date: initialData?.date || new Date().toISOString().split('T')[0],
@@ -217,8 +217,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
       
       if (onSuccess) onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+    } catch (err) {
+      setError((err instanceof Error ? err.message : String(err)) || "An error occurred");
     } finally {
       setLoading(false);
     }

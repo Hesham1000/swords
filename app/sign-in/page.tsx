@@ -84,13 +84,6 @@ const FencingLogin = () => {
       }
     };
 
-  const showValidationError = (field: string, message: string) => {
-    const ref = validationRefs[field as keyof typeof validationRefs];
-    if (ref?.current) {
-      ref.current.textContent = message;
-      ref.current.classList.add("show");
-    }
-  };
 
   const clearValidationError = (field: string) => {
     const ref = validationRefs[field as keyof typeof validationRefs];
@@ -416,7 +409,7 @@ const FencingLogin = () => {
               </div>
               <AnimatePresence mode="wait">{renderLoginForm()}</AnimatePresence>
               <p className="signup">
-                Don't have an account?
+                Don&apos;t have an account?
                 <span
                   className="signup-toggle"
                   onClick={toggleForm}

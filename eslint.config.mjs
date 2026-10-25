@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone Node scripts (CommonJS) not part of the Next.js build:
+    "analyze_products.js",
+    "scripts/**",
+    "proxy.ts",
   ]),
 ]);
 

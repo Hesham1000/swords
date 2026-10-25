@@ -8,7 +8,7 @@ interface ProductData {
   name: string;
   description: string;
   price: number | null;
-  category: ("Foil" | "Sabre" | "Epée")[];
+  category: string[];
   productType: string;
   brand?: string;
   model?: string;
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       name,
       description: description || "",
       price: price ? parseFloat(price) : null,
-      category: category as any,
+      category,
       productType: productType,
       quantity: parseInt(quantity),
       images: imagePaths,
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       if (model) productData.model = model;
     }
 
-    const inserted = await db.insert(products).values(productData as any).returning();
+    const inserted = await db.insert(products).values(productData as unknown as typeof products.$inferInsert).returning();
     const insertedProduct = transformProduct(inserted[0]);
     const insertedId = inserted[0].id;
 

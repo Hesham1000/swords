@@ -27,7 +27,6 @@ export class AuthError extends Error {
 // Generate Access + Refresh Tokens
 export async function generateToken(
   userId: string,
-  timezone: string = "UTC",
   expiresIn: number = 6 * 60 * 60 // 6 hours
 ): Promise<{ accessToken: string; refreshToken: string }> {
   const now = Math.floor(Date.now() / 1000);
@@ -157,8 +156,7 @@ export async function isTokenBlacklisted(token: string): Promise<boolean> {
 // Revoke token and clear cookies
 export async function revokeAndDeleteToken(
   token: string,
-  userId?: string,
-  refresh?: string
+  userId?: string
 ): Promise<void> {
   try {
     // Blacklist token
@@ -177,7 +175,7 @@ export async function revokeAndDeleteToken(
         .where(eq(users.id, userId))
         .limit(1);
       const sessions = Array.isArray(rows[0]?.sessions) ? rows[0]!.sessions : [];
-      const updated = (sessions as any[]).filter((s: any) => s?.token !== token);
+      const updated = (sessions as { token?: string }[]).filter((s) => s?.token !== token);
       await db
         .update(users)
         .set({ sessions: updated, updatedAt: new Date() })

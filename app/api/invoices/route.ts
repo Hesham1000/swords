@@ -219,8 +219,8 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const oldItems: any[] = Array.isArray(existingInvoice.items) ? existingInvoice.items : [];
-    const newItems: any[] = items && Array.isArray(items) ? items : oldItems;
+    const oldItems = (Array.isArray(existingInvoice.items) ? existingInvoice.items : []) as { id: string; quantity?: number; price?: number; name?: string }[];
+    const newItems = items && Array.isArray(items) ? (items as { id: string; quantity?: number; price?: number; name?: string }[]) : oldItems;
 
     // Adjust stock for item changes
     // 1. Return stock for removed items

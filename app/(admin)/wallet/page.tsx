@@ -51,8 +51,8 @@ export default function WalletPage() {
         if (transactionsRes.pagination) {
           setPagination(transactionsRes.pagination);
         }
-      } catch (err: any) {
-        setError(err.message || "Failed to load wallet data");
+      } catch (err) {
+        setError((err instanceof Error ? err.message : String(err)) || "Failed to load wallet data");
       } finally {
         setLoading(false);
       }

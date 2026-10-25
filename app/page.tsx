@@ -1,19 +1,9 @@
 // app/page.tsx - Premium KINGS Landing Page
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { motion, useScroll, useTransform } from "framer-motion";
-import {
-  ArrowRight,
-  Zap,
-  Shield,
-  Wallet,
-  LayoutDashboard,
-  Package,
-  TrendingUp,
-  Globe
-} from "lucide-react";
+import { motion } from "framer-motion";
 import "./globals.css";
 
 const KingsLogo = () => (
@@ -32,21 +22,10 @@ const KingsLogo = () => (
 );
 
 export default function LandingPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const { scrollYProgress } = useScroll();
-
-  useEffect(() => {
-    const cookies = document.cookie.split(";");
-    const hasToken = cookies.some((c) => c.trim().startsWith("logged_in="));
-    setIsAuthenticated(hasToken);
-  }, []);
-
-  const features = [
-    { title: "Smart Dashboard", description: "Real-time analytics and inventory tracking for elite fencers.", icon: LayoutDashboard },
-    { title: "Secure Wallet", description: "Seamless EGP, USD, and EUR transactions for global trade.", icon: Wallet },
-    { title: "Premium Gear", description: "Only the highest standard FIE certified equipment.", icon: Shield },
-    { title: "Global Network", description: "Connecting academies and athletes across the world.", icon: Globe },
-  ];
+  const [isAuthenticated] = useState(
+    () => typeof document !== "undefined" &&
+      document.cookie.split(";").some((c) => c.trim().startsWith("logged_in="))
+  );
 
   const categories = [
     { 

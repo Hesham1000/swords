@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -9,14 +9,41 @@ import {
   Package, 
   PackageOpen,
   Users, 
-  Loader2, 
   AlertCircle, 
   CheckCircle 
 } from "lucide-react";
-import { DashboardSummaryData } from "../../lib/api/dashboard";
-import { updateInvoiceStatus } from "../../lib/api/invoice";
 import { useRouter } from "next/navigation";
 import { useDashboard } from "../layout";
+
+function StatCard({
+    title,
+    value,
+    change,
+    icon: Icon,
+    prefix = ""
+  }: {
+    title: string;
+    value: number;
+    change: number;
+    icon: React.ElementType;
+    prefix?: string;
+  }) {
+  return (
+    <div className="stat-card">
+      <div className="stat-icon">
+        <Icon size={20} />
+      </div>
+      <div className={`stat-badge ${change >= 0 ? "positive" : "negative"}`}>
+        {change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+        <span>{Math.abs(change)}%</span>
+      </div>
+      <h3 className="stat-title">{title}</h3>
+      <p className="stat-value">
+        {prefix}{value.toLocaleString()}
+      </p>
+    </div>
+  );
+}
 
 /** Last-6-months revenue derived from analytics trends. */
 function getMonthlyRevenue(trends: { date: string; revenue: number; orders: number }[]) {
@@ -41,14 +68,9 @@ function getMonthlyRevenue(trends: { date: string; revenue: number; orders: numb
 }
 
 export default function DashboardOverview() {
-  const { user, isAdmin, dashboardData, refreshDashboard } = useDashboard();
+  const { dashboardData, refreshDashboard } = useDashboard();
   const router = useRouter();
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (dashboardData || error) setLoading(false);
-  }, [dashboardData, error]);
+  const loading = !dashboardData;
 
   // Full-page spinner before any other early returns
   if (loading) {
@@ -69,42 +91,11 @@ export default function DashboardOverview() {
     );
   }
 
-  if (error) {
-    return <div className="error-banner">{error}</div>;
-  }
 
   const { summary, recentInvoices, lowStockItems, analytics } = dashboardData;
   const trends = analytics?.trends ?? [];
   const monthlyRevenue = getMonthlyRevenue(trends);
   const maxMonthly = Math.max(...monthlyRevenue.map((m) => m.revenue), 1);
-
-  const StatCard = ({
-    title,
-    value,
-    change,
-    icon: Icon,
-    prefix = ""
-  }: {
-    title: string;
-    value: number;
-    change: number;
-    icon: React.ElementType;
-    prefix?: string;
-  }) => (
-    <div className="stat-card">
-      <div className="stat-icon">
-        <Icon size={20} />
-      </div>
-      <div className={`stat-badge ${change >= 0 ? "positive" : "negative"}`}>
-        {change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-        <span>{Math.abs(change)}%</span>
-      </div>
-      <h3 className="stat-title">{title}</h3>
-      <p className="stat-value">
-        {prefix}{value.toLocaleString()}
-      </p>
-    </div>
-  );
 
   return (
     <>

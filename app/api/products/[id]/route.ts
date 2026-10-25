@@ -109,7 +109,7 @@ export async function PUT(
         const oldPriceValue = existingProduct.price ? parseFloat(existingProduct.price) : null;
         const hasPriceChanged = newPriceValue !== oldPriceValue;
 
-        await db.update(products).set(updateData as any).where(eq(products.id, id));
+        await db.update(products).set(updateData as unknown as typeof products.$inferInsert).where(eq(products.id, id));
 
         // 📝 AUDIT LOGGING
         try {

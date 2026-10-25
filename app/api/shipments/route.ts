@@ -3,7 +3,7 @@ import { db, shipments, wallet, walletTransactions } from "../../lib/db";
 import { eq, sql } from "drizzle-orm";
 
 // GET endpoint to retrieve all shipments
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const rows = await db
       .select()
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Ensure wallet row exists
-    let walletRows = await db.select().from(wallet).where(eq(wallet.slug, "main"));
+    const walletRows = await db.select().from(wallet).where(eq(wallet.slug, "main"));
     let walletRow = walletRows[0];
     if (!walletRow) {
       const created = await db.insert(wallet).values({ slug: "main" }).returning();

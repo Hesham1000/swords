@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     }
     const categoryCount = new Map<string, number>();
     for (const inv of periodInvoices) {
-      const items: any[] = Array.isArray(inv.items) ? inv.items : [];
+      const items = (Array.isArray(inv.items) ? inv.items : []) as { id: string; quantity?: number; price?: number; name?: string }[];
       for (const item of items) {
         const cats = productCategoryMap.get(item.id) || [];
         for (const cat of cats) {
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     // Top products
     const productCount = new Map<string, { name: string; count: number; revenue: number }>();
     for (const inv of periodInvoices) {
-      const items: any[] = Array.isArray(inv.items) ? inv.items : [];
+      const items = (Array.isArray(inv.items) ? inv.items : []) as { id: string; quantity?: number; price?: number; name?: string }[];
       for (const item of items) {
         const existing = productCount.get(item.id);
         const itemRevenue = (item.price || 0) * (item.quantity || 0);

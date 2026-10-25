@@ -11,8 +11,7 @@ import {
   Moon,
   Wallet,
   TrendingUp,
-  PieChart,
-} from "lucide-react";
+  } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface SidebarProps {
@@ -20,11 +19,11 @@ interface SidebarProps {
   onNavigation: (page: string) => void;
   sidebarOpen: boolean;
   onLogoutSuccess?: () => void; // Optional callback after successful logout
-  user?: any; // Added user prop
+  user?: { username?: string; email?: string; roles?: string[]; firstName?: string } | null; // Added user prop
 }
 
 const Sidebar = ({
-  currentPage,
+  // currentPage removed (unused)
   onNavigation,
   sidebarOpen,
   onLogoutSuccess,

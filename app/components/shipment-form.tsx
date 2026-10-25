@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, FormEvent } from "react";
-import { Truck, DollarSign, FileText, MapPin, X } from "lucide-react";
+import { Truck, DollarSign, FileText, X } from "lucide-react";
 
 interface ShipmentFormProps {
   onClose: () => void;
@@ -32,8 +32,8 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ onClose, onSuccess }) => {
       await createShipment({ destination, cost: numCost, description, date });
       if (onSuccess) onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+    } catch (err) {
+      setError((err instanceof Error ? err.message : String(err)) || "An error occurred");
     } finally {
       setLoading(false);
     }

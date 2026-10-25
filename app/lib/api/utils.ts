@@ -6,6 +6,7 @@ export const API_URL = "";
  * - Normalizes _id/id to id
  * - Prepends the API URL to image paths if they are relative
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic product records from DB
 export function transformProduct(product: any) {
     if (!product) return null;
 
