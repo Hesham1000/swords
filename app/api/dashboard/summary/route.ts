@@ -3,6 +3,14 @@ import { db, schema } from "../../../lib/db";
 import { sql, desc, lt, gte } from "drizzle-orm";
 import { transformProduct } from "../../../lib/api/utils";
 
+interface InvoiceItemRow {
+  productId: string;
+  name: string;
+  category?: string;
+  price?: number | string;
+  quantity?: number | string;
+}
+
 export async function GET(request: NextRequest) {
   try {
     // 1. RECENT INVOICES (Latest 5)
@@ -110,7 +118,7 @@ export async function GET(request: NextRequest) {
 
     periodInvoices.forEach((inv) => {
       const items = Array.isArray(inv.items) ? inv.items : [];
-      items.forEach((item: any) => {
+      items.forEach((item: InvoiceItemRow) => {
         const cat =
           productCategoryMap[item.productId] || item.category || "General";
         const lineTotal = Number(item.price) * Number(item.quantity);

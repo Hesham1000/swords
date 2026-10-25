@@ -37,13 +37,13 @@ const ProductRow: React.FC<ProductRowProps> = ({
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  const handleDragEnd = (_: any, info: any) => {
+  const handleDragEnd = (_: unknown, info: { offset: { x: number } }) => {
     if (!hasMultipleImages) return;
     const swipeThreshold = 50;
     if (info.offset.x < -swipeThreshold) {
-      nextImage({ stopPropagation: () => {} } as any);
+      nextImage({ stopPropagation: () => {} } as React.MouseEvent);
     } else if (info.offset.x > swipeThreshold) {
-      prevImage({ stopPropagation: () => {} } as any);
+      prevImage({ stopPropagation: () => {} } as React.MouseEvent);
     }
   };
 

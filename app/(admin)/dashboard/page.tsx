@@ -17,6 +17,32 @@ import { updateInvoiceStatus } from "../../lib/api/invoice";
 import { useRouter } from "next/navigation";
 import { useDashboard } from "../layout";
 
+interface StatCardProps {
+  title: string;
+  value: number;
+  change: number;
+  icon: React.ElementType;
+  prefix?: string;
+}
+
+function StatCard({ title, value, change, icon: Icon, prefix = "" }: StatCardProps) {
+  return (
+    <div className="stat-card">
+      <div className="stat-icon">
+        <Icon size={20} />
+      </div>
+      <div className={`stat-badge ${change >= 0 ? "positive" : "negative"}`}>
+        {change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+        <span>{Math.abs(change)}%</span>
+      </div>
+      <h3 className="stat-title">{title}</h3>
+      <p className="stat-value">
+        {prefix}{value.toLocaleString()}
+      </p>
+    </div>
+  );
+}
+
 export default function DashboardOverview() {
   const { user, isAdmin, dashboardData, refreshDashboard } = useDashboard();
   const router = useRouter();
@@ -89,34 +115,6 @@ export default function DashboardOverview() {
 
   const trendData = (analytics?.trends ?? []).slice(-7);
   const maxTrendRevenue = Math.max(...trendData.map((t) => t.revenue ?? 0), 1);
-
-  const StatCard = ({
-    title,
-    value,
-    change,
-    icon: Icon,
-    prefix = ""
-  }: {
-    title: string;
-    value: number;
-    change: number;
-    icon: React.ElementType;
-    prefix?: string;
-  }) => (
-    <div className="stat-card">
-      <div className="stat-icon">
-        <Icon size={20} />
-      </div>
-      <div className={`stat-badge ${change >= 0 ? "positive" : "negative"}`}>
-        {change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-        <span>{Math.abs(change)}%</span>
-      </div>
-      <h3 className="stat-title">{title}</h3>
-      <p className="stat-value">
-        {prefix}{value.toLocaleString()}
-      </p>
-    </div>
-  );
 
   return (
     <>

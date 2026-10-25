@@ -6,7 +6,13 @@ export const API_URL = "";
  * - Handles both MongoDB (_id) and Drizzle/Postgres (id) shapes
  * - Prepends the API URL to image paths if they are relative
  */
-export function transformProduct(product: any) {
+type ProductInput = {
+    _id?: { toString(): string } | null;
+    id?: string;
+    images?: string[] | null;
+} & Record<string, unknown>;
+
+export function transformProduct(product: ProductInput | null) {
     if (!product) return null;
 
     const apiUrl = "";

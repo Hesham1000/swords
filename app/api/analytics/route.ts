@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "../../lib/db";
 import { sql, gte } from "drizzle-orm";
 
+interface InvoiceItemRow {
+  productId: string;
+  name: string;
+  category?: string;
+  price?: number | string;
+  quantity?: number | string;
+}
+
 export async function GET(request: NextRequest) {
   try {
     // 1. INVOICES FOR PROCESSING (last 90 days)
@@ -92,7 +100,7 @@ export async function GET(request: NextRequest) {
 
     invoices.forEach((inv) => {
       const items = Array.isArray(inv.items) ? inv.items : [];
-      items.forEach((item: any) => {
+      items.forEach((item: InvoiceItemRow) => {
         const cat =
           productCategoryMap[item.productId] || item.category || "General";
         const lineTotal = Number(item.price) * Number(item.quantity);

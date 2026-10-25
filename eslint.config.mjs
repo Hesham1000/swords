@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Plain CommonJS Node scripts (package.json has no "type": "module",
+    // so they cannot use ESM imports without breaking `node scripts/x.js`)
+    "scripts/**/*.js",
+    "analyze_products.js",
   ]),
 ]);
 

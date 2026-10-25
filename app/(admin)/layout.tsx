@@ -19,7 +19,7 @@ interface DashboardContextType {
   refreshDashboard: () => void;
 }
 
-const DashboardContext = React.createContext<DashboardContextType | null>(null);
+export const DashboardContext = React.createContext<DashboardContextType | null>(null);
 
 export const useDashboard = () => {
   const context = React.useContext(DashboardContext);

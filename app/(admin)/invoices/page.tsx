@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FileText, Plus, Search, CheckCircle, AlertCircle, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import InvoiceForm from "../../components/invoice-form";
-import { getInvoices, updateInvoiceStatus, deleteInvoice, Invoice } from "../../lib/api/invoice";
+import { getInvoices, updateInvoiceStatus, deleteInvoice, Invoice, InvoicesResponse } from "../../lib/api/invoice";
 import { useDashboard } from "../layout";
 
 export default function InvoicesPage() {
@@ -14,7 +14,7 @@ export default function InvoicesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState<any>(null);
+  const [pagination, setPagination] = useState<InvoicesResponse["pagination"] | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [refresh, setRefresh] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -34,8 +34,8 @@ export default function InvoicesPage() {
         const response = await getInvoices(page, 10, searchQuery);
         setInvoices(response.data);
         setPagination(response.pagination);
-      } catch (err: any) {
-        setError(err.message || "Failed to load invoices");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load invoices");
       } finally {
         setLoading(false);
       }
@@ -86,8 +86,8 @@ export default function InvoicesPage() {
       }
       setConfirmAction(null);
       setRefresh(!refresh);
-    } catch (err: any) {
-      alert(err.message || (type === "paid" ? "Failed to update status" : "Failed to delete invoice"));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : (type === "paid" ? "Failed to update status" : "Failed to delete invoice"));
     }
   };
 

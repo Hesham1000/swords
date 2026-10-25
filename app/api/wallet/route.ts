@@ -2,23 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "../../lib/db";
 import { wallet, walletTransactions } from "../../lib/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { verifyAccessTokenEdge } from "../../lib/auth/edge";
 
 const CURRENCIES = ["EGP", "USD", "EUR"] as const;
 type Currency = typeof CURRENCIES[number];
 
 // Resolve the current user's id from the x-user-id header or access_token cookie
-function getUserId(request: NextRequest): string | null {
+async function getUserId(request: NextRequest): Promise<string | null> {
   const headerId = request.headers.get("x-user-id");
   if (headerId) return headerId;
   const token = request.cookies.get("access_token")?.value;
-  if (token) return token;
-  return null;
+  if (!token) return null;
+  const payload = await verifyAccessTokenEdge(token);
+  return payload?.userId ?? null;
 }
 
 // GET: Return wallet balances for all currencies
 export async function GET(request: NextRequest) {
   try {
-    const userId = getUserId(request);
+    const userId = await getUserId(request);
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -68,7 +70,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Type must be deposit or withdraw" }, { status: 400 });
     }
 
-    const userId = getUserId(request);
+    const userId = await getUserId(request);
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

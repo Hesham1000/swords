@@ -66,8 +66,8 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
       await walletTransaction(parseFloat(amount), mode, currency as "EGP" | "USD" | "EUR", note || undefined);
       if (onSuccess) onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }

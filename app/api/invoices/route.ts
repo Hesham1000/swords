@@ -3,6 +3,12 @@ import { db, schema } from "../../lib/db";
 import { invoices, products } from "../../lib/db/schema";
 import { ilike, or, sql, desc, eq } from "drizzle-orm";
 
+interface InvoiceItemRow {
+  productId: string;
+  name?: string;
+  quantity: number;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -131,11 +137,11 @@ export async function PATCH(request: NextRequest) {
 
     // 1. STOCK ADJUSTMENT (if items changed)
     if (items && Array.isArray(items)) {
-      const oldItems = (invoice.items as any[]) || [];
+      const oldItems = (invoice.items as InvoiceItemRow[]) || [];
       const processedOldProductIds = new Set<string>();
 
       for (const newItem of items) {
-        const oldItem = oldItems.find((oi: any) => oi.productId === newItem.productId);
+        const oldItem = oldItems.find((oi) => oi.productId === newItem.productId);
         processedOldProductIds.add(newItem.productId);
         const oldQty = oldItem ? oldItem.quantity : 0;
         const netChange = newItem.quantity - oldQty;

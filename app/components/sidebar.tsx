@@ -14,14 +14,20 @@ import {
   PieChart,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useDashboard } from "../(admin)/layout";
+import { DashboardContext } from "../(admin)/layout";
+import { User } from "../lib/api/auth";
 
 interface SidebarProps {
   currentPage: string;
   onNavigation: (page: string) => void;
   sidebarOpen: boolean;
   onLogoutSuccess?: () => void; // Optional callback after successful logout
-  user?: any; // Added user prop
+  user?: User | null; // Added user prop
+}
+
+/** Read the dashboard context without throwing when the provider is absent. */
+function useDashboardSafe() {
+  return React.useContext(DashboardContext);
 }
 
 const Sidebar = ({
@@ -34,13 +40,8 @@ const Sidebar = ({
   const router = useRouter();
   const pathname = usePathname();
 
-  // Safe fallback context: useDashboard throws outside the provider
-  let ctx: { user?: any; isAdmin?: boolean } | null = null;
-  try {
-    ctx = useDashboard();
-  } catch {
-    ctx = null;
-  }
+  // Safe fallback context: returns null outside the provider
+  const ctx = useDashboardSafe();
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);

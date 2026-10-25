@@ -21,7 +21,7 @@ interface ProductsListProps {
     hasNextPage: boolean;
     hasPrevPage: boolean;
     totalCount: number;
-  };
+  } | null;
   onPageChange?: (page: number) => void;
   isAdmin?: boolean;
   currentPage?: number;
@@ -74,7 +74,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
         <Package size={64} className="text-slate-400" />
         <h3 className="mt-4 text-lg font-semibold text-slate-700">No products found</h3>
         <p className="mt-1 text-sm text-slate-500">
-          Try adjusting your search or filters to find what you're looking for.
+          Try adjusting your search or filters to find what you&apos;re looking for.
         </p>
         {isAdmin && onAddProduct && (
           <button
