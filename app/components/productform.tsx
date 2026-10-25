@@ -86,6 +86,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>(initialData?.images || []);
 
@@ -123,6 +124,40 @@ const ProductForm: React.FC<ProductFormProps> = ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+
+    setFieldErrors((prev) => {
+      if (!(name in prev)) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
+  };
+
+  const validate = (): Record<string, string> => {
+    const errors: Record<string, string> = {};
+
+    const name = (formData.name ?? "").trim();
+    if (name.length < 2) {
+      errors.name = "Name is required (min 2 characters)";
+    }
+
+    if (!formData.productType) {
+      errors.productType = "Product type is required";
+    }
+
+    const q = formData.quantity;
+    if (!q || !Number.isInteger(Number(q)) || Number(q) < 0) {
+      errors.quantity = "Quantity must be a non-negative integer";
+    }
+
+    if (formData.price !== "") {
+      const p = Number(formData.price);
+      if (Number.isNaN(p) || p < 0) {
+        errors.price = "Price must be a non-negative number";
+      }
+    }
+
+    return errors;
   };
 
   const handleBrandChange = (e: ChangeEvent<HTMLSelectElement>) => {
@@ -195,6 +230,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    const errors = validate();
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setError("Please fix the highlighted fields");
+      return;
+    }
     setLoading(true);
     setError("");
 
@@ -285,6 +326,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     <option value="pin">Pin</option>
                     <option value="glove">Glove</option>
                   </select>
+                  {fieldErrors.productType && <p className="field-error">{fieldErrors.productType}</p>}
                 </div>
                 <div className="form-group full-width">
                   <label>Model Name *</label>
@@ -297,6 +339,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     required
                     disabled={loading}
                   />
+                  {fieldErrors.name && <p className="field-error">{fieldErrors.name}</p>}
                 </div>
                 <div className="form-group full-width">
                   <label>Disciplines (Select all that apply) *</label>
@@ -508,6 +551,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     <Package size={14} />
                     <input type="number" name="quantity" value={formData.quantity} onChange={handleChange} min="1" required disabled={loading} />
                   </div>
+                  {fieldErrors.quantity && <p className="field-error">{fieldErrors.quantity}</p>}
                 </div>
                 <div className="form-group">
                   <label>Unit Price (EGP)</label>
@@ -515,6 +559,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     <span className="currency-label">EGP</span>
                     <input type="number" name="price" value={formData.price} onChange={handleChange} placeholder="0.00" min="0" step="0.01" disabled={loading} />
                   </div>
+                  {fieldErrors.price && <p className="field-error">{fieldErrors.price}</p>}
                 </div>
               </div>
             </div>
@@ -570,6 +615,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
           .product-form-container { padding: 2.5rem; max-height: 85dvh; overflow-y: auto; }
           .product-form { display: flex; flex-direction: column; gap: 2.5rem; }
           .error-message { background: rgba(225, 29, 72, 0.1); border: 1px solid var(--accent-red); color: var(--accent-red); padding: 1rem; border-radius: 12px; font-size: 13px; text-align: center; }
+          .field-error { color: var(--accent-red); font-size: 11px; margin: 0; font-weight: 600; }
           .form-section { display: flex; flex-direction: column; gap: 1.25rem; }
           .section-header { display: flex; align-items: center; gap: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-tech); color: var(--accent-blue); }
           .section-header h3 { font-family: var(--font-display); font-size: 10px; font-weight: 900; letter-spacing: 1.5px; margin: 0; text-transform: uppercase; }

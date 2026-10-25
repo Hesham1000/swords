@@ -7,6 +7,7 @@ import { getProducts, Product } from "../lib/api/product";
 
 interface InvoiceFormData {
   customer: string;
+  customerEmail: string;
   status: "paid" | "pending" | "overdue";
   paymentMethod: "cash" | "visa";
   date: string;
@@ -21,10 +22,12 @@ interface InvoiceFormProps {
 const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialData }) => {
   const [formData, setFormData] = useState<InvoiceFormData>({
     customer: initialData?.customer || "",
+    customerEmail: (initialData as any)?.customerEmail || "",
     status: initialData?.status || "pending",
     paymentMethod: initialData?.paymentMethod || "cash",
     date: initialData?.date || new Date().toISOString().split('T')[0],
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [deposit, setDeposit] = useState<string>(initialData?.deposit?.toString() || "0");
 
   const [items, setItems] = useState<InvoiceItem[]>(initialData?.items || []);
@@ -154,14 +157,48 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
     }));
   };
 
+  const validate = (): Record<string, string> => {
+    const errors: Record<string, string> = {};
+
+    const customer = (formData.customer || "").trim();
+    if (customer.length < 2) {
+      errors.customer = "Customer name is required (min 2 characters).";
+    }
+
+    const email = (formData.customerEmail || "").trim();
+    if (!/^[^s@]+@[^s@]+\.[^s@]+$/.test(email)) {
+      errors.customerEmail = "A valid email address is required.";
+    }
+
+    if (items.length === 0) {
+      errors.items = "Please add at least one product.";
+    }
+
+    items.forEach((item) => {
+      const q = item?.quantity;
+      if (!(Number.isInteger(q) && q > 0)) {
+        errors[`quantity-${item?.productId}`] = "Quantity must be a positive integer.";
+      }
+      const p = item?.price ?? 0;
+      if (isNaN(p) || p < 0) {
+        errors[`price-${item?.productId}`] = "Price must be a non-negative number.";
+      }
+    });
+
+    return errors;
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (items.length === 0) {
-      setError("Please add at least one product.");
+    const errors = validate();
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError("Please fix the errors above.");
       return;
     }
-    setLoading(true);
+    setFieldErrors({});
     setError("");
+    setLoading(true);
 
     try {
       const invoiceData: Partial<Invoice> = {
@@ -204,7 +241,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
             <h3>CUSTOMER INFORMATION</h3>
           </div>
           <div className="form-group full-width">
-            <label>Customer Name / Reference</label>
+            <label>Customer Name / Reference *</label>
             <div className="input-with-icon">
               <User size={14} />
               <input
@@ -212,10 +249,32 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
                 name="customer"
                 value={formData.customer}
                 onChange={handleChange}
-                placeholder="Optional: e.g. Elite Fencing Club"
+                placeholder="e.g. Elite Fencing Club"
                 disabled={loading}
+                className={fieldErrors.customer ? "input-error" : ""}
               />
             </div>
+            {fieldErrors.customer && (
+              <small className="field-error">{fieldErrors.customer}</small>
+            )}
+          </div>
+          <div className="form-group full-width">
+            <label>Customer Email *</label>
+            <div className="input-with-icon">
+              <User size={14} />
+              <input
+                type="email"
+                name="customerEmail"
+                value={formData.customerEmail}
+                onChange={handleChange}
+                placeholder="e.g. contact@elitefencing.com"
+                disabled={loading}
+                className={fieldErrors.customerEmail ? "input-error" : ""}
+              />
+            </div>
+            {fieldErrors.customerEmail && (
+              <small className="field-error">{fieldErrors.customerEmail}</small>
+            )}
           </div>
         </div>
 
@@ -276,20 +335,23 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
                   </div>
                 ) : (
                   items.map(item => (
-                    <div key={item.productId} className="selected-item-row">
+                    <div key={item?.productId} className="selected-item-row">
                       <div className="item-info">
-                        <span className="item-name">{item.name}</span>
+                        <span className="item-name">{item?.name ?? ""}</span>
                         <div className="item-price-edit">
-                          <input 
-                            type="number" 
-                            value={item.price ?? ""} 
-                            onChange={(e) => updatePrice(item.productId, parseFloat(e.target.value) || 0)}
-                            className="price-input"
+                          <input
+                            type="number"
+                            value={item?.price ?? ""}
+                            onChange={(e) => updatePrice(item?.productId, parseFloat(e.target.value) || 0)}
+                            className={`price-input ${fieldErrors[`price-${item?.productId}`] ? "input-error" : ""}`}
                             min="0"
                             step="0.01"
                           />
                           <span className="unit-label">EGP</span>
                         </div>
+                        {fieldErrors[`price-${item?.productId}`] && (
+                          <small className="field-error">{fieldErrors[`price-${item?.productId}`]}</small>
+                        )}
                         <div className="item-discount-edit">
                           <DollarSign size={10} />
                           <input 
@@ -306,14 +368,17 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
                       </div>
                       <div className="item-controls">
                         <div className="quantity-adjuster">
-                          <button type="button" onClick={() => updateQuantity(item.productId, item.quantity - 1)}>-</button>
-                          <span>{item.quantity}</span>
-                          <button type="button" onClick={() => updateQuantity(item.productId, item.quantity + 1)}>+</button>
+                          <button type="button" onClick={() => updateQuantity(item?.productId, (item?.quantity ?? 1) - 1)}>-</button>
+                          <span>{item?.quantity ?? 0}</span>
+                          <button type="button" onClick={() => updateQuantity(item?.productId, (item?.quantity ?? 0) + 1)}>+</button>
                         </div>
-                        <button type="button" className="remove-btn" onClick={() => removeItem(item.productId)}>
+                        <button type="button" className="remove-btn" onClick={() => removeItem(item?.productId)}>
                           <Trash2 size={14} />
                         </button>
                       </div>
+                      {fieldErrors[`quantity-${item?.productId}`] && (
+                        <small className="field-error">{fieldErrors[`quantity-${item?.productId}`]}</small>
+                      )}
                     </div>
                   ))
                 )}
@@ -443,6 +508,15 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
           border-radius: 8px;
           font-size: 13px;
           text-align: center;
+        }
+        .field-error {
+          color: #e11d48;
+          font-size: 11px;
+          margin-top: 0.25rem;
+          display: block;
+        }
+        .input-error {
+          border-color: #e11d48 !important;
         }
         .form-section {
           display: flex;

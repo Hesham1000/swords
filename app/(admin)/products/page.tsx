@@ -24,6 +24,7 @@ export default function ProductsPage() {
   const [filterCategory, setFilterCategory] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
+  const [sortBy, setSortBy] = useState("name-asc");
 
   useEffect(() => {
     const params = JSON.stringify({ page, searchQuery, filterCategory, filterType, filterBrand, refresh });
@@ -39,8 +40,8 @@ export default function ProductsPage() {
           productType: filterType,
           brand: filterBrand,
         });
-        setProducts(response.data);
-        setPagination(response.pagination);
+        setProducts(response?.data ?? []);
+        setPagination(response?.pagination ?? null);
       } catch (err: any) {
         setError(err.message || "Failed to load products");
       } finally {
@@ -64,6 +65,18 @@ export default function ProductsPage() {
     setEditingProduct(product);
     setShowForm(true);
   };
+
+  const sortedProducts = [...(products ?? [])].sort((a, b) => {
+    const pa = a ?? {} as Product; const pb = b ?? {} as Product;
+    switch (sortBy) {
+      case "name-desc": return (pb.name ?? "").localeCompare(pa.name ?? "");
+      case "price-asc": return (Number(pa.price) || 0) - (Number(pb.price) || 0);
+      case "price-desc": return (Number(pb.price) || 0) - (Number(pa.price) || 0);
+      case "qty-asc": return (Number(pa.quantity) || 0) - (Number(pb.quantity) || 0);
+      case "qty-desc": return (Number(pb.quantity) || 0) - (Number(pa.quantity) || 0);
+      default: return (pa.name ?? "").localeCompare(pb.name ?? "");
+    }
+  });
 
   return (
     <div className="page-content">
@@ -157,6 +170,19 @@ export default function ProductsPage() {
             <option value="chinese">Chinese</option>
           </select>
 
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="filter-select"
+          >
+            <option value="name-asc">Name A-Z</option>
+            <option value="name-desc">Name Z-A</option>
+            <option value="price-asc">Price Low-High</option>
+            <option value="price-desc">Price High-Low</option>
+            <option value="qty-asc">Quantity Low-High</option>
+            <option value="qty-desc">Quantity High-Low</option>
+          </select>
+
           {(searchQuery || filterCategory || filterType || filterBrand) && (
             <button 
               className="clear-filters-btn"
@@ -177,16 +203,24 @@ export default function ProductsPage() {
 
       {error && <div className="error-banner">{error}</div>}
 
-      <ProductsList
-        products={products}
-        loading={loading}
-        onDelete={handleDelete}
-        onEdit={handleEdit}
-        isAdmin={isAdmin}
-        currentPage={page}
-        onPageChange={setPage}
-        pagination={pagination}
-      />
+      {!loading && sortedProducts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center gap-2">
+          <Package size={48} className="text-gray-400" />
+          <h3>No products found</h3>
+          <p className="text-gray-400">Try adjusting your search or filters, or add a new product.</p>
+        </div>
+      ) : (
+        <ProductsList
+          products={sortedProducts}
+          loading={loading}
+          onDelete={handleDelete}
+          onEdit={handleEdit}
+          isAdmin={isAdmin}
+          currentPage={page}
+          onPageChange={setPage}
+          pagination={pagination}
+        />
+      )}
 
       {showForm && (
         <ProductForm
