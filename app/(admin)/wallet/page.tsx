@@ -89,7 +89,7 @@ export default function WalletPage() {
           USD: balanceRes.data.balanceUSD,
           EUR: balanceRes.data.balanceEUR,
         });
-        setTransactions(transactionsRes.data);
+        setTransactions(transactionsRes.data.map((tx) => ({ ...tx, date: tx.createdAt || tx.date })));
         if (transactionsRes.pagination) {
           setPagination(transactionsRes.pagination);
         }

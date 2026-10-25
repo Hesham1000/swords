@@ -1,7 +1,7 @@
 // app/page.tsx - Premium KINGS Landing Page
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
 import {
@@ -32,11 +32,12 @@ const KingsLogo = () => (
 );
 
 export default function LandingPage() {
-  const [isAuthenticated] = useState(() => {
-    if (typeof document === "undefined") return false;
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
     const cookies = document.cookie.split(";");
-    return cookies.some((c) => c.trim().startsWith("logged_in="));
-  });
+    setIsAuthenticated(cookies.some((c) => c.trim().startsWith("logged_in=")));
+  }, []);
   const { scrollYProgress } = useScroll();
 
   const features = [
