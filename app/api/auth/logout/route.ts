@@ -1,26 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revokeAndDeleteToken } from "../../../lib/auth/token";
 import { cookies } from "next/headers";
 import ApiError from "../../../utils/ApiError";
 
+// In-memory token blacklist: token -> expiresAt
+const tokenBlacklist = new Map<string, number>();
+
+// Periodically purge expired entries so the map doesn't grow unbounded
+function purgeExpiredTokens() {
+  const now = Date.now();
+  for (const [token, expiresAt] of tokenBlacklist.entries()) {
+    if (expiresAt <= now) {
+      tokenBlacklist.delete(token);
+    }
+  }
+}
 
 /**
  * API route to handle logout
  */
 export async function POST(request: NextRequest) {
   try {
-
     const cookieStore = await cookies();
-    const userId = request.headers.get("x-user-id");
     const token = cookieStore.get("access_token")?.value;
 
-    // Revoke and delete token from database if exists
+    // Blacklist the token in memory until its natural expiry (6h access token)
     if (token) {
-      try {
-        await revokeAndDeleteToken(token, userId as string);
-      } catch (err) {
-        console.error("Error revoking/deleting token:", err);
-      }
+      purgeExpiredTokens();
+      tokenBlacklist.set(token, Date.now() + 6 * 60 * 60 * 1000);
     }
 
     const response = NextResponse.json({

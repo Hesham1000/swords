@@ -3,15 +3,14 @@ import {
   generatePasswordSetupToken,
   PASSWORD_TOKEN_EXPIRATION_MINUTES,
 } from "../../../lib/auth/token";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { db, schema } from "../../../lib/db";
+import { eq } from "drizzle-orm";
 import { sendEmailSetPassword } from "../../../utils/email";
 import ApiError from "../../../utils/ApiError";
 import { buildErrorUrl } from "../../../lib/errors/error-builder";
 
-
 export async function POST(request: NextRequest) {
   try {
-
     const body = await request.json();
     console.log("Received forget-password request for email:", body.email);
     const email = body.email.trim();
@@ -21,8 +20,12 @@ export async function POST(request: NextRequest) {
       throw ApiError.badRequest("Email is required");
     }
 
-    const userCollection = await getUserCollection();
-    const existingUser = await userCollection.findOne({ email });
+    const existingRows = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.email, email))
+      .limit(1);
+    const existingUser = existingRows[0];
 
     if (!existingUser) {
       // For security, don't reveal whether user exists
@@ -36,31 +39,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if this is a personal GitHub account (useDefaultGithub: false means personal GitHub account)
-    if (existingUser.useDefaultGithub === false) {
-      const errorUrl = buildErrorUrl({
-        message:
-          "This account uses GitHub authentication. Please sign in with GitHub or set up a password through your profile settings.",
-        type: "auth",
-        source: "github-auth",
-      });
-      return NextResponse.json(
-        {
-          error: "GitHub account detected",
-          message:
-            "This account uses GitHub authentication. Please sign in with GitHub.",
-          redirectUrl: errorUrl,
-          statusCode: 400,
-        },
-        { status: 400 }
-      );
-    }
-
     // Prevent too frequent email sending
     const now = new Date();
-    if (existingUser.lastEmailSent) {
+    if (existingUser.updatedAt) {
       const timeDiff =
-        now.getTime() - new Date(existingUser.lastEmailSent).getTime();
+        now.getTime() - new Date(existingUser.updatedAt).getTime();
       if (timeDiff < 60000) {
         console.warn("Password reset email sent too recently", {
           email,
@@ -87,10 +70,10 @@ export async function POST(request: NextRequest) {
     );
 
     // Save lastEmailSent
-    await userCollection.updateOne(
-      { _id: existingUser._id },
-      { $set: { lastEmailSent: now } }
-    );
+    await db
+      .update(schema.users)
+      .set({ updatedAt: now })
+      .where(eq(schema.users.id, existingUser.id));
 
     return NextResponse.json(
       { message: "A reset link has been sent." },
@@ -106,6 +89,7 @@ export async function POST(request: NextRequest) {
         { status: error.statusCode }
       );
     }
+    console.error("Forget password error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

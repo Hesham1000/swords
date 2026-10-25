@@ -1,49 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getWalletCollection, getWalletTransactionsCollection, getInvoicesCollection } from "../../lib/mongoDB";
+import { db, schema } from "../../lib/db";
+import { wallet, walletTransactions } from "../../lib/db/schema";
+import { eq, sql } from "drizzle-orm";
 
 const CURRENCIES = ["EGP", "USD", "EUR"] as const;
 type Currency = typeof CURRENCIES[number];
 
+// Resolve the current user's id from the x-user-id header or access_token cookie
+function getUserId(request: NextRequest): string | null {
+  const headerId = request.headers.get("x-user-id");
+  if (headerId) return headerId;
+  const token = request.cookies.get("access_token")?.value;
+  if (token) return token;
+  return null;
+}
+
 // GET: Return wallet balances for all currencies
 export async function GET(request: NextRequest) {
   try {
-    const walletCollection = await getWalletCollection();
-    let wallet = await walletCollection.findOne({ _id: "main" as any });
-
-    if (!wallet || !wallet.initialized) {
-      // Calculate initial EGP balance from all cash deposits
-      const invoicesCollection = await getInvoicesCollection();
-      const cashInvoices = await invoicesCollection.find({ paymentMethod: "cash" }).toArray();
-      const initialEGP = cashInvoices.reduce((sum: number, inv: any) => sum + (inv.deposit || 0), 0);
-
-      await walletCollection.updateOne(
-        { _id: "main" as any },
-        { $set: { balanceEGP: initialEGP, balanceUSD: 0, balanceEUR: 0, initialized: true } },
-        { upsert: true }
-      );
-      wallet = { _id: "main" as any, balanceEGP: initialEGP, balanceUSD: 0, balanceEUR: 0, initialized: true };
+    const userId = getUserId(request);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!wallet) {
-       return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
+    let rows = await db.select().from(wallet).where(eq(wallet.userId, userId));
+
+    if (rows.length === 0) {
+      // Initialize wallet with zero balances
+      const inserted = await db
+        .insert(wallet)
+        .values({ userId, balanceEGP: "0", balanceUSD: "0", balanceEUR: "0" })
+        .returning();
+      rows = inserted;
     }
 
-    // Migration: if old single-balance format, migrate to multi-currency
-    if (wallet.balance !== undefined && wallet.balanceEGP === undefined) {
-      const oldBalance = wallet.balance || 0;
-      await walletCollection.updateOne(
-        { _id: "main" as any },
-        { $set: { balanceEGP: oldBalance, balanceUSD: 0, balanceEUR: 0 }, $unset: { balance: "" } }
-      );
-      wallet = { _id: wallet._id, balanceEGP: oldBalance, balanceUSD: 0, balanceEUR: 0, initialized: wallet.initialized };
-    }
+    const w = rows[0];
 
     return NextResponse.json({
       message: "Wallet balance retrieved successfully",
       data: {
-        balanceEGP: wallet.balanceEGP || 0,
-        balanceUSD: wallet.balanceUSD || 0,
-        balanceEUR: wallet.balanceEUR || 0,
+        balanceEGP: Number(w.balanceEGP ?? 0),
+        balanceUSD: Number(w.balanceUSD ?? 0),
+        balanceEUR: Number(w.balanceEUR ?? 0),
       },
     }, { status: 200 });
   } catch (error) {
@@ -70,41 +68,53 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Type must be deposit or withdraw" }, { status: 400 });
     }
 
-    const walletCollection = await getWalletCollection();
-    const transactionsCollection = await getWalletTransactionsCollection();
+    const userId = getUserId(request);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const balanceField = `balance${currency}` as string;
     const parsedAmount = parseFloat(amount);
     const delta = type === "deposit" ? parsedAmount : -parsedAmount;
 
+    // Ensure the wallet row exists
+    const existing = await db.select().from(wallet).where(eq(wallet.userId, userId));
+    if (existing.length === 0) {
+      await db.insert(wallet).values({ userId, balanceEGP: "0", balanceUSD: "0", balanceEUR: "0" });
+    }
+
     // Update wallet balance for the specific currency
-    await walletCollection.updateOne(
-      { _id: "main" as any },
-      { $inc: { [balanceField]: delta } },
-      { upsert: true }
-    );
+    const updateSet: Record<string, unknown> = { updatedAt: new Date() };
+    if (currency === "EGP") updateSet.balanceEGP = sql`${wallet.balanceEGP} + ${delta}`;
+    else if (currency === "USD") updateSet.balanceUSD = sql`${wallet.balanceUSD} + ${delta}`;
+    else updateSet.balanceEUR = sql`${wallet.balanceEUR} + ${delta}`;
+
+    await db.update(wallet).set(updateSet).where(eq(wallet.userId, userId));
 
     // Log the transaction
-    const transaction = {
-      type,
-      amount: delta,
-      currency,
-      note: note || (type === "deposit" ? `Cash deposit (${currency})` : `Withdrawal (${currency})`),
-      date: new Date(),
-      createdAt: new Date(),
-    };
-    await transactionsCollection.insertOne(transaction);
+    const insertedTx = await db
+      .insert(walletTransactions)
+      .values({
+        userId,
+        type,
+        amount: String(delta),
+        currency,
+        description: note || (type === "deposit" ? `Cash deposit (${currency})` : `Withdrawal (${currency})`),
+      })
+      .returning();
 
     // Get updated balances
-    const wallet = await walletCollection.findOne({ _id: "main" as any });
+    const updated = (await db.select().from(wallet).where(eq(wallet.userId, userId)))[0];
 
     return NextResponse.json({
       message: `${type === "deposit" ? "Deposit" : "Withdrawal"} successful`,
       data: {
-        balanceEGP: wallet?.balanceEGP || 0,
-        balanceUSD: wallet?.balanceUSD || 0,
-        balanceEUR: wallet?.balanceEUR || 0,
-        transaction,
+        balanceEGP: Number(updated?.balanceEGP ?? 0),
+        balanceUSD: Number(updated?.balanceUSD ?? 0),
+        balanceEUR: Number(updated?.balanceEUR ?? 0),
+        transaction: {
+          ...insertedTx[0],
+          amount: Number(insertedTx[0].amount),
+        },
       },
     }, { status: 201 });
   } catch (error) {

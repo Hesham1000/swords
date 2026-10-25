@@ -2,8 +2,8 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 /**
- * Transforms a MongoDB product document into the format expected by the frontend.
- * - Renames _id to id
+ * Transforms a product document into the format expected by the frontend.
+ * - Handles both MongoDB (_id) and Drizzle/Postgres (id) shapes
  * - Prepends the API URL to image paths if they are relative
  */
 export function transformProduct(product: any) {
@@ -14,7 +14,7 @@ export function transformProduct(product: any) {
 
     const transformed = {
         ...product,
-        id: product._id.toString(),
+        id: product._id ? product._id.toString() : product.id,
         images: (product.images || []).map((img: string) => {
             if (img.startsWith("http")) {
                 return img;

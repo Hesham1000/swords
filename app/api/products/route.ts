@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProductsCollection } from "../../lib/mongoDB";
+import { and, asc, desc, eq, ilike, lt, or, sql } from "drizzle-orm";
+import { db, schema } from "../../lib/db";
 import { transformProduct } from "../../lib/api/utils";
 
 // GET endpoint to retrieve products with pagination and filtering
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const summary = searchParams.get("summary") === "true";
-    
+
     // Filter parameters
     const search = searchParams.get("search");
     const category = searchParams.get("category");
@@ -34,47 +35,54 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const productsCollection = await getProductsCollection();
     const dashboard = searchParams.get("dashboard") === "true";
 
-    // Build query object
-    const query: any = {};
-    
+    // Build filter conditions
+    const conditions = [];
+
     if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-        { model: { $regex: search, $options: "i" } }
-      ];
+      conditions.push(
+        or(
+          ilike(schema.products.name, `%${search}%`),
+          ilike(schema.products.description, `%${search}%`),
+          ilike(schema.products.model, `%${search}%`)
+        )
+      );
     }
-    
+
     if (category) {
-      query.category = category;
+      conditions.push(eq(schema.products.category, [category]));
     }
-    
+
     if (productType) {
-      query.productType = productType;
+      conditions.push(eq(schema.products.productType, productType));
     }
-    
+
     if (brand) {
-      query.brand = brand;
+      conditions.push(eq(schema.products.brand, brand));
     }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     // DASHBOARD OPTIMIZED RESPONSE
     if (dashboard) {
       // 1. Calculate total quantity matching query
-      const qtyResult = await productsCollection.aggregate([
-        { $match: query },
-        { $group: { _id: null, total: { $sum: "$quantity" } } }
-      ]).toArray();
-      const totalQuantity = qtyResult.length > 0 ? qtyResult[0].total : 0;
+      const qtyResult = await db
+        .select({ total: sql<string>`coalesce(sum(${schema.products.quantity}), 0)` })
+        .from(schema.products)
+        .where(whereClause);
+      const totalQuantity = parseInt(qtyResult[0]?.total || "0", 10);
 
       // 2. Fetch ALL low stock items (quantity < 3) matching query
-      const lowStockQuery = { ...query, quantity: { $lt: 3 } };
-      const lowStockItems = await productsCollection
-        .find(lowStockQuery)
-        .sort({ quantity: 1 })
-        .toArray();
+      const lowStockConditions = [
+        ...(conditions || []),
+        lt(schema.products.quantity, 3),
+      ];
+      const lowStockItems = await db
+        .select()
+        .from(schema.products)
+        .where(and(...lowStockConditions))
+        .orderBy(asc(schema.products.quantity));
 
       return NextResponse.json({
         success: true,
@@ -88,25 +96,30 @@ export async function GET(request: NextRequest) {
 
     // STANDARD PAGINATED RESPONSE
     // Get total count of products for pagination metadata
-    const totalCount = await productsCollection.countDocuments(query);
+    const countResult = await db
+      .select({ count: sql<string>`count(*)` })
+      .from(schema.products)
+      .where(whereClause);
+    const totalCount = parseInt(countResult[0]?.count || "0", 10);
 
     // If summary is requested, calculate total quantity across all products matching the query
     let totalQuantity = 0;
     if (summary) {
-      const result = await productsCollection.aggregate([
-        { $match: query },
-        { $group: { _id: null, total: { $sum: "$quantity" } } }
-      ]).toArray();
-      totalQuantity = result.length > 0 ? result[0].total : 0;
+      const result = await db
+        .select({ total: sql<string>`coalesce(sum(${schema.products.quantity}), 0)` })
+        .from(schema.products)
+        .where(whereClause);
+      totalQuantity = parseInt(result[0]?.total || "0", 10);
     }
 
     // Fetch paginated products
-    const products = await productsCollection
-      .find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
+    const products = await db
+      .select()
+      .from(schema.products)
+      .where(whereClause)
+      .orderBy(desc(schema.products.createdAt))
       .limit(limit)
-      .toArray();
+      .offset(skip);
 
     // Calculate pagination metadata
     const totalPages = Math.ceil(totalCount / limit);
@@ -139,4 +152,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}

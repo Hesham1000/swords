@@ -1,9 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
-import { ObjectId } from "mongodb";
-import {
-  getUserCollection,
-  getBlacklistCollection,
-} from "../mongoDB";
+import { and, eq } from "drizzle-orm";
+import { db, schema } from "../db";
 import { verifyAccessTokenEdge as verifyAccessToken } from "./edge";
 
 // export { verifyAccessToken }; // If needed by other non-edge files
@@ -142,17 +139,14 @@ export async function decodePasswordSetupToken(
 
 
 
-// Lazy DB initialization (no top-level await)
-async function getCollections() {
-  const blacklist = await getBlacklistCollection();
-  const users = await getUserCollection();
-  return { blacklist, users };
-}
-
 // Blacklist check
 export async function isTokenBlacklisted(token: string): Promise<boolean> {
-  const { blacklist } = await getCollections();
-  return !!(await blacklist.findOne({ token }));
+  const rows = await db
+    .select({ id: schema.tokenBlacklist.id })
+    .from(schema.tokenBlacklist)
+    .where(eq(schema.tokenBlacklist.token, token))
+    .limit(1);
+  return rows.length > 0;
 }
 
 // Revoke token and clear cookies
@@ -161,21 +155,24 @@ export async function revokeAndDeleteToken(
   userId?: string,
   refresh?: string
 ): Promise<void> {
-  const { blacklist, users } = await getCollections();
-
   // Blacklist token
   if (!(await isTokenBlacklisted(token))) {
-    await blacklist.insertOne({
+    await db.insert(schema.tokenBlacklist).values({
       token,
-      revoked_at: new Date(),
-      ...(userId ? { user_id: new ObjectId(userId) } : {}),
+      revokedAt: new Date(),
+      ...(userId ? { userId } : {}),
     });
   }
 
   // Remove session
   if (userId) {
-    await users.updateOne({ _id: new ObjectId(userId) }, {
-      $pull: { sessions: { token } },
-    } as any);
+    await db
+      .delete(schema.userSessions)
+      .where(
+        and(
+          eq(schema.userSessions.token, token),
+          eq(schema.userSessions.userId, userId)
+        )
+      );
   }
 }

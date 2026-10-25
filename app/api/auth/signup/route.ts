@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { db, schema } from "../../../lib/db";
+import { eq } from "drizzle-orm";
 import {
   validateEmail,
   validateUsername,
@@ -18,10 +19,13 @@ export async function POST(request: NextRequest) {
     const username = body.username.trim();
     const email = body.email?.trim();
 
-    const userCollection = await getUserCollection();
-
     // Check existing user
-    const existingUser = await userCollection.findOne({ email });
+    const existingRows = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.email, email))
+      .limit(1);
+    const existingUser = existingRows[0];
 
     if (existingUser) {
       if (!existingUser.isActive) {
@@ -30,7 +34,7 @@ export async function POST(request: NextRequest) {
         );
       }
       // Check if last email was sent < 1 min ago
-      const lastEmailSent = existingUser.lastEmailSent;
+      const lastEmailSent = existingUser.updatedAt;
       const now = new Date();
 
       if (lastEmailSent) {
@@ -56,17 +60,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new user with roles array
-    const newUser = {
+    await db.insert(schema.users).values({
       username: username,
       email,
       isActive: false,
       roles: ["user"], // 👈 roles array instead of single role
-      sessions: [],
-      dateJoined: new Date(),
-      lastEmailSent: new Date(),
-    };
-
-    await userCollection.insertOne(newUser);
+      // Password is set later via /set-password; store an unusable random hash placeholder
+      password: crypto.randomUUID(),
+    });
 
     // Send setup email
     const token = await generatePasswordSetupToken(email);
@@ -100,8 +101,10 @@ export async function POST(request: NextRequest) {
         { status: error.statusCode }
       );
     }
+
+    console.error("Signup error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", statusCode: 500 },
       { status: 500 }
     );
   }
