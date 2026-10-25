@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
-import { Menu, X, Loader2 } from "lucide-react";
+import { Menu, X, Loader2, LogOut } from "lucide-react";
 import Sidebar from "../components/sidebar";
 import { getCurrentUser, User } from "../lib/api/auth";
 import { getDashboardSummary, DashboardSummaryData } from "../lib/api/dashboard";
@@ -35,10 +35,12 @@ export default function DashboardLayout({
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardSummaryData | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
   const fetchedRef = useRef(false);
 
   // Check for mobile on mount and window resize
@@ -61,6 +63,32 @@ export default function DashboardLayout({
   const refreshDashboard = () => {
     fetchedRef.current = false;
     setRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      setLogoutError(null);
+
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Include cookies for session-based auth
+      });
+
+      if (!response.ok) {
+        throw new Error(`Logout failed with status: ${response.status}`);
+      }
+
+      router.push("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+      setLogoutError("Logout failed. Please try again.");
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const contextValue = React.useMemo(() => ({
@@ -133,17 +161,7 @@ export default function DashboardLayout({
             color: white;
             gap: 1.5rem;
           }
-          .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #e5e7eb;
-            border-top-color: #7c2d3a;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-          }
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
+          /* .spinner itself comes from the global .spinner class in globals.css */
         `}</style>
       </div>
     );
@@ -183,8 +201,36 @@ export default function DashboardLayout({
             {pathname.includes("/wallet") && "Wallet Management"}
             {pathname.includes("/history") && "Inventory History"}
           </h2>
-          <div></div>
+          <div className="topbar-right">
+            <div
+              className="user-avatar"
+              aria-hidden="true"
+              title={user?.username || "User"}
+            >
+              {(user?.username?.charAt(0) || "U").toUpperCase()}
+            </div>
+            <span className="user-name">{user?.username || "Guest"}</span>
+            <button
+              className="logout-btn"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              aria-label="Log out"
+            >
+              {isLoggingOut ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <LogOut size={16} />
+              )}
+              <span>Logout</span>
+            </button>
+          </div>
         </div>
+
+        {logoutError && (
+          <div className="logout-error" role="alert">
+            {logoutError}
+          </div>
+        )}
 
         <div className="content-wrapper">
           <Suspense fallback={
@@ -265,6 +311,62 @@ export default function DashboardLayout({
         .menu-toggle:hover {
           background: rgba(var(--accent-blue-rgb), 0.08);
           border-color: rgba(var(--accent-blue-rgb), 0.2);
+        }
+        .user-avatar {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: var(--grad-amber, #7c2d3a);
+          color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 0.9rem;
+          flex-shrink: 0;
+          user-select: none;
+        }
+        .topbar-right {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+        .user-name {
+          color: var(--text-primary);
+          font-size: 0.9rem;
+          font-weight: 600;
+          white-space: nowrap;
+        }
+        .logout-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          background: var(--glass-bg);
+          border: 1px solid var(--border-tech);
+          color: var(--text-primary);
+          cursor: pointer;
+          padding: 0.45rem 0.9rem;
+          border-radius: 10px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          transition: all 0.2s;
+        }
+        .logout-btn:hover:not(:disabled) {
+          background: rgba(var(--accent-blue-rgb), 0.08);
+          border-color: rgba(var(--accent-blue-rgb), 0.2);
+        }
+        .logout-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        .logout-error {
+          background: rgba(220, 38, 38, 0.12);
+          border: 1px solid rgba(220, 38, 38, 0.4);
+          color: #fca5a5;
+          padding: 0.6rem 1rem;
+          border-radius: 10px;
+          font-size: 0.85rem;
+          margin: 0 2rem;
         }
         .content-wrapper {
           padding: 2rem;

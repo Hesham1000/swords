@@ -1,5 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import {
   LayoutDashboard,
@@ -11,7 +12,6 @@ import {
   Moon,
   Wallet,
   TrendingUp,
-  PieChart,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -103,50 +103,151 @@ const Sidebar = ({
 
   return (
     <aside className={`sidebar ${sidebarOpen ? 'mobile-open' : 'closed'}`}>
+      <style jsx global>{`
+        .sidebar {
+          width: 280px;
+          display: flex;
+          flex-direction: column;
+          background: var(--glass-bg, var(--card-bg, #ffffff));
+          border-right: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+          padding: 24px 16px;
+          gap: 8px;
+          height: 100vh;
+          position: sticky;
+          top: 0;
+          flex-shrink: 0;
+        }
+
+        /* Mobile: fixed drawer, hidden by default */
+        @media (max-width: 768px) {
+          .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 50;
+            transform: translateX(-100%);
+            transition: transform 0.25s ease;
+            box-shadow: 0 0 24px rgba(0, 0, 0, 0.2);
+          }
+          .sidebar.mobile-open {
+            transform: translateX(0);
+          }
+        }
+
+        .sidebar-header {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 8px 0 20px;
+          border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+          margin-bottom: 8px;
+        }
+
+        .sidebar-brand {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .sidebar-brand img {
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          object-fit: cover;
+        }
+
+        .sidebar-brand-text {
+          font-family: var(--font-display, inherit);
+          font-size: 1.25rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          color: var(--text-color, inherit);
+        }
+
+        .sidebar-nav {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          flex: 1;
+        }
+
+        .nav-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 14px;
+          border-radius: 10px;
+          border-left: 3px solid transparent;
+          color: var(--text-color, inherit);
+          text-decoration: none;
+          font-size: 0.95rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: background-color 0.2s ease, transform 0.2s ease,
+            border-color 0.2s ease;
+        }
+
+        .nav-item:hover {
+          background: var(--glass-bg, rgba(0, 0, 0, 0.04));
+          transform: translateX(4px);
+        }
+
+        .nav-item.active {
+          border-left: 3px solid var(--accent-blue, #3b82f6);
+          background: color-mix(
+            in srgb,
+            var(--accent-blue, #3b82f6) 10%,
+            transparent
+          );
+          font-weight: 600;
+        }
+
+        .nav-item:focus-visible {
+          outline: 2px solid var(--accent-blue, #3b82f6);
+          outline-offset: 2px;
+        }
+
+        .sidebar-footer {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          padding-top: 16px;
+          border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+        }
+      `}</style>
       <motion.div
         className="sidebar-header"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ scale: 1.02 }}
       >
-        <motion.div
-          className="sidebar-brand"
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", marginBottom: "-20px" }}
-          animate={{ textShadow: ["0 0 0px var(--accent-gold)", "0 0 8px var(--accent-gold)", "0 0 0px var(--accent-gold)"] }}
-          transition={{ duration: 3, repeat: Infinity }}
-        >
-          <img src="/icon.png" alt="Kings Logo" width="100" height="100" />
-        </motion.div>
+        <div className="sidebar-brand">
+          <img src="/icon.png" alt="Kings Logo" width={40} height={40} />
+          <span className="sidebar-brand-text">KINGS</span>
+        </div>
       </motion.div>
 
-      <nav className="sidebar-nav">
-        {navItems.map((item, index) => (
-          <motion.div
-            key={item.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}
-            whileHover={{ x: 5, backgroundColor: "var(--glass-bg)" }}
-            whileTap={{ scale: 0.95 }}
-            className={`nav-item ${currentPage === item.id ? "active" : ""}`}
-            onClick={() => {
-              const target = item.id === "dashboard" ? "/dashboard" : `/${item.id}`;
-              router.push(target);
-              onNavigation(item.id);
-            }}
-          >
+      <nav className="sidebar-nav" aria-label="Main navigation">
+        {navItems.map((item, index) => {
+          const href = item.id === "dashboard" ? "/dashboard" : `/${item.id}`;
+          return (
             <motion.div
-              animate={currentPage === item.id ? {
-                scale: [1, 1.2, 1],
-                rotate: [0, 5, -5, 0]
-              } : {}}
-              transition={{ duration: 0.5 }}
+              key={item.id}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
             >
-              <item.icon size={20} />
+              <Link
+                href={href}
+                className={`nav-item ${currentPage === item.id ? "active" : ""}`}
+                aria-current={currentPage === item.id ? "page" : undefined}
+                onClick={() => onNavigation(item.id)}
+              >
+                <item.icon size={20} aria-hidden="true" />
+                <span>{item.label}</span>
+              </Link>
             </motion.div>
-            <span>{item.label}</span>
-          </motion.div>
-        ))}
+          );
+        })}
       </nav>
 
       <div className="sidebar-footer">
