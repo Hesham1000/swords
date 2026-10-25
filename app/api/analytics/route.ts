@@ -1,99 +1,116 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getInvoicesCollection, getProductsCollection } from "../../lib/mongoDB";
-import { ObjectId } from "mongodb";
+import { db, invoices, products } from "../../lib/db";
+import { sql } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
-    const invoicesCollection = await getInvoicesCollection();
-    const productsCollection = await getProductsCollection();
+    // Fetch invoices from the last 90 days
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const periodInvoices = await db
+      .select()
+      .from(invoices)
+      .where(sql`${invoices.createdAt} >= ${ninetyDaysAgo.toISOString()}`)
+      .orderBy(sql`${invoices.createdAt} ASC`);
 
-    // 1. GET ALL INVOICES FOR PROCESSING
-    // We fetch a reasonable range (last 90 days) for detailed analytics
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    // Fetch all products
+    const allProducts = await db.select().from(products);
 
-    const invoices = await invoicesCollection.find({
-      date: { $gte: threeMonthsAgo.toISOString().split('T')[0] }
-    }).toArray();
+    // All-time totals
+    const allInvoices = await db.select().from(invoices);
+    let totalRevenue = 0;
+    const allCustomers = new Set<string>();
+    for (const inv of allInvoices) {
+      totalRevenue += Number(inv.totalAmount || 0);
+      if (inv.customer) allCustomers.add(inv.customer);
+    }
 
-    // 2. SUMMARY STATS (Total from all time)
-    const allInvoices = await invoicesCollection.find({}).toArray();
-    const totalRevenue = allInvoices.reduce((acc, inv) => acc + (inv.amount || 0), 0);
-    const totalOrders = allInvoices.length;
-    
-    // Unique customers
-    const uniqueCustomers = new Set(allInvoices.map(inv => inv.customer)).size;
+    let inventoryValue = 0;
+    let totalInventoryCount = 0;
+    for (const prod of allProducts) {
+      inventoryValue += Number(prod.price || 0) * (prod.quantity || 0);
+      totalInventoryCount += prod.quantity || 0;
+    }
 
-    // Inventory Value
-    const allProducts = await productsCollection.find({}).toArray();
-    const inventoryValue = allProducts.reduce((acc, prod) => acc + ((prod.price || 0) * (prod.quantity || 0)), 0);
+    // Revenue trend (daily over the 90-day period)
+    const trendMap = new Map<string, number>();
+    for (const inv of periodInvoices) {
+      const day = inv.createdAt ? new Date(inv.createdAt).toISOString().slice(0, 10) : "unknown";
+      trendMap.set(day, (trendMap.get(day) || 0) + Number(inv.totalAmount || 0));
+    }
+    const revenueTrend = Array.from(trendMap.entries()).map(([date, amount]) => ({
+      date,
+      amount,
+    }));
 
-    // 3. TRENDS (Last 30 Days)
-    const last30Days = Array.from({ length: 30 }).map((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      return d.toISOString().split('T')[0];
-    }).reverse();
-
-    const revenueTrend = last30Days.map(day => {
-      const dayInvoices = invoices.filter(inv => inv.date === day);
-      return {
-        date: day,
-        revenue: dayInvoices.reduce((acc, inv) => acc + (inv.amount || 0), 0),
-        orders: dayInvoices.length
-      };
-    });
-
-    // 4. CATEGORY DISTRIBUTION
-    const productCategoryMap: Record<string, string> = {};
-    allProducts.forEach(prod => {
-      const cat = prod.category && Array.isArray(prod.category) && prod.category.length > 0 
-        ? prod.category[0] 
-        : (typeof prod.category === 'string' ? prod.category : "Equipment");
-      productCategoryMap[prod._id.toString()] = cat;
-    });
-
-    const categorySales: Record<string, number> = {};
-    invoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
-        const cat = productCategoryMap[item.productId] || item.category || "General";
-        categorySales[cat] = (categorySales[cat] || 0) + (item.price * item.quantity);
-      });
-    });
-
-    // 5. TOP PRODUCTS
-    const productSales: Record<string, {name: string, revenue: number, quantity: number}> = {};
-    invoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
-        if (!productSales[item.productId]) {
-          productSales[item.productId] = { name: item.name, revenue: 0, quantity: 0 };
+    // Category distribution
+    const productCategoryMap = new Map<string, string[]>();
+    for (const prod of allProducts) {
+      productCategoryMap.set(prod.id, prod.category || []);
+    }
+    const categoryCount = new Map<string, number>();
+    for (const inv of periodInvoices) {
+      const items: any[] = Array.isArray(inv.items) ? inv.items : [];
+      for (const item of items) {
+        const cats = productCategoryMap.get(item.id) || [];
+        for (const cat of cats) {
+          categoryCount.set(cat, (categoryCount.get(cat) || 0) + (item.quantity || 0));
         }
-        productSales[item.productId].revenue += (item.price * item.quantity);
-        productSales[item.productId].quantity += item.quantity;
-      });
-    });
-
-    const topProducts = Object.values(productSales)
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5);
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        summary: {
-          totalRevenue,
-          totalOrders,
-          uniqueCustomers,
-          inventoryValue,
-          averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0
-        },
-        trends: revenueTrend,
-        categories: Object.entries(categorySales).map(([name, value]) => ({ name, value })),
-        topProducts
       }
-    }, { status: 200 });
+    }
+    const categoryDistribution = Array.from(categoryCount.entries())
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Top products
+    const productCount = new Map<string, { name: string; count: number; revenue: number }>();
+    for (const inv of periodInvoices) {
+      const items: any[] = Array.isArray(inv.items) ? inv.items : [];
+      for (const item of items) {
+        const existing = productCount.get(item.id);
+        const itemRevenue = (item.price || 0) * (item.quantity || 0);
+        if (existing) {
+          existing.count += item.quantity || 0;
+          existing.revenue += itemRevenue;
+        } else {
+          productCount.set(item.id, {
+            name: item.name || "Unknown",
+            count: item.quantity || 0,
+            revenue: itemRevenue,
+          });
+        }
+      }
+    }
+    const topProducts = Array.from(productCount.entries())
+      .map(([id, { name, count, revenue }]) => ({ id, name, count, revenue }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          totals: {
+            revenue: totalRevenue,
+            orders: allInvoices.length,
+            uniqueCustomers: allCustomers.size,
+            inventoryValue,
+            totalInventoryCount,
+            avgOrderValue: allInvoices.length > 0 ? totalRevenue / allInvoices.length : 0,
+          },
+          periodOrders: periodInvoices.length,
+          revenueTrend,
+          categoryDistribution,
+          topProducts,
+        },
+      },
+      { status: 200 }
+    );
   } catch (error) {
-    console.error("Analytics Error:", error);
-    return NextResponse.json({ error: "Failed to generate analytics" }, { status: 500 });
+    console.error("Error fetching analytics:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

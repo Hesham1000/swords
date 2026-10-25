@@ -2,8 +2,8 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 /**
- * Transforms a MongoDB product document into the format expected by the frontend.
- * - Renames _id to id
+ * Transforms a product record into the format expected by the frontend.
+ * - Normalizes _id/id to id
  * - Prepends the API URL to image paths if they are relative
  */
 export function transformProduct(product: any) {
@@ -12,9 +12,11 @@ export function transformProduct(product: any) {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
 
+    const rawId = product._id ?? product.id;
+
     const transformed = {
         ...product,
-        id: product._id.toString(),
+        id: rawId?.toString?.() ?? rawId,
         images: (product.images || []).map((img: string) => {
             if (img.startsWith("http")) {
                 return img;
@@ -32,7 +34,7 @@ export function transformProduct(product: any) {
         }),
     };
 
-    // Remove the raw MongoDB _id to avoid confusion on the frontend
+    // Remove the raw _id to avoid confusion on the frontend
     delete transformed._id;
 
     return transformed;

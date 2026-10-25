@@ -1,81 +1,120 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getShipmentsCollection, getWalletCollection, getWalletTransactionsCollection } from "../../lib/mongoDB";
+import { db, shipments, wallet, walletTransactions } from "../../lib/db";
+import { eq, sql } from "drizzle-orm";
 
-// GET: Return all shipments
+// GET endpoint to retrieve all shipments
 export async function GET(request: NextRequest) {
   try {
-    const shipmentsCollection = await getShipmentsCollection();
-    const shipments = await shipmentsCollection
-      .find({})
-      .sort({ createdAt: -1 })
-      .toArray();
+    const rows = await db
+      .select()
+      .from(shipments)
+      .orderBy(sql`${shipments.createdAt} DESC`);
 
-    return NextResponse.json({
-      message: "Shipments retrieved successfully",
-      data: shipments,
-    }, { status: 200 });
+    return NextResponse.json(
+      { success: true, data: rows },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error fetching shipments:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 
-// POST: Create a shipment — deducts from wallet
+// POST endpoint to create a new shipment
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { destination, cost, description, date } = body;
 
-    if (!destination || !["cairo", "alex"].includes(destination.toLowerCase())) {
-      return NextResponse.json({ error: "Destination must be Cairo or Alex" }, { status: 400 });
+    if (!destination || !cost) {
+      return NextResponse.json(
+        { error: "Destination and cost are required" },
+        { status: 400 }
+      );
     }
 
-    if (!cost || cost <= 0) {
-      return NextResponse.json({ error: "Cost must be greater than 0" }, { status: 400 });
+    // Validate destination
+    const validDestinations = ["cairo", "alex"];
+    if (!validDestinations.includes(destination.toLowerCase())) {
+      return NextResponse.json(
+        { error: "Destination must be Cairo or Alex" },
+        { status: 400 }
+      );
     }
 
-    const walletCollection = await getWalletCollection();
-    const transactionsCollection = await getWalletTransactionsCollection();
-    const shipmentsCollection = await getShipmentsCollection();
+    const numCost = Number(cost);
+    if (isNaN(numCost) || numCost <= 0) {
+      return NextResponse.json(
+        { error: "Cost must be a positive number" },
+        { status: 400 }
+      );
+    }
 
-    // Deduct from wallet (EGP)
-    await walletCollection.updateOne(
-      { _id: "main" as any },
-      { $inc: { balanceEGP: -parseFloat(cost) } },
-      { upsert: true }
-    );
+    // Ensure wallet row exists
+    let walletRows = await db.select().from(wallet).where(eq(wallet.slug, "main"));
+    let walletRow = walletRows[0];
+    if (!walletRow) {
+      const created = await db.insert(wallet).values({ slug: "main" }).returning();
+      walletRow = created[0];
+    }
 
-    // Create shipment record
-    const shipment = {
-      destination: destination.toLowerCase(),
-      cost: parseFloat(cost),
-      description: description || "",
-      date: date || new Date().toISOString().split("T")[0],
-      createdAt: new Date(),
-    };
-    const result = await shipmentsCollection.insertOne(shipment);
+    // Check sufficient EGP balance
+    const currentBalance = Number(walletRow.balanceEgp || 0);
+    if (currentBalance < numCost) {
+      return NextResponse.json(
+        { error: "Insufficient EGP balance for shipment cost" },
+        { status: 400 }
+      );
+    }
 
-    // Log wallet transaction
-    const transaction = {
-      type: "shipment",
-      amount: -parseFloat(cost),
+    // Deduct from wallet
+    const updated = await db
+      .update(wallet)
+      .set({
+        balanceEgp: sql`coalesce(${wallet.balanceEgp}, 0) - ${numCost}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(wallet.id, walletRow.id))
+      .returning();
+
+    // Insert shipment
+    const inserted = await db
+      .insert(shipments)
+      .values({
+        destination: destination.toLowerCase(),
+        cost: String(numCost),
+        description: description || "",
+        date: date || new Date().toISOString().slice(0, 10),
+        status: "pending",
+      })
+      .returning();
+
+    // Record wallet transaction
+    await db.insert(walletTransactions).values({
+      walletId: walletRow.id,
+      type: "withdraw",
+      amount: String(numCost),
       currency: "EGP",
-      note: `Shipment to ${destination} — ${description || "No description"}`,
-      date: new Date(),
-      createdAt: new Date(),
-      referenceId: result.insertedId,
-    };
-    await transactionsCollection.insertOne(transaction);
+      description: `Shipment to ${destination.toLowerCase()}${description ? `: ${description}` : ""}`,
+      referenceId: inserted[0].id,
+    });
 
-    // Get updated balance
-    const wallet = await walletCollection.findOne({ _id: "main" as any });
-
-    return NextResponse.json({
-      message: "Shipment created successfully",
-      data: { shipment: { ...shipment, _id: result.insertedId }, balanceEGP: wallet?.balanceEGP || 0 },
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        message: "Shipment created successfully",
+        data: inserted[0],
+        balanceEGP: Number(updated[0].balanceEgp || 0),
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error creating shipment:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

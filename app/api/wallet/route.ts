@@ -1,114 +1,175 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getWalletCollection, getWalletTransactionsCollection, getInvoicesCollection } from "../../lib/mongoDB";
+import { db, wallet, walletTransactions, invoices } from "../../lib/db";
+import { eq, sql } from "drizzle-orm";
 
-const CURRENCIES = ["EGP", "USD", "EUR"] as const;
-type Currency = typeof CURRENCIES[number];
-
-// GET: Return wallet balances for all currencies
+// GET endpoint to retrieve wallet balances
 export async function GET(request: NextRequest) {
   try {
-    const walletCollection = await getWalletCollection();
-    let wallet = await walletCollection.findOne({ _id: "main" as any });
+    // Ensure wallet row exists
+    let walletRows = await db.select().from(wallet).where(eq(wallet.slug, "main"));
+    let walletRow = walletRows[0];
 
-    if (!wallet || !wallet.initialized) {
-      // Calculate initial EGP balance from all cash deposits
-      const invoicesCollection = await getInvoicesCollection();
-      const cashInvoices = await invoicesCollection.find({ paymentMethod: "cash" }).toArray();
-      const initialEGP = cashInvoices.reduce((sum: number, inv: any) => sum + (inv.deposit || 0), 0);
-
-      await walletCollection.updateOne(
-        { _id: "main" as any },
-        { $set: { balanceEGP: initialEGP, balanceUSD: 0, balanceEUR: 0, initialized: true } },
-        { upsert: true }
-      );
-      wallet = { _id: "main" as any, balanceEGP: initialEGP, balanceUSD: 0, balanceEUR: 0, initialized: true };
+    if (!walletRow) {
+      const created = await db.insert(wallet).values({ slug: "main" }).returning();
+      walletRow = created[0];
     }
 
-    if (!wallet) {
-       return NextResponse.json({ error: "Wallet not found" }, { status: 404 });
+    // Initialization: derive balances from cash invoices if wallet was never initialized
+    if (!walletRow.initialized) {
+      const cashInvoices = await db
+        .select()
+        .from(invoices)
+        .where(eq(invoices.paymentMethod, "cash"));
+
+      let egp = 0, usd = 0, eur = 0;
+      for (const inv of cashInvoices) {
+        const total = Number(inv.totalAmount || 0);
+        const cur = (inv.depositCurrency || "EGP").toUpperCase();
+        if (cur === "USD") usd += total;
+        else if (cur === "EUR") eur += total;
+        else egp += total;
+      }
+
+      const updated = await db
+        .update(wallet)
+        .set({
+          balanceEgp: String(egp),
+          balanceUsd: String(usd),
+          balanceEur: String(eur),
+          initialized: true,
+          updatedAt: new Date(),
+        })
+        .where(eq(wallet.id, walletRow.id))
+        .returning();
+      walletRow = updated[0];
     }
 
-    // Migration: if old single-balance format, migrate to multi-currency
-    if (wallet.balance !== undefined && wallet.balanceEGP === undefined) {
-      const oldBalance = wallet.balance || 0;
-      await walletCollection.updateOne(
-        { _id: "main" as any },
-        { $set: { balanceEGP: oldBalance, balanceUSD: 0, balanceEUR: 0 }, $unset: { balance: "" } }
-      );
-      wallet = { _id: wallet._id, balanceEGP: oldBalance, balanceUSD: 0, balanceEUR: 0, initialized: wallet.initialized };
-    }
-
-    return NextResponse.json({
-      message: "Wallet balance retrieved successfully",
-      data: {
-        balanceEGP: wallet.balanceEGP || 0,
-        balanceUSD: wallet.balanceUSD || 0,
-        balanceEUR: wallet.balanceEUR || 0,
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          id: walletRow.id,
+          balanceEGP: Number(walletRow.balanceEgp || 0),
+          balanceUSD: Number(walletRow.balanceUsd || 0),
+          balanceEUR: Number(walletRow.balanceEur || 0),
+        },
       },
-    }, { status: 200 });
+      { status: 200 }
+    );
   } catch (error) {
-    console.error("Error fetching wallet balance:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error("Error fetching wallet:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 
-// POST: Deposit or Withdraw from wallet
+// POST endpoint to deposit or withdraw from the wallet
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { amount, note, currency = "EGP", type = "deposit" } = body;
+    const { type, amount, currency, description } = body;
 
-    if (!amount || amount <= 0) {
-      return NextResponse.json({ error: "Amount must be greater than 0" }, { status: 400 });
-    }
-
-    if (!CURRENCIES.includes(currency)) {
-      return NextResponse.json({ error: "Currency must be EGP, USD, or EUR" }, { status: 400 });
+    if (!type || !amount || !currency) {
+      return NextResponse.json(
+        { error: "Type, amount, and currency are required" },
+        { status: 400 }
+      );
     }
 
     if (!["deposit", "withdraw"].includes(type)) {
-      return NextResponse.json({ error: "Type must be deposit or withdraw" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Type must be 'deposit' or 'withdraw'" },
+        { status: 400 }
+      );
     }
 
-    const walletCollection = await getWalletCollection();
-    const transactionsCollection = await getWalletTransactionsCollection();
+    const numAmount = Number(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return NextResponse.json(
+        { error: "Amount must be a positive number" },
+        { status: 400 }
+      );
+    }
 
-    const balanceField = `balance${currency}` as string;
-    const parsedAmount = parseFloat(amount);
-    const delta = type === "deposit" ? parsedAmount : -parsedAmount;
+    const cur = currency.toUpperCase();
+    if (!["EGP", "USD", "EUR"].includes(cur)) {
+      return NextResponse.json(
+        { error: "Currency must be EGP, USD, or EUR" },
+        { status: 400 }
+      );
+    }
 
-    // Update wallet balance for the specific currency
-    await walletCollection.updateOne(
-      { _id: "main" as any },
-      { $inc: { [balanceField]: delta } },
-      { upsert: true }
-    );
+    // Ensure wallet row exists
+    let walletRows = await db.select().from(wallet).where(eq(wallet.slug, "main"));
+    let walletRow = walletRows[0];
+    if (!walletRow) {
+      const created = await db.insert(wallet).values({ slug: "main" }).returning();
+      walletRow = created[0];
+    }
 
-    // Log the transaction
-    const transaction = {
+    const balanceColumn =
+      cur === "USD" ? wallet.balanceUsd :
+      cur === "EUR" ? wallet.balanceEur :
+      wallet.balanceEgp;
+    const balanceField =
+      cur === "USD" ? "balanceUsd" :
+      cur === "EUR" ? "balanceEur" :
+      "balanceEgp";
+
+    // Check sufficient balance for withdrawal
+    if (type === "withdraw") {
+      const currentBalance = Number(
+        cur === "USD" ? walletRow.balanceUsd :
+        cur === "EUR" ? walletRow.balanceEur :
+        walletRow.balanceEgp || 0
+      );
+      if (currentBalance < numAmount) {
+        return NextResponse.json(
+          { error: `Insufficient ${cur} balance` },
+          { status: 400 }
+        );
+      }
+    }
+
+    const signedAmount = type === "deposit" ? numAmount : -numAmount;
+
+    const updated = await db
+      .update(wallet)
+      .set({
+        [balanceField]: sql`coalesce(${balanceColumn}, 0) + ${signedAmount}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(wallet.id, walletRow.id))
+      .returning();
+
+    // Record transaction
+    await db.insert(walletTransactions).values({
+      walletId: walletRow.id,
       type,
-      amount: delta,
-      currency,
-      note: note || (type === "deposit" ? `Cash deposit (${currency})` : `Withdrawal (${currency})`),
-      date: new Date(),
-      createdAt: new Date(),
-    };
-    await transactionsCollection.insertOne(transaction);
+      amount: String(numAmount),
+      currency: cur,
+      description: description || `${type === "deposit" ? "Deposit" : "Withdrawal"} of ${numAmount} ${cur}`,
+    });
 
-    // Get updated balances
-    const wallet = await walletCollection.findOne({ _id: "main" as any });
-
-    return NextResponse.json({
-      message: `${type === "deposit" ? "Deposit" : "Withdrawal"} successful`,
-      data: {
-        balanceEGP: wallet?.balanceEGP || 0,
-        balanceUSD: wallet?.balanceUSD || 0,
-        balanceEUR: wallet?.balanceEUR || 0,
-        transaction,
+    return NextResponse.json(
+      {
+        success: true,
+        message: `${type === "deposit" ? "Deposit" : "Withdrawal"} successful`,
+        data: {
+          balanceEGP: Number(updated[0].balanceEgp || 0),
+          balanceUSD: Number(updated[0].balanceUsd || 0),
+          balanceEUR: Number(updated[0].balanceEur || 0),
+        },
       },
-    }, { status: 201 });
+      { status: 200 }
+    );
   } catch (error) {
-    console.error("Error processing wallet transaction:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error("Error updating wallet:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

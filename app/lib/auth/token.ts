@@ -1,9 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
-import { ObjectId } from "mongodb";
-import {
-  getUserCollection,
-  getBlacklistCollection,
-} from "../mongoDB";
+import { eq } from "drizzle-orm";
+import { db, blacklistTokens, users } from "../db";
 import { verifyAccessTokenEdge as verifyAccessToken } from "./edge";
 
 // export { verifyAccessToken }; // If needed by other non-edge files
@@ -142,17 +139,19 @@ export async function decodePasswordSetupToken(
 
 
 
-// Lazy DB initialization (no top-level await)
-async function getCollections() {
-  const blacklist = await getBlacklistCollection();
-  const users = await getUserCollection();
-  return { blacklist, users };
-}
-
 // Blacklist check
 export async function isTokenBlacklisted(token: string): Promise<boolean> {
-  const { blacklist } = await getCollections();
-  return !!(await blacklist.findOne({ token }));
+  try {
+    const rows = await db
+      .select({ id: blacklistTokens.id })
+      .from(blacklistTokens)
+      .where(eq(blacklistTokens.token, token))
+      .limit(1);
+    return rows.length > 0;
+  } catch (error) {
+    console.error("Error checking token blacklist:", error);
+    return false;
+  }
 }
 
 // Revoke token and clear cookies
@@ -161,21 +160,30 @@ export async function revokeAndDeleteToken(
   userId?: string,
   refresh?: string
 ): Promise<void> {
-  const { blacklist, users } = await getCollections();
+  try {
+    // Blacklist token
+    if (!(await isTokenBlacklisted(token))) {
+      await db.insert(blacklistTokens).values({
+        token,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+      });
+    }
 
-  // Blacklist token
-  if (!(await isTokenBlacklisted(token))) {
-    await blacklist.insertOne({
-      token,
-      revoked_at: new Date(),
-      ...(userId ? { user_id: new ObjectId(userId) } : {}),
-    });
-  }
-
-  // Remove session
-  if (userId) {
-    await users.updateOne({ _id: new ObjectId(userId) }, {
-      $pull: { sessions: { token } },
-    } as any);
+    // Remove session from user's sessions jsonb
+    if (userId) {
+      const rows = await db
+        .select({ sessions: users.sessions })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      const sessions = Array.isArray(rows[0]?.sessions) ? rows[0]!.sessions : [];
+      const updated = (sessions as any[]).filter((s: any) => s?.token !== token);
+      await db
+        .update(users)
+        .set({ sessions: updated, updatedAt: new Date() })
+        .where(eq(users.id, userId));
+    }
+  } catch (error) {
+    console.error("Error revoking token:", error);
   }
 }

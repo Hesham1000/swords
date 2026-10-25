@@ -1,113 +1,127 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getInvoicesCollection, getProductsCollection } from "../../../lib/mongoDB";
-import { transformProduct } from "../../../lib/api/utils";
+import { db, invoices, products } from "../../../lib/db";
+import { sql } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
-    const invoicesCollection = await getInvoicesCollection();
-    const productsCollection = await getProductsCollection();
+    // Fetch recent 5 invoices
+    const recentInvoices = await db
+      .select()
+      .from(invoices)
+      .orderBy(sql`${invoices.createdAt} DESC`)
+      .limit(5);
 
-    // 1. RECENT INVOICES (Latest 5)
-    const recentInvoices = await invoicesCollection
-      .find({})
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .toArray();
-
-    // 2. ANALYTICS DATA (Revenue, Orders, Customers)
+    // Fetch invoices from the last 3 months
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    const periodInvoices = await db
+      .select()
+      .from(invoices)
+      .where(sql`${invoices.createdAt} >= ${threeMonthsAgo.toISOString()}`);
 
-    const periodInvoices = await invoicesCollection.find({
-      date: { $gte: threeMonthsAgo.toISOString().split('T')[0] }
-    }).toArray();
+    // Fetch all products for inventory stats
+    const allProducts = await db.select().from(products);
 
-    const allInvoices = await invoicesCollection.find({}).toArray();
-    const totalRevenue = allInvoices.reduce((acc, inv) => acc + (inv.amount || 0), 0);
-    const totalOrders = allInvoices.length;
-    const uniqueCustomers = new Set(allInvoices.map(inv => inv.customer)).size;
+    // Calculate totals
+    let revenue = 0;
+    const customerSet = new Set<string>();
+    for (const inv of periodInvoices) {
+      revenue += Number(inv.totalAmount || 0);
+      if (inv.customer) customerSet.add(inv.customer);
+    }
 
-    // 3. PRODUCT SUMMARY & LOW STOCK
-    const allProducts = await productsCollection.find({}).toArray();
-    const totalInventoryCount = allProducts.reduce((acc, prod) => acc + (prod.quantity || 0), 0);
-    const inventoryValue = allProducts.reduce((acc, prod) => acc + ((prod.price || 0) * (prod.quantity || 0)), 0);
-    
-    const lowStockItems = allProducts
-      .filter(p => (p.quantity || 0) < 3)
-      .sort((a, b) => (a.quantity || 0) - (b.quantity || 0))
-      .slice(0, 5);
+    let inventoryValue = 0;
+    let totalInventoryCount = 0;
+    for (const prod of allProducts) {
+      const price = Number(prod.price || 0);
+      const qty = prod.quantity || 0;
+      inventoryValue += price * qty;
+      totalInventoryCount += qty;
+    }
+    const avgOrderValue = periodInvoices.length > 0 ? revenue / periodInvoices.length : 0;
 
-    // 4. TRENDS (Last 30 Days)
-    const last30Days = Array.from({ length: 30 }).map((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      return d.toISOString().split('T')[0];
-    }).reverse();
+    // 30-day revenue trend
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const trendInvoices = await db
+      .select()
+      .from(invoices)
+      .where(sql`${invoices.createdAt} >= ${thirtyDaysAgo.toISOString()}`)
+      .orderBy(sql`${invoices.createdAt} ASC`);
 
-    const revenueTrend = last30Days.map(day => {
-      const dayInvoices = periodInvoices.filter(inv => inv.date === day);
-      return {
-        date: day,
-        revenue: dayInvoices.reduce((acc, inv) => acc + (inv.amount || 0), 0),
-        orders: dayInvoices.length
-      };
-    });
+    const trendMap = new Map<string, number>();
+    for (const inv of trendInvoices) {
+      const day = inv.createdAt ? new Date(inv.createdAt).toISOString().slice(0, 10) : "unknown";
+      trendMap.set(day, (trendMap.get(day) || 0) + Number(inv.totalAmount || 0));
+    }
+    const revenueTrend = Array.from(trendMap.entries()).map(([date, amount]) => ({
+      date,
+      amount,
+    }));
 
-    // 5. CATEGORY DISTRIBUTION
-    const productCategoryMap: Record<string, string> = {};
-    allProducts.forEach(prod => {
-      const cat = prod.category && Array.isArray(prod.category) && prod.category.length > 0 
-        ? prod.category[0] 
-        : (typeof prod.category === 'string' ? prod.category : "Equipment");
-      productCategoryMap[prod._id.toString()] = cat;
-    });
-
-    const categorySales: Record<string, number> = {};
-    periodInvoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
-        const cat = productCategoryMap[item.productId] || item.category || "General";
-        categorySales[cat] = (categorySales[cat] || 0) + (item.price * item.quantity);
-      });
-    });
-
-    // 6. TOP PRODUCTS
-    const productSalesMap: Record<string, {name: string, revenue: number, quantity: number}> = {};
-    periodInvoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
-        if (!productSalesMap[item.productId]) {
-          productSalesMap[item.productId] = { name: item.name, revenue: 0, quantity: 0 };
-        }
-        productSalesMap[item.productId].revenue += (item.price * item.quantity);
-        productSalesMap[item.productId].quantity += item.quantity;
-      });
-    });
-
-    const topProducts = Object.values(productSalesMap)
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5);
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        summary: {
-          totalRevenue,
-          totalOrders,
-          uniqueCustomers,
-          inventoryValue,
-          totalInventoryCount,
-          averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0
-        },
-        recentInvoices,
-        lowStockItems: lowStockItems.map(transformProduct),
-        analytics: {
-          trends: revenueTrend,
-          categories: Object.entries(categorySales).map(([name, value]) => ({ name, value })),
-          topProducts
+    // Category distribution (via product map keyed by product id)
+    const productCategoryMap = new Map<string, string[]>();
+    for (const prod of allProducts) {
+      productCategoryMap.set(prod.id, prod.category || []);
+    }
+    const categoryCount = new Map<string, number>();
+    for (const inv of periodInvoices) {
+      const items: any[] = Array.isArray(inv.items) ? inv.items : [];
+      for (const item of items) {
+        const cats = productCategoryMap.get(item.id) || [];
+        for (const cat of cats) {
+          categoryCount.set(cat, (categoryCount.get(cat) || 0) + (item.quantity || 0));
         }
       }
-    }, { status: 200 });
+    }
+    const categoryDistribution = Array.from(categoryCount.entries())
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Top 5 products by quantity sold
+    const productCount = new Map<string, { name: string; count: number }>();
+    for (const inv of periodInvoices) {
+      const items: any[] = Array.isArray(inv.items) ? inv.items : [];
+      for (const item of items) {
+        const existing = productCount.get(item.id);
+        if (existing) {
+          existing.count += item.quantity || 0;
+        } else {
+          productCount.set(item.id, { name: item.name || "Unknown", count: item.quantity || 0 });
+        }
+      }
+    }
+    const topProducts = Array.from(productCount.entries())
+      .map(([id, { name, count }]) => ({ id, name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          recentInvoices,
+          periodInvoicesCount: periodInvoices.length,
+          totals: {
+            revenue,
+            orders: periodInvoices.length,
+            uniqueCustomers: customerSet.size,
+            inventoryValue,
+            totalInventoryCount,
+            avgOrderValue,
+          },
+          revenueTrend,
+          categoryDistribution,
+          topProducts,
+        },
+      },
+      { status: 200 }
+    );
   } catch (error) {
-    console.error("Dashboard Summary Error:", error);
-    return NextResponse.json({ error: "Failed to generate dashboard summary" }, { status: 500 });
+    console.error("Error fetching dashboard summary:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

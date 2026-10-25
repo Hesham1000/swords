@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
-import { getProductsCollection } from "../../../lib/mongoDB";
+import { db, products } from "../../../lib/db";
 import { transformProduct } from "../../../lib/api/utils";
 import { uploadImage, deleteImage, getPublicIdFromUrl, getRelativePathFromUrl } from "../../../lib/cloudinary";
+import { eq } from "drizzle-orm";
 
 // GET a single product
 export async function GET(
@@ -11,12 +11,9 @@ export async function GET(
 ) {
     try {
         const { id } = await params;
-        if (!ObjectId.isValid(id)) {
-            return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
-        }
 
-        const productsCollection = await getProductsCollection();
-        const product = await productsCollection.findOne({ _id: new ObjectId(id) });
+        const rows = await db.select().from(products).where(eq(products.id, id));
+        const product = rows[0];
 
         if (!product) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -38,15 +35,12 @@ export async function PUT(
 ) {
     try {
         const { id } = await params;
-        if (!ObjectId.isValid(id)) {
-            return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
-        }
 
         const formData = await request.formData();
-        const productsCollection = await getProductsCollection();
 
         // Find existing product to handle image replacement if needed
-        const existingProduct = await productsCollection.findOne({ _id: new ObjectId(id) });
+        const existingRows = await db.select().from(products).where(eq(products.id, id));
+        const existingProduct = existingRows[0];
         if (!existingProduct) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
@@ -84,17 +78,17 @@ export async function PUT(
                 const result = await uploadImage(buffer, "products");
                 imagePaths.push(getRelativePathFromUrl(result.url));
 
-                // Note: In a more advanced implementation, we would track which old images 
-                // were removed and delete them from Cloudinary here. 
+                // Note: In a more advanced implementation, we would track which old images
+                // were removed and delete them from Cloudinary here.
                 // For now, we focus on making the upload work.
             }
         }
 
-        // Update document
+        // Update data
         const updateData = {
             name,
             description,
-            price: price ? parseFloat(price) : null,
+            price: price ? String(parseFloat(price)) : null,
             category,
             productType,
             brand,
@@ -107,18 +101,15 @@ export async function PUT(
             isKings,
             hand,
             images: imagePaths,
-            updatedAt: new Date().toISOString(),
+            updatedAt: new Date(),
         };
 
         const quantityChange = parseInt(quantity) - (existingProduct.quantity || 0);
         const newPriceValue = price ? parseFloat(price) : null;
-        const oldPriceValue = existingProduct.price;
+        const oldPriceValue = existingProduct.price ? parseFloat(existingProduct.price) : null;
         const hasPriceChanged = newPriceValue !== oldPriceValue;
 
-        await productsCollection.updateOne(
-            { _id: new ObjectId(id) },
-            { $set: updateData }
-        );
+        await db.update(products).set(updateData as any).where(eq(products.id, id));
 
         // 📝 AUDIT LOGGING
         try {
@@ -171,12 +162,9 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params;
-        if (!ObjectId.isValid(id)) {
-            return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
-        }
 
-        const productsCollection = await getProductsCollection();
-        const product = await productsCollection.findOne({ _id: new ObjectId(id) });
+        const rows = await db.select().from(products).where(eq(products.id, id));
+        const product = rows[0];
 
         if (!product) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -196,9 +184,9 @@ export async function DELETE(
             }
         }
 
-        const result = await productsCollection.deleteOne({ _id: new ObjectId(id) });
+        const deleted = await db.delete(products).where(eq(products.id, id)).returning();
 
-        if (result.deletedCount === 0) {
+        if (deleted.length === 0) {
             return NextResponse.json({ error: "Could not delete product" }, { status: 500 });
         }
 

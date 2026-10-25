@@ -1,107 +1,120 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserCollection } from "../../../lib/mongoDB";
-import {
-  validateEmail,
-  validateUsername,
-} from "../../../utils/validations/auth/validator";
-import {
-  generatePasswordSetupToken,
-  PASSWORD_TOKEN_EXPIRATION_MINUTES,
-} from "../../../lib/auth/token";
-import { sendEmailSetPassword } from "../../../utils/email";
-import ApiError from "../../../utils/ApiError";
+import { db, users } from "../../../lib/db";
+import { sendPasswordSetupEmail } from "../../../lib/email";
+import { generatePasswordSetupToken } from "../../../lib/auth/token";
+import { eq } from "drizzle-orm";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    // Sanitize data from raw body early
-    const username = body.username.trim();
-    const email = body.email?.trim();
+    const { email, username } = await request.json();
 
-    const userCollection = await getUserCollection();
+    if (!email || !username) {
+      return NextResponse.json(
+        { error: "Email and username are required" },
+        { status: 400 }
+      );
+    }
 
-    // Check existing user
-    const existingUser = await userCollection.findOne({ email });
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Invalid email format" },
+        { status: 400 }
+      );
+    }
+
+    // Validate username format
+    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+    if (!usernameRegex.test(username)) {
+      return NextResponse.json(
+        { error: "Username must be 3-20 characters (letters, numbers, underscores only)" },
+        { status: 400 }
+      );
+    }
+
+    // Check if user already exists
+    const existingRows = await db.select().from(users).where(eq(users.email, email));
+    const existingUser = existingRows[0];
 
     if (existingUser) {
-      if (!existingUser.isActive) {
-        throw ApiError.badRequest(
-          "You are already registered. Please go to your email and set your password"
-        );
-      }
-      // Check if last email was sent < 1 min ago
-      const lastEmailSent = existingUser.lastEmailSent;
-      const now = new Date();
-
-      if (lastEmailSent) {
-        const timeDiff = now.getTime() - new Date(lastEmailSent).getTime();
-        if (timeDiff < 60000) {
-          throw ApiError.badRequest("Please check your email inbox");
+      // Rate limit: prevent resending setup email within 60 seconds
+      if (existingUser.lastEmailSent) {
+        const timeSinceLastEmail = Date.now() - new Date(existingUser.lastEmailSent).getTime();
+        if (timeSinceLastEmail < 60 * 1000) {
+          return NextResponse.json(
+            { error: "Please wait before requesting another setup email" },
+            { status: 429 }
+          );
         }
       }
 
-      throw ApiError.badRequest(
-        "This email is already registered. Please login"
+      // Resend setup email for existing inactive user
+      if (!existingUser.isActive) {
+        const setupToken = await generatePasswordSetupToken(email);
+        await sendPasswordSetupEmail(email, username, setupToken);
+
+        await db
+          .update(users)
+          .set({ lastEmailSent: new Date(), updatedAt: new Date() })
+          .where(eq(users.email, email));
+
+        return NextResponse.json(
+          { message: "Setup email resent. Please check your inbox." },
+          { status: 200 }
+        );
+      }
+
+      return NextResponse.json(
+        { error: "User with this email already exists" },
+        { status: 409 }
       );
     }
 
-    const usernameValidation = validateUsername(username);
-    if (usernameValidation) {
-      throw ApiError.badRequest(usernameValidation);
+    // Check if username is taken
+    const usernameRows = await db.select().from(users).where(eq(users.username, username));
+    if (usernameRows[0]) {
+      return NextResponse.json(
+        { error: "Username is already taken" },
+        { status: 409 }
+      );
     }
 
-    const emailValidation = validateEmail(email);
-    if (emailValidation) {
-      throw ApiError.badRequest(emailValidation);
-    }
-
-    // Create new user with roles array
-    const newUser = {
-      username: username,
-      email,
-      isActive: false,
-      roles: ["user"], // 👈 roles array instead of single role
-      sessions: [],
-      dateJoined: new Date(),
-      lastEmailSent: new Date(),
-    };
-
-    await userCollection.insertOne(newUser);
-
-    // Send setup email
-    const token = await generatePasswordSetupToken(email);
-    const setupLink = `${
-      process.env.REDIRECT_URL
-    }/set-password?type=activate&token=${encodeURIComponent(token)}`;
-    try {
-      await sendEmailSetPassword(
+    // Create new user (inactive until password is set)
+    const inserted = await db
+      .insert(users)
+      .values({
         email,
-        `${username}`,
-        setupLink,
-        PASSWORD_TOKEN_EXPIRATION_MINUTES
-      );
-    } catch (emailError) {
-      throw ApiError.badRequest("Error sending email: " + emailError);
-    }
+        username,
+        password: "", // Will be set via setup link
+        roles: ["user"],
+        isActive: false,
+        dateJoined: new Date(),
+        lastEmailSent: new Date(),
+      })
+      .returning();
+
+    const newUser = inserted[0];
+
+    // Generate setup token and send email
+    const setupToken = await generatePasswordSetupToken(email);
+    await sendPasswordSetupEmail(email, username, setupToken);
 
     return NextResponse.json(
       {
-        message: "User created. Please check your email to set your password.",
+        message: "User created. Please check your email to set up your password.",
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          username: newUser.username,
+        },
       },
       { status: 201 }
     );
   } catch (error) {
-    if (error instanceof ApiError) {
-      return NextResponse.json(
-        {
-          error: error.message,
-          statusCode: error.statusCode,
-        },
-        { status: error.statusCode }
-      );
-    }
+    console.error("Signup error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

@@ -1,80 +1,79 @@
 import { NextRequest, NextResponse } from "next/server";
+import { db, blacklistTokens } from "../../../lib/db";
 import { revokeAndDeleteToken } from "../../../lib/auth/token";
 import { cookies } from "next/headers";
-import ApiError from "../../../utils/ApiError";
 
-
-/**
- * API route to handle logout
- */
 export async function POST(request: NextRequest) {
   try {
-
     const cookieStore = await cookies();
-    const userId = request.headers.get("x-user-id");
     const token = cookieStore.get("access_token")?.value;
+    const refreshToken = cookieStore.get("refresh_token")?.value;
 
-    // Revoke and delete token from database if exists
-    if (token) {
+    // Revoke and delete the refresh token if present
+    if (refreshToken) {
       try {
-        await revokeAndDeleteToken(token, userId as string);
+        await revokeAndDeleteToken(refreshToken);
       } catch (err) {
-        console.error("Error revoking/deleting token:", err);
+        console.error("Failed to revoke refresh token:", err);
       }
     }
 
-    const response = NextResponse.json({
-      message: "Logout successful",
-      status: 200,
-      success: true,
+    // Blacklist the access token so it can't be reused before expiry
+    if (token) {
+      try {
+        // Access tokens are short-lived; blacklist for 1 hour to cover remaining validity
+        await db.insert(blacklistTokens).values({
+          token,
+          expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        });
+      } catch (err) {
+        console.error("Failed to blacklist access token:", err);
+      }
+    }
+
+    // Create response and clear cookies
+    const response = NextResponse.json(
+      { message: "Logged out successfully" },
+      { status: 200 }
+    );
+
+    response.cookies.set("access_token", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 0,
+      path: "/",
     });
 
-    // Clear ALL cookies by setting them to expire immediately
-    const allCookies = cookieStore.getAll();
+    response.cookies.set("refresh_token", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 0,
+      path: "/",
+    });
 
-    for (const cookie of allCookies) {
-      response.cookies.set(cookie.name, "", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        path: "/",
-        expires: new Date(0), // Set to past date to delete
-        maxAge: 0, // Also set maxAge to 0 for immediate deletion
-      });
-    }
+    response.cookies.set("ROLES", "", {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 0,
+      path: "/",
+    });
 
-    // Also clear common auth-related cookies explicitly to ensure deletion
-    const authCookies = [
-      "access_token",
-      "refresh_token",
-      "logged_in",
-    ];
-
-    for (const cookieName of authCookies) {
-      response.cookies.set(cookieName, "", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        path: "/",
-        expires: new Date(0),
-        maxAge: 0,
-      });
-    }
+    response.cookies.set("logged_in", "", {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 0,
+      path: "/",
+    });
 
     return response;
   } catch (error) {
-    if (error instanceof ApiError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message,
-          statusCode: error.statusCode,
-        },
-        { status: error.statusCode }
-      );
-    }
+    console.error("Logout error:", error);
     return NextResponse.json(
-      { success: false, error: "Internal Server Error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

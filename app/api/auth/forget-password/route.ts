@@ -1,113 +1,76 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  generatePasswordSetupToken,
-  PASSWORD_TOKEN_EXPIRATION_MINUTES,
-} from "../../../lib/auth/token";
-import { getUserCollection } from "../../../lib/mongoDB";
-import { sendEmailSetPassword } from "../../../utils/email";
-import ApiError from "../../../utils/ApiError";
-import { buildErrorUrl } from "../../../lib/errors/error-builder";
-
+import { db, users } from "../../../lib/db";
+import { sendPasswordResetEmail } from "../../../lib/email";
+import { generatePasswordSetupToken } from "../../../lib/auth/token";
+import { eq } from "drizzle-orm";
 
 export async function POST(request: NextRequest) {
   try {
-
-    const body = await request.json();
-    console.log("Received forget-password request for email:", body.email);
-    const email = body.email.trim();
-    console.log("Processed email:", email);
+    const { email } = await request.json();
 
     if (!email) {
-      throw ApiError.badRequest("Email is required");
-    }
-
-    const userCollection = await getUserCollection();
-    const existingUser = await userCollection.findOne({ email });
-
-    if (!existingUser) {
-      // For security, don't reveal whether user exists
-      throw ApiError.badRequest("This email does not exist");
-    }
-
-    // Check if user account is inactive (registration not completed)
-    if (!existingUser.isActive) {
-      throw ApiError.badRequest(
-        "Your account registration is incomplete. We have sent you a password setup link during registration. Please check your email or contact support for assistance."
-      );
-    }
-
-    // Check if this is a personal GitHub account (useDefaultGithub: false means personal GitHub account)
-    if (existingUser.useDefaultGithub === false) {
-      const errorUrl = buildErrorUrl({
-        message:
-          "This account uses GitHub authentication. Please sign in with GitHub or set up a password through your profile settings.",
-        type: "auth",
-        source: "github-auth",
-      });
       return NextResponse.json(
-        {
-          error: "GitHub account detected",
-          message:
-            "This account uses GitHub authentication. Please sign in with GitHub.",
-          redirectUrl: errorUrl,
-          statusCode: 400,
-        },
+        { error: "Email is required" },
         { status: 400 }
       );
     }
 
-    // Prevent too frequent email sending
-    const now = new Date();
-    if (existingUser.lastEmailSent) {
-      const timeDiff =
-        now.getTime() - new Date(existingUser.lastEmailSent).getTime();
-      if (timeDiff < 60000) {
-        console.warn("Password reset email sent too recently", {
-          email,
-          secondsRemaining: Math.ceil((60000 - timeDiff) / 1000),
-        });
-        throw ApiError.tooManyRequests(
-          "Please wait before requesting another reset link."
+    const rows = await db.select().from(users).where(eq(users.email, email));
+    const user = rows[0];
+
+    if (!user) {
+      // Don't reveal whether the email exists
+      return NextResponse.json(
+        { message: "If an account with that email exists, a reset link has been sent." },
+        { status: 200 }
+      );
+    }
+
+    // Check if account is active
+    if (!user.isActive) {
+      return NextResponse.json(
+        { error: "Account is not activated. Please check your email for setup instructions." },
+        { status: 403 }
+      );
+    }
+
+    // Check if user uses default GitHub credentials (no password reset needed)
+    if (user.useDefaultGithub) {
+      return NextResponse.json(
+        { error: "This account uses default credentials. Please contact an administrator." },
+        { status: 400 }
+      );
+    }
+
+    // Rate limit: prevent resending reset email within 60 seconds
+    if (user.lastEmailSent) {
+      const timeSinceLastEmail = Date.now() - new Date(user.lastEmailSent).getTime();
+      if (timeSinceLastEmail < 60 * 1000) {
+        return NextResponse.json(
+          { error: "Please wait before requesting another reset email" },
+          { status: 429 }
         );
       }
     }
 
-    // Generate reset token
-    const token = await generatePasswordSetupToken(email);
-    const resetLink = `${
-      process.env.REDIRECT_URL
-    }/set-password?token=${encodeURIComponent(token)}`;
+    // Generate reset token and send email
+    const resetToken = await generatePasswordSetupToken(email);
+    await sendPasswordResetEmail(email, user.username, resetToken);
 
-    // Send email
-    await sendEmailSetPassword(
-      email,
-      existingUser.username,
-      resetLink,
-      PASSWORD_TOKEN_EXPIRATION_MINUTES
-    );
-
-    // Save lastEmailSent
-    await userCollection.updateOne(
-      { _id: existingUser._id },
-      { $set: { lastEmailSent: now } }
-    );
+    // Update lastEmailSent
+    await db
+      .update(users)
+      .set({ lastEmailSent: new Date(), updatedAt: new Date() })
+      .where(eq(users.email, email));
 
     return NextResponse.json(
-      { message: "A reset link has been sent." },
+      { message: "If an account with that email exists, a reset link has been sent." },
       { status: 200 }
     );
   } catch (error) {
-    if (error instanceof ApiError) {
-      return NextResponse.json(
-        {
-          error: error.message,
-          statusCode: error.statusCode,
-        },
-        { status: error.statusCode }
-      );
-    }
+    console.error("Forget password error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

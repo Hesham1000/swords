@@ -1,206 +1,172 @@
 import { NextRequest, NextResponse } from "next/server";
+import { db, users, blacklistTokens } from "../../../lib/db";
 import { verifyPassword } from "../../../lib/auth/password";
 import { generateToken } from "../../../lib/auth/token";
-import { v4 as uuidv4 } from "uuid";
-import { getUserCollection } from "../../../lib/mongoDB";
-import ApiError from "../../../utils/ApiError";
+import { and, eq, gt, or } from "drizzle-orm";
 
-// Failed login attempts tracking
-const failedAttempts: {
-  [identifier: string]: { attempts: number; lockoutTime?: Date };
-} = {};
-const LOCKOUT_PERIOD = 15 * 60 * 1000; // 15 minutes
-const MAX_FAILED_ATTEMPTS = 3;
-
-// Helper function to check if input is email
-function isEmail(input: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(input);
-}
+// In-memory store for failed login attempts
+const failedAttempts = new Map<string, { count: number; lastAttempt: number }>();
+const MAX_ATTEMPTS = 3;
+const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes in milliseconds
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    // Sanitize data from raw body early
-    const identifier = body.email.trim();
-    const password = body.password?.trim();
+    const { email, password } = await request.json();
 
-    if (!identifier || !password) {
-      throw ApiError.badRequest("Email/Username and password are required!");
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: "Email and password are required" },
+        { status: 400 }
+      );
     }
 
-    const userCollection = await getUserCollection();
-
-    // Find user by either email or username
-    let user;
-    if (isEmail(identifier)) {
-      // Search by email
-      user = await userCollection.findOne({ email: identifier });
-    } else {
-      // Search by username
-      user = await userCollection.findOne({ username: identifier });
+    // Check if user is locked out
+    const attemptData = failedAttempts.get(email.toLowerCase());
+    if (attemptData && attemptData.count >= MAX_ATTEMPTS) {
+      const timeElapsed = Date.now() - attemptData.lastAttempt;
+      if (timeElapsed < LOCKOUT_TIME) {
+        const minutesLeft = Math.ceil((LOCKOUT_TIME - timeElapsed) / (60 * 1000));
+        return NextResponse.json(
+          { error: `Too many failed attempts. Please try again in ${minutesLeft} minutes.` },
+          { status: 429 }
+        );
+      } else {
+        // Reset attempts if lockout time has passed
+        failedAttempts.delete(email.toLowerCase());
+      }
     }
 
-    // If not found with email, also check username for email input (fallback)
-    if (!user && isEmail(identifier)) {
-      user = await userCollection.findOne({ email: identifier });
-    }
-
-    if (!user) {
-      // Determine whether the identifier was an email or username for error message
-      const identifierType = isEmail(identifier) ? "email" : "username";
-      throw ApiError.badRequest(`Incorrect ${identifierType} or password!`);
-    }
-
-    // Use email for lockout tracking (consistent identifier)
-    const lockoutKey = user.email;
-
-    if (user) {
-      if (!user.isActive) {
-        throw ApiError.badRequest(
-          "You do not complete the registration process. Please check your email to set your password"
+    // Check if the access token (if provided) is blacklisted
+    const accessToken = request.cookies.get("access_token")?.value;
+    if (accessToken) {
+      const blacklisted = await db
+        .select()
+        .from(blacklistTokens)
+        .where(and(eq(blacklistTokens.token, accessToken), gt(blacklistTokens.expiresAt, new Date())));
+      if (blacklisted.length > 0) {
+        return NextResponse.json(
+          { error: "Session has been revoked. Please sign in again." },
+          { status: 401 }
         );
       }
-
-      // 🔒 Lockout handling
-      if (failedAttempts[lockoutKey]) {
-        const lockoutTime = failedAttempts[lockoutKey].lockoutTime;
-        if (lockoutTime) {
-          const remaining =
-            LOCKOUT_PERIOD - (Date.now() - lockoutTime.getTime());
-          if (remaining > 0) {
-            throw ApiError.badRequest(
-              "Account locked out for " +
-                Math.ceil(remaining / 60000) +
-                " minutes"
-            );
-          } else {
-            // Reset lockout
-            failedAttempts[lockoutKey].attempts = 0;
-            delete failedAttempts[lockoutKey].lockoutTime;
-          }
-        }
-      }
-
-      // 🔑 Verify password
-      const isValidPassword = await verifyPassword(password, user.password);
-      if (!isValidPassword) {
-        // Track failed attempt
-        if (!failedAttempts[lockoutKey]) {
-          failedAttempts[lockoutKey] = { attempts: 1 };
-        } else {
-          failedAttempts[lockoutKey].attempts++;
-        }
-
-        // Lock account if max attempts exceeded
-        if (failedAttempts[lockoutKey].attempts > MAX_FAILED_ATTEMPTS) {
-          failedAttempts[lockoutKey].lockoutTime = new Date();
-          throw ApiError.badRequest(
-            "Account locked out for " + LOCKOUT_PERIOD / 60000 + " minutes"
-          );
-        }
-
-        throw ApiError.badRequest("Incorrect email/username or password!");
-      }
-
-      // ✅ Clear failed attempts on successful login
-      delete failedAttempts[lockoutKey];
     }
 
-    // Update user login status
-    const now = new Date();
+    // Find user by email or username
+    const rows = await db
+      .select()
+      .from(users)
+      .where(or(eq(users.email, email), eq(users.username, email)));
+    const user = rows[0];
 
-    // Generate tokens - adjust this based on your token generation logic
-    // You might want to pass user._id instead of "1"
-    const { accessToken, refreshToken } = await generateToken(
-      user._id.toString()
-    );
+    if (!user) {
+      // Record failed attempt
+      const attempts = failedAttempts.get(email.toLowerCase()) || { count: 0, lastAttempt: 0 };
+      failedAttempts.set(email.toLowerCase(), {
+        count: attempts.count + 1,
+        lastAttempt: Date.now()
+      });
+      return NextResponse.json(
+        { error: "Invalid credentials" },
+        { status: 401 }
+      );
+    }
 
-    // Create new session
-    const newSession = {
-      session_id: uuidv4(),
-      token: accessToken,
-      refresh: refreshToken,
-      last_action: now,
+    // Check if account is active
+    if (!user.isActive) {
+      return NextResponse.json(
+        { error: "Account is not activated. Please check your email for setup instructions." },
+        { status: 403 }
+      );
+    }
+
+    // Verify password
+    const isPasswordValid = await verifyPassword(password, user.password);
+    if (!isPasswordValid) {
+      // Record failed attempt
+      const attempts = failedAttempts.get(email.toLowerCase()) || { count: 0, lastAttempt: 0 };
+      failedAttempts.set(email.toLowerCase(), {
+        count: attempts.count + 1,
+        lastAttempt: Date.now()
+      });
+      return NextResponse.json(
+        { error: "Invalid credentials" },
+        { status: 401 }
+      );
+    }
+
+    // Clear failed attempts on successful login
+    failedAttempts.delete(email.toLowerCase());
+
+    // Generate tokens
+    const token = await generateToken(user.id);
+
+    // Update last login and session
+    const session = {
+      createdAt: new Date(),
+      userAgent: request.headers.get("user-agent") || "unknown",
     };
+    const currentSessions = Array.isArray(user.sessions) ? user.sessions : [];
+    await db
+      .update(users)
+      .set({
+        lastLogin: new Date(),
+        sessions: [...currentSessions, session],
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, user.id));
 
-    // Add session to user
-    await userCollection.updateOne(
-      { _id: user._id },
-      {
-        $push: { sessions: newSession as any },
-        $set: { lastLogin: now }, // Update last login time
-      }
-    );
-
-    // Prepare user data (exclude sensitive fields)
-    const userData = {
-      id: user._id.toString(),
-      username: user.username,
-      email: user.email,
-      roles: user.roles ?? [], // 👈 roles array
-      dateJoined: user.dateJoined,
-      lastLogin: now,
-      isActive: user.isActive,
-    };
-
-    // Create response with cookies
+    // Create response
     const response = NextResponse.json(
-      { message: "Signin successful", data: userData },
+      {
+        message: "Sign in successful",
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          roles: user.roles,
+        },
+      },
       { status: 200 }
     );
 
-    // Set secure HTTP-only cookies
-    response.cookies.set("access_token", accessToken, {
+    // Set cookies
+    response.cookies.set("access_token", token.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
+      maxAge: 60 * 60, // 1 hour
       path: "/",
-      maxAge: 60 * 60 * 6, // 6 hours for access token
     });
 
-    response.cookies.set("refresh_token", refreshToken, {
+    response.cookies.set("refresh_token", token.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
+      sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60, // 7 days
+      path: "/",
     });
 
     response.cookies.set("ROLES", JSON.stringify(user.roles || []), {
-      httpOnly: true,
+      httpOnly: false,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
+      maxAge: 60 * 60, // 1 hour
       path: "/",
-      maxAge: 60 * 60 * 6, // 6 hours
     });
 
-    // Add a non-httpOnly cookie for the client UI to check login state
     response.cookies.set("logged_in", "true", {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
+      maxAge: 60 * 60, // 1 hour
       path: "/",
-      maxAge: 60 * 60 * 6,
     });
 
     return response;
   } catch (error) {
-    if (error instanceof ApiError) {
-      return NextResponse.json(
-        {
-          error: error.message,
-          statusCode: error.statusCode,
-        },
-        { status: error.statusCode }
-      );
-    }
-
-    // Log unexpected errors for debugging
-    console.error("Login error:", error);
-
+    console.error("Sign in error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
