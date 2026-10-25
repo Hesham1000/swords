@@ -1,5 +1,5 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import {
   LayoutDashboard,
@@ -31,6 +31,7 @@ const Sidebar = ({
   user,
 }: SidebarProps) => {
   const router = useRouter();
+  const pathname = usePathname();
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -69,6 +70,10 @@ const Sidebar = ({
     { id: "wallet", label: "Wallet", icon: Wallet, adminOnly: true },
     { id: "history", label: "History", icon: TrendingUp, adminOnly: true },
   ].filter(item => !item.adminOnly || isAdmin);
+
+  const isActive = (item: { id: string }) =>
+    pathname === (item.id === "dashboard" ? "/dashboard" : `/${item.id}`) ||
+    pathname.startsWith(`/${item.id}`);
 
   const handleLogout = async () => {
     try {
@@ -128,7 +133,7 @@ const Sidebar = ({
             transition={{ delay: index * 0.1 }}
             whileHover={{ x: 5, backgroundColor: "var(--glass-bg)" }}
             whileTap={{ scale: 0.95 }}
-            className={`nav-item ${currentPage === item.id ? "active" : ""}`}
+            className={`nav-item ${isActive(item) ? "active bg-blue-50 text-blue-700 font-semibold border-l-4 border-blue-500" : "text-gray-700 hover:bg-gray-100"}`}
             onClick={() => {
               const target = item.id === "dashboard" ? "/dashboard" : `/${item.id}`;
               router.push(target);
@@ -136,7 +141,7 @@ const Sidebar = ({
             }}
           >
             <motion.div
-              animate={currentPage === item.id ? {
+              animate={isActive(item) ? {
                 scale: [1, 1.2, 1],
                 rotate: [0, 5, -5, 0]
               } : {}}
