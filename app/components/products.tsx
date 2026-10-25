@@ -9,7 +9,7 @@ import { useState } from "react";
 interface ProductRowProps {
   product: Product;
   onEdit?: (product: Product) => void;
-  onDelete?: (productId: string) => void;
+  onDelete?: (product: Product) => void;
   isAdmin?: boolean;
 }
 
@@ -24,7 +24,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
   const hasMultipleImages = images.length > 1;
 
   const handleDelete = () => {
-    onDelete?.(product.id);
+    onDelete?.(product);
   };
 
   const nextImage = (e: React.MouseEvent) => {

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { Wallet, Plus, ArrowUpCircle, ArrowDownCircle, Truck, Loader2 } from "lucide-react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { Wallet, Plus, ArrowUpCircle, ArrowDownCircle, Truck, ArrowUp, ArrowDown } from "lucide-react";
 import WalletDepositForm from "../../components/wallet-deposit-form";
 import ShipmentForm from "../../components/shipment-form";
 import { getWalletBalance, getWalletTransactions, WalletTransaction } from "../../lib/api/wallet";
@@ -26,6 +26,51 @@ export default function WalletPage() {
     hasPrevPage: boolean;
   } | null>(null);
   const lastParamsRef = useRef("");
+
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [currencyFilter, setCurrencyFilter] = useState("all");
+  const [sort, setSort] = useState<{ key: "date" | "type" | "amount" | "currency"; dir: "asc" | "desc" }>({
+    key: "date",
+    dir: "desc",
+  });
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const displayedTransactions = useMemo(() => {
+    const list = (transactions ?? []).filter((tx) => {
+      const q = search.trim().toLowerCase();
+      if (q && !`${tx.note ?? ""}`.toLowerCase().includes(q) && !`${(tx as { id?: string }).id ?? ""}`.toLowerCase().includes(q)) {
+        return false;
+      }
+      if (typeFilter !== "all" && tx.type !== typeFilter) return false;
+      if (currencyFilter !== "all" && tx.currency !== currencyFilter) return false;
+      return true;
+    });
+    const dir = sort.dir === "asc" ? 1 : -1;
+    return [...list].sort((a, b) => {
+      switch (sort.key) {
+        case "date":
+          return (new Date(a.date).getTime() - new Date(b.date).getTime()) * dir;
+        case "amount":
+          return (a.amount - b.amount) * dir;
+        case "type":
+          return `${a.type}`.localeCompare(`${b.type}`) * dir;
+        case "currency":
+          return `${a.currency}`.localeCompare(`${b.currency}`) * dir;
+        default:
+          return 0;
+      }
+    });
+  }, [transactions, search, typeFilter, currencyFilter, sort]);
+
+  const toggleSort = (key: "date" | "type" | "amount" | "currency") => {
+    setSort((s) => (s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+  };
 
   useEffect(() => {
     const params = JSON.stringify({ refresh, page });
@@ -78,34 +123,98 @@ export default function WalletPage() {
       </div>
 
       <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon"><Wallet size={20} /></div>
-          <h3 className="stat-title">EGP Balance</h3>
-          <p className="stat-value">EGP {balance.EGP.toLocaleString()}</p>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon"><Wallet size={20} /></div>
-          <h3 className="stat-title">USD Balance</h3>
-          <p className="stat-value">$ {balance.USD.toLocaleString()}</p>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon"><Wallet size={20} /></div>
-          <h3 className="stat-title">EUR Balance</h3>
-          <p className="stat-value">€ {balance.EUR.toLocaleString()}</p>
-        </div>
+        {loading ? (
+          <>
+            <div className="animate-pulse bg-gray-200/10 rounded-xl h-24" />
+            <div className="animate-pulse bg-gray-200/10 rounded-xl h-24" />
+            <div className="animate-pulse bg-gray-200/10 rounded-xl h-24" />
+          </>
+        ) : (
+          <>
+            <div className="stat-card">
+              <div className="stat-icon"><Wallet size={20} /></div>
+              <h3 className="stat-title">EGP Balance</h3>
+              <p className="stat-value">EGP {(balance?.EGP ?? 0).toLocaleString()}</p>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon"><Wallet size={20} /></div>
+              <h3 className="stat-title">USD Balance</h3>
+              <p className="stat-value">$ {(balance?.USD ?? 0).toLocaleString()}</p>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon"><Wallet size={20} /></div>
+              <h3 className="stat-title">EUR Balance</h3>
+              <p className="stat-value">€ {(balance?.EUR ?? 0).toLocaleString()}</p>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="list-card full-width">
         <div className="card-header">
           <h2 className="card-title">Transaction History</h2>
         </div>
+
+        <div className="tx-toolbar">
+          <input
+            className="tx-search"
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search by description or reference..."
+          />
+          <select
+            className="tx-filter"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+          >
+            <option value="all">All</option>
+            <option value="deposit">Deposit</option>
+            <option value="withdrawal">Withdrawal</option>
+            <option value="shipment">Shipment</option>
+          </select>
+          <select
+            className="tx-filter"
+            value={currencyFilter}
+            onChange={(e) => setCurrencyFilter(e.target.value)}
+          >
+            <option value="all">All</option>
+            <option value="EGP">EGP</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+        </div>
+
+        <div className="tx-sort-header">
+          {([
+            { key: "date", label: "Date" },
+            { key: "type", label: "Type" },
+            { key: "amount", label: "Amount" },
+            { key: "currency", label: "Currency" },
+          ] as const).map(({ key, label }) => (
+            <button key={key} className="tx-sort-btn" onClick={() => toggleSort(key)} type="button">
+              {label}
+              {sort.key === key && (sort.dir === "asc" ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+            </button>
+          ))}
+        </div>
+
         <div className="transaction-list">
           {loading ? (
-            <div className="loading-state"><Loader2 className="animate-spin" /></div>
-          ) : transactions.length === 0 ? (
-            <div className="empty-state">No transactions recorded.</div>
+            <>
+              <div className="animate-pulse bg-gray-200/10 rounded h-16" />
+              <div className="animate-pulse bg-gray-200/10 rounded h-16" />
+              <div className="animate-pulse bg-gray-200/10 rounded h-16" />
+              <div className="animate-pulse bg-gray-200/10 rounded h-16" />
+              <div className="animate-pulse bg-gray-200/10 rounded h-16" />
+            </>
+          ) : displayedTransactions.length === 0 ? (
+            <div className="empty-state empty-state-flex">
+              <Wallet size={32} />
+              <span>No transactions yet</span>
+            </div>
           ) : (
-            transactions.map((tx, idx) => (
+            displayedTransactions.map((tx, idx) => (
               <div key={idx} className="transaction-item">
                 <div className="tx-icon">
                   {(tx.type === "invoice" || tx.type === "deposit") ? (
@@ -201,6 +310,67 @@ export default function WalletPage() {
         .tx-amount.positive { color: #10b981; }
         .tx-amount.negative { color: #3b82f6; }
         .loading-state, .empty-state { padding: 4rem; text-align: center; color: var(--text-secondary); }
+        .empty-state-flex {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .tx-toolbar {
+          display: flex;
+          gap: 0.75rem;
+          padding: 1rem 1rem 0;
+          flex-wrap: wrap;
+        }
+        .tx-search {
+          flex: 1;
+          min-width: 200px;
+          padding: 0.5rem 1rem;
+          background: var(--bg-deep);
+          border: 1px solid var(--border-tech);
+          border-radius: 8px;
+          color: var(--text-primary);
+          font-size: 13px;
+          outline: none;
+        }
+        .tx-filter {
+          padding: 0.5rem 1rem;
+          background: var(--bg-deep);
+          border: 1px solid var(--border-tech);
+          border-radius: 8px;
+          color: var(--text-primary);
+          font-size: 13px;
+          cursor: pointer;
+          outline: none;
+        }
+        .tx-search:focus, .tx-filter:focus {
+          border-color: var(--accent-blue);
+        }
+        .tx-sort-header {
+          display: flex;
+          gap: 0.75rem;
+          padding: 0.75rem 1rem 0;
+        }
+        .tx-sort-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+          padding: 0.5rem 1rem;
+          background: var(--bg-deep);
+          border: 1px solid var(--border-tech);
+          border-radius: 8px;
+          color: var(--text-primary);
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .tx-sort-btn:hover {
+          border-color: var(--accent-blue);
+          background: rgba(59, 130, 246, 0.1);
+        }
 
         .pagination-footer {
           display: flex;

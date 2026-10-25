@@ -86,6 +86,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>(initialData?.images || []);
 
@@ -102,6 +103,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     const checked = (e.target as HTMLInputElement).checked;
 
     if (name === "category") {
+      setErrors((prev) => ({ ...prev, category: "" }));
       setFormData((prev) => {
         const currentCategories = [...prev.category];
         if (checked) {
@@ -127,6 +129,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   const handleBrandChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const brand = e.target.value as Brand;
+    setErrors((prev) => ({ ...prev, brand: "" }));
     setFormData((prev) => ({
       ...prev,
       brand,
@@ -193,8 +196,44 @@ const ProductForm: React.FC<ProductFormProps> = ({
     }
   };
 
+  const validate = (): Record<string, string> => {
+    const validationErrors: Record<string, string> = {};
+
+    if (!formData.name || formData.name.trim().length < 2) {
+      validationErrors.name = "Name must be at least 2 characters";
+    }
+
+    const price = parseFloat(formData.price);
+    if (!formData.price || isNaN(price) || price < 0) {
+      validationErrors.price = "Price must be a number greater than or equal to 0";
+    }
+
+    const quantity = parseInt(formData.quantity, 10);
+    if (!formData.quantity || isNaN(quantity) || quantity < 0 || String(quantity) !== String(parseFloat(formData.quantity))) {
+      validationErrors.quantity = "Quantity must be a whole number greater than or equal to 0";
+    }
+
+    if (!formData.productType) {
+      validationErrors.productType = "Product type is required";
+    }
+
+    if (!formData.category || formData.category.length === 0) {
+      validationErrors.category = "Select at least one category";
+    }
+
+    return validationErrors;
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+    setErrors({});
+
     setLoading(true);
     setError("");
 
@@ -267,7 +306,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               <div className="form-grid">
                 <div className="form-group full-width">
                   <label>Product Type *</label>
-                  <select name="productType" value={formData.productType} onChange={handleProductTypeChange} required disabled={loading}>
+                  <select name="productType" value={formData.productType} onChange={handleProductTypeChange} required disabled={loading} className={errors.productType ? "border-red-500" : ""}>
                     <option value="lame">Lamé</option>
                     <option value="wire">Wire</option>
                     <option value="grip">Grip</option>
@@ -337,7 +376,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 </div>
                 <div className="form-group">
                   <label>Manufacturer *</label>
-                  <select name="brand" value={formData.brand} onChange={handleBrandChange} required disabled={loading || ["wire", "grip", "guard_padding", "french_pommel", "nut", "point", "screws", "point_contact_springs", "socket", "insulating_tube", "body_wire", "cable", "pin", "glove"].includes(formData.productType)}>
+                  <select name="brand" value={formData.brand} onChange={handleBrandChange} required disabled={loading || ["wire", "grip", "guard_padding", "french_pommel", "nut", "point", "screws", "point_contact_springs", "socket", "insulating_tube", "body_wire", "cable", "pin", "glove"].includes(formData.productType)} className={errors.brand ? "border-red-500" : ""}>
                     <option value="">Select Brand</option>
                     {formData.productType === "guard" ? (
                       <>
@@ -513,8 +552,9 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   <label>Unit Price (EGP)</label>
                   <div className="input-with-icon">
                     <span className="currency-label">EGP</span>
-                    <input type="number" name="price" value={formData.price} onChange={handleChange} placeholder="0.00" min="0" step="0.01" disabled={loading} />
+                    <input type="number" name="price" value={formData.price} onChange={handleChange} placeholder="0.00" min="0" step="0.01" disabled={loading} className={errors.price ? "border-red-500" : ""} />
                   </div>
+                  {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price}</p>}
                 </div>
               </div>
             </div>

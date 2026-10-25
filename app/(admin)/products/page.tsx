@@ -17,6 +17,11 @@ export default function ProductsPage() {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
   const [refresh, setRefresh] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [sortField, setSortField] = useState<string>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const lastParamsRef = useRef("");
 
   // Filters
@@ -50,13 +55,46 @@ export default function ProductsPage() {
     fetchProducts();
   }, [page, searchQuery, filterCategory, filterType, filterBrand, refresh]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this product?")) return;
+  const handleSortChange = (field: string) => {
+    if (field === sortField) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
+
+  const sortedProducts = [...(products ?? [])].sort((a, b) => {
+    const dir = sortDir === "asc" ? 1 : -1;
+    if (sortField === "price") {
+      return ((a.price ?? 0) - (b.price ?? 0)) * dir;
+    }
+    if (sortField === "quantity") {
+      return ((a.quantity ?? 0) - (b.quantity ?? 0)) * dir;
+    }
+    if (sortField === "category") {
+      return (a.category?.[0] ?? "").localeCompare(b.category?.[0] ?? "") * dir;
+    }
+    return (a.name ?? "").localeCompare(b.name ?? "") * dir;
+  });
+
+  const handleDelete = (product: Product) => {
+    setDeleteError("");
+    setDeleteTarget(product);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await deleteProduct(id);
+      setDeleting(true);
+      setDeleteError("");
+      await deleteProduct(deleteTarget.id);
+      setDeleteTarget(null);
       setRefresh(!refresh);
     } catch (err: any) {
-      alert(err.message || "Failed to delete product");
+      setDeleteError(err.message || "Failed to delete product");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -178,7 +216,7 @@ export default function ProductsPage() {
       {error && <div className="error-banner">{error}</div>}
 
       <ProductsList
-        products={products}
+        products={sortedProducts}
         loading={loading}
         onDelete={handleDelete}
         onEdit={handleEdit}
@@ -186,7 +224,46 @@ export default function ProductsPage() {
         currentPage={page}
         onPageChange={setPage}
         pagination={pagination}
+        sortField={sortField}
+        sortDir={sortDir}
+        onSortChange={handleSortChange}
+        onAddProduct={() => {
+          setEditingProduct(null);
+          setShowForm(true);
+        }}
       />
+
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+            <h2 className="text-lg font-semibold text-slate-900">Delete Product</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Are you sure you want to delete &ldquo;{deleteTarget.name}&rdquo;? This action cannot be undone.
+            </p>
+            {deleteError && (
+              <p className="mt-2 text-red-500 text-xs">{deleteError}</p>
+            )}
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                onClick={confirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showForm && (
         <ProductForm

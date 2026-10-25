@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Package } from "lucide-react";
+import { Package, ArrowUp, ArrowDown } from "lucide-react";
 import { Product } from "../lib/api/product";
 import ProductRow from "./products";
 
@@ -10,7 +10,11 @@ interface ProductsListProps {
   loading: boolean;
   error?: string;
   onEdit?: (product: Product) => void;
-  onDelete: (productId: string) => void;
+  onDelete: (product: Product) => void;
+  sortField?: string;
+  sortDir?: "asc" | "desc";
+  onSortChange?: (field: string) => void;
+  onAddProduct?: () => void;
   pagination?: {
     page: number;
     totalPages: number;
@@ -32,12 +36,24 @@ const ProductsList: React.FC<ProductsListProps> = ({
   pagination,
   onPageChange,
   isAdmin,
+  sortField,
+  sortDir,
+  onSortChange,
+  onAddProduct,
 }) => {
+  const sortColumns: { field: string; label: string }[] = [
+    { field: "name", label: "Name" },
+    { field: "price", label: "Price" },
+    { field: "quantity", label: "Quantity" },
+    { field: "category", label: "Category" },
+  ];
+
   if (loading) {
     return (
-      <div className="products-loading">
-        <div className="spinner"></div>
-        <p>Loading products...</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="animate-pulse bg-slate-200 rounded-lg h-48" />
+        ))}
       </div>
     );
   }
@@ -52,21 +68,49 @@ const ProductsList: React.FC<ProductsListProps> = ({
     );
   }
 
-  if (products.length === 0) {
+  if ((products ?? []).length === 0) {
     return (
-      <div className="no-products">
-        <Package size={64} />
-        <h3>No products found</h3>
-        <p>Try adjusting your search or filters to find what you're looking for.</p>
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <Package size={64} className="text-slate-400" />
+        <h3 className="mt-4 text-lg font-semibold text-slate-700">No products found</h3>
+        <p className="mt-1 text-sm text-slate-500">
+          Try adjusting your search or filters to find what you're looking for.
+        </p>
+        {isAdmin && onAddProduct && (
+          <button
+            className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
+            onClick={onAddProduct}
+          >
+            Add Product
+          </button>
+        )}
       </div>
     );
   }
 
   return (
     <div className="products-list-container">
+      {/* Sortable Column Headers */}
+      <div className="flex items-center gap-4 px-4 py-2 bg-slate-100 rounded-lg text-sm font-semibold text-slate-700">
+        {sortColumns.map(({ field, label }) => {
+          const isActive = sortField === field;
+          return (
+            <button
+              key={field}
+              type="button"
+              onClick={() => onSortChange?.(field)}
+              className={`flex items-center gap-1 hover:text-slate-900 ${isActive ? "text-blue-600" : ""}`}
+            >
+              {label}
+              {isActive && (sortDir === "asc" ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Products Grid */}
       <div className="products-grid">
-        {products.map((product) => (
+        {(products ?? []).map((product) => (
           <ProductRow
             key={product.id}
             product={product}

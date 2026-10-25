@@ -12,26 +12,58 @@ interface WalletDepositFormProps {
 const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSuccess, mode = "deposit" }) => {
   const [amount, setAmount] = useState<string>("");
   const [note, setNote] = useState<string>("");
-  const [currency, setCurrency] = useState<"EGP" | "USD" | "EUR">("EGP");
+  const [currency, setCurrency] = useState<"" | "EGP" | "USD" | "EUR">("EGP");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [amountError, setAmountError] = useState<string>("");
+  const [currencyError, setCurrencyError] = useState<string>("");
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const isDeposit = mode === "deposit";
 
+  const validateAmount = (value: string): string => {
+    const numAmount = parseFloat(value);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return "Amount must be a number greater than 0";
+    }
+    return "";
+  };
+
+  const validateCurrency = (value: string): string => {
+    if (!value) return "Currency is required";
+    return "";
+  };
+
+  const handleAmountChange = (value: string) => {
+    setAmount(value);
+    if (submitAttempted) setAmountError(validateAmount(value));
+  };
+
+  const handleAmountBlur = () => {
+    if (amount) setAmountError(validateAmount(amount));
+  };
+
+  const handleCurrencySelect = (cur: "EGP" | "USD" | "EUR") => {
+    setCurrency(cur);
+    if (submitAttempted) setCurrencyError(validateCurrency(cur));
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const numAmount = parseFloat(amount);
-    if (!numAmount || numAmount <= 0) {
-      setError("Please enter a valid amount.");
-      return;
-    }
+    setSubmitAttempted(true);
+
+    const aError = validateAmount(amount);
+    const cError = validateCurrency(currency);
+    setAmountError(aError);
+    setCurrencyError(cError);
+    if (aError || cError) return;
 
     setLoading(true);
     setError("");
 
     try {
       const { walletTransaction } = await import("../lib/api/wallet");
-      await walletTransaction(numAmount, mode, currency, note || undefined);
+      await walletTransaction(parseFloat(amount), mode, currency as "EGP" | "USD" | "EUR", note || undefined);
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: any) {
@@ -69,7 +101,7 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
                       key={cur}
                       type="button"
                       className={`wallet-currency-option ${currency === cur ? "active" : ""}`}
-                      onClick={() => setCurrency(cur)}
+                      onClick={() => handleCurrencySelect(cur)}
                       disabled={loading}
                     >
                       <span className="wallet-currency-symbol">{currencySymbols[cur]}</span>
@@ -77,6 +109,7 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
                     </button>
                   ))}
                 </div>
+                {currencyError && <p className="field-error">{currencyError}</p>}
               </div>
 
               <div className="form-group full-width">
@@ -86,7 +119,8 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
                   <input
                     type="number"
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    onChange={(e) => handleAmountChange(e.target.value)}
+                    onBlur={handleAmountBlur}
                     placeholder={`e.g. ${currency === "EGP" ? "5000" : "100"}`}
                     required
                     min="0.01"
@@ -94,6 +128,7 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
                     disabled={loading}
                   />
                 </div>
+                {amountError && <p className="field-error">{amountError}</p>}
               </div>
               <div className="form-group full-width">
                 <label>Note (optional)</label>
@@ -143,6 +178,11 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
             border-radius: 8px;
             font-size: 13px;
             text-align: center;
+          }
+          .field-error {
+            color: #e11d48;
+            font-size: 12px;
+            margin: 0;
           }
           .form-section {
             display: flex;
