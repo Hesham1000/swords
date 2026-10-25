@@ -3,6 +3,22 @@ import { db, invoices, products } from "../../../lib/db";
 import { desc, gte, sql } from "drizzle-orm";
 import { transformProduct } from "../../../lib/api/utils";
 
+interface InvoiceItemRow {
+  productId: string;
+  category?: string;
+  price: number;
+  quantity: number;
+  name: string;
+}
+
+interface InvoiceItemRow {
+  productId: string;
+  category?: string;
+  price: number;
+  quantity: number;
+  name: string;
+}
+
 export async function GET(request: NextRequest) {
   try {
     // 1. RECENT INVOICES (Latest 5)
@@ -91,7 +107,7 @@ export async function GET(request: NextRequest) {
 
     const categorySales: Record<string, number> = {};
     periodInvoices.forEach((inv) => {
-      const items = (inv.items as any[]) || [];
+      const items = (inv.items as InvoiceItemRow[]) || [];
       items.forEach((item) => {
         const cat =
           productCategoryMap[item.productId] || item.category || "General";
@@ -106,7 +122,7 @@ export async function GET(request: NextRequest) {
       { name: string; revenue: number; quantity: number }
     > = {};
     periodInvoices.forEach((inv) => {
-      const items = (inv.items as any[]) || [];
+      const items = (inv.items as InvoiceItemRow[]) || [];
       items.forEach((item) => {
         if (!productSalesMap[item.productId]) {
           productSalesMap[item.productId] = {

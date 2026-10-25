@@ -6,7 +6,13 @@ export const API_URL = ""
  * - Rows already have an `id` (uuid) column, so no _id renaming is needed
  * - Prepends the API URL to image paths if they are relative
  */
-export function transformProduct(product: any) {
+interface ProductRow {
+  id: string;
+  images?: string[] | null;
+  [key: string]: unknown;
+}
+
+export function transformProduct(product: ProductRow) {
     if (!product) return null;
 
     const apiUrl = ""
@@ -33,7 +39,7 @@ export function transformProduct(product: any) {
     };
 
     // Remove any legacy MongoDB _id if it somehow slipped through
-    delete transformed._id;
+    delete (transformed as Record<string, unknown>)._id;
 
     return transformed;
 }

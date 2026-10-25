@@ -27,7 +27,7 @@ async function getMainWallet() {
 // GET: Return wallet balances for all currencies
 export async function GET(request: NextRequest) {
   try {
-    let mainWallet = await getMainWallet();
+    const mainWallet = await getMainWallet();
 
     if (!mainWallet) {
       // No users yet — can't create the wallet row (FK on user_id).

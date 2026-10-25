@@ -125,7 +125,7 @@ async function main() {
   if (existingLogs.length === 0) {
     await db.insert(inventoryLogs).values(
       logSeed.map((l) => ({
-        productId: l.product?.id!,
+        productId: l.product!.id,
         action: l.action,
         quantityChange: l.quantityChange,
         reason: l.reason,

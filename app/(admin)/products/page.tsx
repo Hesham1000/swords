@@ -15,7 +15,13 @@ export default function ProductsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState<any>(null);
+  const [pagination, setPagination] = useState<{
+    page: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+    totalCount: number;
+  } | null>(null);
   const [refresh, setRefresh] = useState(false);
   const lastParamsRef = useRef("");
 
@@ -46,8 +52,8 @@ export default function ProductsPage() {
         });
         setProducts(response?.data ?? []);
         setPagination(response?.pagination ?? null);
-      } catch (err: any) {
-        setError(err.message || "Failed to load products");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load products");
       } finally {
         setLoading(false);
       }
@@ -77,8 +83,8 @@ export default function ProductsPage() {
     try {
       await deleteProduct(id);
       setRefresh(!refresh);
-    } catch (err: any) {
-      alert(err.message || "Failed to delete product");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete product");
     }
   };
 

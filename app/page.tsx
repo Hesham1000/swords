@@ -38,7 +38,7 @@ export default function LandingPage() {
   useEffect(() => {
     const cookies = document.cookie.split(";");
     const hasToken = cookies.some((c) => c.trim().startsWith("logged_in="));
-    setIsAuthenticated(hasToken);
+    queueMicrotask(() => setIsAuthenticated(hasToken));
   }, []);
 
   const features = [
