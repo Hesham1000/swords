@@ -35,8 +35,11 @@ export default function LandingPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const cookies = document.cookie.split(";");
-    setIsAuthenticated(cookies.some((c) => c.trim().startsWith("logged_in=")));
+    const checkAuth = () => {
+      const cookies = document.cookie.split(";");
+      setIsAuthenticated(cookies.some((c) => c.trim().startsWith("logged_in=")));
+    };
+    checkAuth();
   }, []);
   const { scrollYProgress } = useScroll();
 
