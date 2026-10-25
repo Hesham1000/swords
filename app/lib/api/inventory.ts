@@ -6,6 +6,8 @@ export interface InventoryLog {
   id?: string;
   productId: string;
   productName: string;
+  action?: string;
+  quantityChange?: number;
   changeAmount: number;
   newQuantity: number;
   reason: string;
@@ -28,16 +30,44 @@ export interface InventoryLogsResponse {
   };
 }
 
+export interface GetInventoryLogsOptions {
+  search?: string;
+  from?: string;
+  to?: string;
+  sortBy?: string;
+  sortOrder?: string;
+}
+
 /**
  * Fetch inventory logs from the API
  */
-export async function getInventoryLogs(page: number = 1, limit: number = 10, productId?: string): Promise<InventoryLogsResponse> {
+export async function getInventoryLogs(
+  page: number = 1,
+  limit: number = 10,
+  productId?: string,
+  options?: GetInventoryLogsOptions
+): Promise<InventoryLogsResponse> {
   try {
     const url = new URL(`${apiUrl}/api/inventory/logs`, window.location.origin);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
     if (productId) {
       url.searchParams.append("productId", productId);
+    }
+    if (options?.search) {
+      url.searchParams.append("search", options.search);
+    }
+    if (options?.from) {
+      url.searchParams.append("from", options.from);
+    }
+    if (options?.to) {
+      url.searchParams.append("to", options.to);
+    }
+    if (options?.sortBy) {
+      url.searchParams.append("sortBy", options.sortBy);
+    }
+    if (options?.sortOrder) {
+      url.searchParams.append("sortOrder", options.sortOrder);
     }
 
     const response = await fetch(url.toString(), {

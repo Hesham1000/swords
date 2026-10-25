@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { Wallet, Plus, ArrowUpCircle, ArrowDownCircle, Truck, Loader2 } from "lucide-react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { Wallet, Plus, ArrowUpCircle, ArrowDownCircle, Truck, Loader2, Search } from "lucide-react";
 import WalletDepositForm from "../../components/wallet-deposit-form";
 import ShipmentForm from "../../components/shipment-form";
 import { getWalletBalance, getWalletTransactions, WalletTransaction } from "../../lib/api/wallet";
@@ -26,6 +26,37 @@ export default function WalletPage() {
     hasPrevPage: boolean;
   } | null>(null);
   const lastParamsRef = useRef("");
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [sortOrder, setSortOrder] = useState("newest");
+
+  const filteredTransactions = useMemo(() => {
+    const typeMap: Record<string, string> = {
+      Deposit: "deposit",
+      Withdrawal: "withdraw",
+      Purchase: "invoice",
+    };
+    const q = search.trim().toLowerCase();
+    const filtered = transactions.filter((tx) => {
+      const matchesSearch = !q || (tx?.note ?? "").toLowerCase().includes(q);
+      const matchesType = typeFilter === "All" || tx?.type === typeMap[typeFilter];
+      return matchesSearch && matchesType;
+    });
+    const sorted = [...filtered];
+    sorted.sort((a, b) => {
+      switch (sortOrder) {
+        case "oldest":
+          return new Date(a?.date).getTime() - new Date(b?.date).getTime();
+        case "amountDesc":
+          return (b?.amount ?? 0) - (a?.amount ?? 0);
+        case "amountAsc":
+          return (a?.amount ?? 0) - (b?.amount ?? 0);
+        default:
+          return new Date(b?.date).getTime() - new Date(a?.date).getTime();
+      }
+    });
+    return sorted;
+  }, [transactions, search, typeFilter, sortOrder]);
 
   useEffect(() => {
     const params = JSON.stringify({ refresh, page });
@@ -81,7 +112,7 @@ export default function WalletPage() {
         <div className="stat-card">
           <div className="stat-icon"><Wallet size={20} /></div>
           <h3 className="stat-title">EGP Balance</h3>
-          <p className="stat-value">EGP {balance.EGP.toLocaleString()}</p>
+          <p className="stat-value">EGP {(balance?.EGP ?? 0).toLocaleString()}</p>
         </div>
         <div className="stat-card">
           <div className="stat-icon"><Wallet size={20} /></div>
@@ -95,6 +126,39 @@ export default function WalletPage() {
         </div>
       </div>
 
+      <div className="filter-bar">
+        <div className="search-wrapper">
+          <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary)", pointerEvents: "none" }} />
+          <input
+            className="search-input"
+            type="text"
+            placeholder="Search transactions..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <select
+          className="filter-select"
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+        >
+          <option value="All">All</option>
+          <option value="Deposit">Deposit</option>
+          <option value="Withdrawal">Withdrawal</option>
+          <option value="Purchase">Purchase</option>
+        </select>
+        <select
+          className="filter-select"
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value)}
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="amountDesc">Amount (High to Low)</option>
+          <option value="amountAsc">Amount (Low to High)</option>
+        </select>
+      </div>
+
       <div className="list-card full-width">
         <div className="card-header">
           <h2 className="card-title">Transaction History</h2>
@@ -102,10 +166,10 @@ export default function WalletPage() {
         <div className="transaction-list">
           {loading ? (
             <div className="loading-state"><Loader2 className="animate-spin" /></div>
-          ) : transactions.length === 0 ? (
-            <div className="empty-state">No transactions recorded.</div>
+          ) : filteredTransactions.length === 0 ? (
+            <div className="empty-state">No transactions found.</div>
           ) : (
-            transactions.map((tx, idx) => (
+            filteredTransactions.map((tx, idx) => (
               <div key={idx} className="transaction-item">
                 <div className="tx-icon">
                   {(tx.type === "invoice" || tx.type === "deposit") ? (
@@ -115,11 +179,11 @@ export default function WalletPage() {
                   )}
                 </div>
                 <div className="tx-details">
-                  <div className="tx-note">{tx.note}</div>
-                  <div className="tx-date">{new Date(tx.date).toLocaleString()}</div>
+                  <div className="tx-note">{tx?.note ?? ""}</div>
+                  <div className="tx-date">{new Date(tx?.date).toLocaleString()}</div>
                 </div>
                 <div className={`tx-amount ${(tx.type === "invoice" || tx.type === "deposit") ? "positive" : "negative"}`}>
-                  {(tx.type === "invoice" || tx.type === "deposit") ? "+" : "-"}{tx.amount.toLocaleString()} {tx.currency}
+                  {(tx.type === "invoice" || tx.type === "deposit") ? "+" : "-"}{(tx.amount ?? 0).toLocaleString()} {tx.currency ?? ""}
                 </div>
               </div>
             ))
@@ -174,6 +238,49 @@ export default function WalletPage() {
       )}
 
       <style jsx>{`
+        .filter-bar {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 1rem;
+        }
+        .search-wrapper {
+          position: relative;
+          flex: 1;
+          display: flex;
+        }
+        .search-input {
+          width: 100%;
+          background: var(--bg-deep);
+          border: 1px solid var(--border-tech);
+          border-radius: 8px;
+          color: var(--text-primary);
+          padding: 0.5rem 0.75rem;
+          padding-left: 36px;
+          font-size: 12px;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        .search-input:focus {
+          border-color: var(--accent-blue);
+        }
+        .search-input::placeholder {
+          color: var(--text-secondary);
+        }
+        .filter-select {
+          background: var(--bg-deep);
+          border: 1px solid var(--border-tech);
+          border-radius: 8px;
+          color: var(--text-primary);
+          padding: 0.5rem 0.75rem;
+          font-size: 12px;
+          cursor: pointer;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        .filter-select:focus {
+          border-color: var(--accent-blue);
+        }
         .transaction-list {
           display: flex;
           flex-direction: column;

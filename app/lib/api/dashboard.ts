@@ -13,6 +13,9 @@ export interface DashboardSummaryData {
     inventoryValue: number;
     totalInventoryCount: number;
     averageOrderValue: number;
+    totalProducts?: number;
+    totalQuantity?: number;
+    lowStockCount?: number;
   };
   recentInvoices: Invoice[];
   lowStockItems: Product[];
