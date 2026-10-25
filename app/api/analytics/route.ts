@@ -1,74 +1,105 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getInvoicesCollection, getProductsCollection } from "../../lib/mongoDB";
-import { ObjectId } from "mongodb";
+import { db, invoices, products } from "../../lib/db";
+import { gte, sql } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
-    const invoicesCollection = await getInvoicesCollection();
-    const productsCollection = await getProductsCollection();
-
-    // 1. GET ALL INVOICES FOR PROCESSING
-    // We fetch a reasonable range (last 90 days) for detailed analytics
+    // 1. GET ALL INVOICES FOR PROCESSING (last 90 days)
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-    const invoices = await invoicesCollection.find({
-      date: { $gte: threeMonthsAgo.toISOString().split('T')[0] }
-    }).toArray();
+    const invoicesRows = await db
+      .select()
+      .from(invoices)
+      .where(gte(invoices.createdAt, threeMonthsAgo));
 
     // 2. SUMMARY STATS (Total from all time)
-    const allInvoices = await invoicesCollection.find({}).toArray();
-    const totalRevenue = allInvoices.reduce((acc, inv) => acc + (inv.amount || 0), 0);
-    const totalOrders = allInvoices.length;
-    
-    // Unique customers
-    const uniqueCustomers = new Set(allInvoices.map(inv => inv.customer)).size;
+    const [totals] = await db
+      .select({
+        totalRevenue: sql<string>`coalesce(sum(${invoices.totalAmount}), 0)`,
+        totalOrders: sql<number>`count(*)::int`,
+        uniqueCustomers: sql<number>`count(distinct ${invoices.customerName})::int`,
+      })
+      .from(invoices);
+
+    const totalRevenue = Number(totals?.totalRevenue ?? 0);
+    const totalOrders = totals?.totalOrders ?? 0;
+    const uniqueCustomers = totals?.uniqueCustomers ?? 0;
 
     // Inventory Value
-    const allProducts = await productsCollection.find({}).toArray();
-    const inventoryValue = allProducts.reduce((acc, prod) => acc + ((prod.price || 0) * (prod.quantity || 0)), 0);
+    const [productTotals] = await db
+      .select({
+        inventoryValue: sql<string>`coalesce(sum(${products.price} * ${products.quantity}), 0)`,
+      })
+      .from(products);
+    const inventoryValue = Number(productTotals?.inventoryValue ?? 0);
 
-    // 3. TRENDS (Last 30 Days)
+    // 3. TRENDS (Last 30 Days) — grouped by day via SQL
+    const trendRows = await db
+      .select({
+        date: sql<string>`to_char(${invoices.createdAt}, 'YYYY-MM-DD')`,
+        revenue: sql<string>`coalesce(sum(${invoices.totalAmount}), 0)`,
+        orders: sql<number>`count(*)::int`,
+      })
+      .from(invoices)
+      .where(gte(invoices.createdAt, sql`now() - interval '30 days'`))
+      .groupBy(sql`to_char(${invoices.createdAt}, 'YYYY-MM-DD')`);
+
+    const trendMap = new Map(trendRows.map((r) => [r.date, r]));
     const last30Days = Array.from({ length: 30 }).map((_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      return d.toISOString().split('T')[0];
+      return d.toISOString().split("T")[0];
     }).reverse();
 
-    const revenueTrend = last30Days.map(day => {
-      const dayInvoices = invoices.filter(inv => inv.date === day);
+    const revenueTrend = last30Days.map((day) => {
+      const row = trendMap.get(day);
       return {
         date: day,
-        revenue: dayInvoices.reduce((acc, inv) => acc + (inv.amount || 0), 0),
-        orders: dayInvoices.length
+        revenue: Number(row?.revenue ?? 0),
+        orders: row?.orders ?? 0,
       };
     });
 
-    // 4. CATEGORY DISTRIBUTION
+    // 4. CATEGORY DISTRIBUTION (items stored as jsonb)
     const productCategoryMap: Record<string, string> = {};
-    allProducts.forEach(prod => {
-      const cat = prod.category && Array.isArray(prod.category) && prod.category.length > 0 
-        ? prod.category[0] 
-        : (typeof prod.category === 'string' ? prod.category : "Equipment");
-      productCategoryMap[prod._id.toString()] = cat;
+    const allProducts = await db.select().from(products);
+    allProducts.forEach((prod) => {
+      const cat =
+        Array.isArray(prod.category) && prod.category.length > 0
+          ? prod.category[0]
+          : "Equipment";
+      productCategoryMap[prod.id] = cat;
     });
 
     const categorySales: Record<string, number> = {};
-    invoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
-        const cat = productCategoryMap[item.productId] || item.category || "General";
-        categorySales[cat] = (categorySales[cat] || 0) + (item.price * item.quantity);
+    invoicesRows.forEach((inv) => {
+      const items = (inv.items as any[]) || [];
+      items.forEach((item) => {
+        const cat =
+          productCategoryMap[item.productId] || item.category || "General";
+        categorySales[cat] =
+          (categorySales[cat] || 0) + Number(item.price) * item.quantity;
       });
     });
 
     // 5. TOP PRODUCTS
-    const productSales: Record<string, {name: string, revenue: number, quantity: number}> = {};
-    invoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
+    const productSales: Record<
+      string,
+      { name: string; revenue: number; quantity: number }
+    > = {};
+    invoicesRows.forEach((inv) => {
+      const items = (inv.items as any[]) || [];
+      items.forEach((item) => {
         if (!productSales[item.productId]) {
-          productSales[item.productId] = { name: item.name, revenue: 0, quantity: 0 };
+          productSales[item.productId] = {
+            name: item.name,
+            revenue: 0,
+            quantity: 0,
+          };
         }
-        productSales[item.productId].revenue += (item.price * item.quantity);
+        productSales[item.productId].revenue +=
+          Number(item.price) * item.quantity;
         productSales[item.productId].quantity += item.quantity;
       });
     });
@@ -77,23 +108,33 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        summary: {
-          totalRevenue,
-          totalOrders,
-          uniqueCustomers,
-          inventoryValue,
-          averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          summary: {
+            totalRevenue,
+            totalOrders,
+            uniqueCustomers,
+            inventoryValue,
+            averageOrderValue:
+              totalOrders > 0 ? totalRevenue / totalOrders : 0,
+          },
+          trends: revenueTrend,
+          categories: Object.entries(categorySales).map(([name, value]) => ({
+            name,
+            value,
+          })),
+          topProducts,
         },
-        trends: revenueTrend,
-        categories: Object.entries(categorySales).map(([name, value]) => ({ name, value })),
-        topProducts
-      }
-    }, { status: 200 });
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Analytics Error:", error);
-    return NextResponse.json({ error: "Failed to generate analytics" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to generate analytics" },
+      { status: 500 }
+    );
   }
 }

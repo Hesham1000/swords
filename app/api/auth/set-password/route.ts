@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
+import { eq } from "drizzle-orm";
 import {
   decodePasswordSetupToken,
   generateToken,
 } from "../../../lib/auth/token";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { db, users } from "../../../lib/db";
 import { hashPassword } from "../../../lib/auth/password";
-import { v4 as uuidv4 } from "uuid";
 import { validatePassword } from "../../../utils/validation";
 import ApiError from "../../../utils/ApiError";
 
@@ -28,19 +27,22 @@ export async function POST(req: NextRequest) {
       throw ApiError.unauthorized("Invalid or expired token");
     }
 
-    const userCollection = await getUserCollection();
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
 
-    const user = await userCollection.findOne({ email });
     if (!user) {
       throw ApiError.notFound("User is not found");
     }
 
-    const userId = user._id.toString();
+    const userId = user.id;
 
     // ✅ Validate password
     const validationError = validatePassword(
       password,
-      user.firstName,
+      user.username,
       user.email,
       ""
     );
@@ -54,35 +56,13 @@ export async function POST(req: NextRequest) {
 
     const hashedPassword = await hashPassword(password.trim());
 
-    await userCollection.updateOne(
-      { _id: ObjectId.createFromHexString(userId) },
-      {
-        $set: {
-          password: hashedPassword,
-          isActive: true,
-          dateUpdated: new Date(),
-          lastLogin: new Date(),
-        },
-      }
-    );
+    await db
+      .update(users)
+      .set({ password: hashedPassword })
+      .where(eq(users.id, userId));
 
     // Generate new auth tokens
     const { accessToken, refreshToken } = await generateToken(userId);
-
-    const now = new Date();
-    // Create new session
-    const newSession = {
-      session_id: uuidv4(),
-      token: accessToken,
-      refresh: refreshToken,
-      last_action: now,
-    };
-
-    // Add session to user
-    await userCollection.updateOne(
-      { _id: ObjectId.createFromHexString(userId) },
-      { $push: { sessions: newSession as any } }
-    );
 
     const res = NextResponse.json(
       {
@@ -107,14 +87,13 @@ export async function POST(req: NextRequest) {
       path: "/",
     });
 
-    res.cookies.set("ROLES", user.roles, {
+    res.cookies.set("ROLES", JSON.stringify(user.roles || ["user"]), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
       maxAge: 60 * 60 * 6, // 6 hours
     });
-
 
     return res;
   } catch (error) {

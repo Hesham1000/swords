@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { eq } from "drizzle-orm";
+import { db, users } from "../../../lib/db";
 import {
   validateEmail,
   validateUsername,
@@ -18,28 +19,14 @@ export async function POST(request: NextRequest) {
     const username = body.username.trim();
     const email = body.email?.trim();
 
-    const userCollection = await getUserCollection();
-
     // Check existing user
-    const existingUser = await userCollection.findOne({ email });
+    const [existingUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
 
     if (existingUser) {
-      if (!existingUser.isActive) {
-        throw ApiError.badRequest(
-          "You are already registered. Please go to your email and set your password"
-        );
-      }
-      // Check if last email was sent < 1 min ago
-      const lastEmailSent = existingUser.lastEmailSent;
-      const now = new Date();
-
-      if (lastEmailSent) {
-        const timeDiff = now.getTime() - new Date(lastEmailSent).getTime();
-        if (timeDiff < 60000) {
-          throw ApiError.badRequest("Please check your email inbox");
-        }
-      }
-
       throw ApiError.badRequest(
         "This email is already registered. Please login"
       );
@@ -55,18 +42,16 @@ export async function POST(request: NextRequest) {
       throw ApiError.badRequest(emailValidation);
     }
 
-    // Create new user with roles array
-    const newUser = {
+    // Create new user with roles array.
+    // The password column is NOT NULL; insert an unusable random placeholder
+    // (bcrypt compare against it always fails) until the user sets a real
+    // password via the set-password flow.
+    await db.insert(users).values({
       username: username,
       email,
-      isActive: false,
+      password: crypto.randomUUID() + crypto.randomUUID(),
       roles: ["user"], // 👈 roles array instead of single role
-      sessions: [],
-      dateJoined: new Date(),
-      lastEmailSent: new Date(),
-    };
-
-    await userCollection.insertOne(newUser);
+    });
 
     // Send setup email
     const token = await generatePasswordSetupToken(email);
@@ -100,8 +85,10 @@ export async function POST(request: NextRequest) {
         { status: error.statusCode }
       );
     }
+
+    console.error("Signup error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { error: "Internal Server Error", statusCode: 500 },
       { status: 500 }
     );
   }

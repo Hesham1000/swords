@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { eq } from "drizzle-orm";
+import { db, users } from "../../../lib/db";
 import { verifyAccessToken } from "../../../lib/auth/token";
-import { ObjectId } from "mongodb";
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,11 +20,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    const userCollection = await getUserCollection();
-    const user = await userCollection.findOne(
-      { _id: new ObjectId(payload.userId) },
-      { projection: { password: 0, sessions: 0 } }
-    );
+    const userId = payload.userId as string;
+    if (!UUID_REGEX.test(userId)) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
+    const [user] = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        roles: users.roles,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -29,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       user: {
-        id: user._id,
+        id: user.id,
         username: user.username,
         email: user.email,
         roles: user.roles || ["user"],

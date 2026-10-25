@@ -1,83 +1,122 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getInvoicesCollection, getProductsCollection } from "../../../lib/mongoDB";
+import { db, invoices, products } from "../../../lib/db";
+import { desc, gte, sql } from "drizzle-orm";
 import { transformProduct } from "../../../lib/api/utils";
 
 export async function GET(request: NextRequest) {
   try {
-    const invoicesCollection = await getInvoicesCollection();
-    const productsCollection = await getProductsCollection();
-
     // 1. RECENT INVOICES (Latest 5)
-    const recentInvoices = await invoicesCollection
-      .find({})
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .toArray();
+    const recentInvoices = await db
+      .select()
+      .from(invoices)
+      .orderBy(desc(invoices.createdAt))
+      .limit(5);
 
     // 2. ANALYTICS DATA (Revenue, Orders, Customers)
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-    const periodInvoices = await invoicesCollection.find({
-      date: { $gte: threeMonthsAgo.toISOString().split('T')[0] }
-    }).toArray();
+    const periodInvoices = await db
+      .select()
+      .from(invoices)
+      .where(gte(invoices.createdAt, threeMonthsAgo));
 
-    const allInvoices = await invoicesCollection.find({}).toArray();
-    const totalRevenue = allInvoices.reduce((acc, inv) => acc + (inv.amount || 0), 0);
-    const totalOrders = allInvoices.length;
-    const uniqueCustomers = new Set(allInvoices.map(inv => inv.customer)).size;
+    const [totals] = await db
+      .select({
+        totalRevenue: sql<string>`coalesce(sum(${invoices.totalAmount}), 0)`,
+        totalOrders: sql<number>`count(*)::int`,
+        uniqueCustomers: sql<number>`count(distinct ${invoices.customerName})::int`,
+      })
+      .from(invoices);
+
+    const totalRevenue = Number(totals?.totalRevenue ?? 0);
+    const totalOrders = totals?.totalOrders ?? 0;
+    const uniqueCustomers = totals?.uniqueCustomers ?? 0;
 
     // 3. PRODUCT SUMMARY & LOW STOCK
-    const allProducts = await productsCollection.find({}).toArray();
-    const totalInventoryCount = allProducts.reduce((acc, prod) => acc + (prod.quantity || 0), 0);
-    const inventoryValue = allProducts.reduce((acc, prod) => acc + ((prod.price || 0) * (prod.quantity || 0)), 0);
-    
-    const lowStockItems = allProducts
-      .filter(p => (p.quantity || 0) < 3)
-      .sort((a, b) => (a.quantity || 0) - (b.quantity || 0))
-      .slice(0, 5);
+    const [productTotals] = await db
+      .select({
+        totalInventoryCount: sql<number>`coalesce(sum(${products.quantity}), 0)::int`,
+        inventoryValue: sql<string>`coalesce(sum(${products.price} * ${products.quantity}), 0)`,
+      })
+      .from(products);
 
-    // 4. TRENDS (Last 30 Days)
+    const totalInventoryCount = productTotals?.totalInventoryCount ?? 0;
+    const inventoryValue = Number(productTotals?.inventoryValue ?? 0);
+
+    const lowStockRows = await db
+      .select()
+      .from(products)
+      .where(sql`${products.quantity} < 3`)
+      .orderBy(sql`${products.quantity} asc`)
+      .limit(5);
+
+    // 4. TRENDS (Last 30 Days) — grouped by day via SQL
+    const trendRows = await db
+      .select({
+        date: sql<string>`to_char(${invoices.createdAt}, 'YYYY-MM-DD')`,
+        revenue: sql<string>`coalesce(sum(${invoices.totalAmount}), 0)`,
+        orders: sql<number>`count(*)::int`,
+      })
+      .from(invoices)
+      .where(gte(invoices.createdAt, sql`now() - interval '30 days'`))
+      .groupBy(sql`to_char(${invoices.createdAt}, 'YYYY-MM-DD')`);
+
+    const trendMap = new Map(trendRows.map((r) => [r.date, r]));
     const last30Days = Array.from({ length: 30 }).map((_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      return d.toISOString().split('T')[0];
+      return d.toISOString().split("T")[0];
     }).reverse();
 
-    const revenueTrend = last30Days.map(day => {
-      const dayInvoices = periodInvoices.filter(inv => inv.date === day);
+    const revenueTrend = last30Days.map((day) => {
+      const row = trendMap.get(day);
       return {
         date: day,
-        revenue: dayInvoices.reduce((acc, inv) => acc + (inv.amount || 0), 0),
-        orders: dayInvoices.length
+        revenue: Number(row?.revenue ?? 0),
+        orders: row?.orders ?? 0,
       };
     });
 
-    // 5. CATEGORY DISTRIBUTION
+    // 5. CATEGORY DISTRIBUTION (items stored as jsonb)
     const productCategoryMap: Record<string, string> = {};
-    allProducts.forEach(prod => {
-      const cat = prod.category && Array.isArray(prod.category) && prod.category.length > 0 
-        ? prod.category[0] 
-        : (typeof prod.category === 'string' ? prod.category : "Equipment");
-      productCategoryMap[prod._id.toString()] = cat;
+    const allProducts = await db.select().from(products);
+    allProducts.forEach((prod) => {
+      const cat =
+        Array.isArray(prod.category) && prod.category.length > 0
+          ? prod.category[0]
+          : "Equipment";
+      productCategoryMap[prod.id] = cat;
     });
 
     const categorySales: Record<string, number> = {};
-    periodInvoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
-        const cat = productCategoryMap[item.productId] || item.category || "General";
-        categorySales[cat] = (categorySales[cat] || 0) + (item.price * item.quantity);
+    periodInvoices.forEach((inv) => {
+      const items = (inv.items as any[]) || [];
+      items.forEach((item) => {
+        const cat =
+          productCategoryMap[item.productId] || item.category || "General";
+        categorySales[cat] =
+          (categorySales[cat] || 0) + Number(item.price) * item.quantity;
       });
     });
 
     // 6. TOP PRODUCTS
-    const productSalesMap: Record<string, {name: string, revenue: number, quantity: number}> = {};
-    periodInvoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
+    const productSalesMap: Record<
+      string,
+      { name: string; revenue: number; quantity: number }
+    > = {};
+    periodInvoices.forEach((inv) => {
+      const items = (inv.items as any[]) || [];
+      items.forEach((item) => {
         if (!productSalesMap[item.productId]) {
-          productSalesMap[item.productId] = { name: item.name, revenue: 0, quantity: 0 };
+          productSalesMap[item.productId] = {
+            name: item.name,
+            revenue: 0,
+            quantity: 0,
+          };
         }
-        productSalesMap[item.productId].revenue += (item.price * item.quantity);
+        productSalesMap[item.productId].revenue +=
+          Number(item.price) * item.quantity;
         productSalesMap[item.productId].quantity += item.quantity;
       });
     });
@@ -86,28 +125,38 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        summary: {
-          totalRevenue,
-          totalOrders,
-          uniqueCustomers,
-          inventoryValue,
-          totalInventoryCount,
-          averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          summary: {
+            totalRevenue,
+            totalOrders,
+            uniqueCustomers,
+            inventoryValue,
+            totalInventoryCount,
+            averageOrderValue:
+              totalOrders > 0 ? totalRevenue / totalOrders : 0,
+          },
+          recentInvoices,
+          lowStockItems: lowStockRows.map(transformProduct),
+          analytics: {
+            trends: revenueTrend,
+            categories: Object.entries(categorySales).map(([name, value]) => ({
+              name,
+              value,
+            })),
+            topProducts,
+          },
         },
-        recentInvoices,
-        lowStockItems: lowStockItems.map(transformProduct),
-        analytics: {
-          trends: revenueTrend,
-          categories: Object.entries(categorySales).map(([name, value]) => ({ name, value })),
-          topProducts
-        }
-      }
-    }, { status: 200 });
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Dashboard Summary Error:", error);
-    return NextResponse.json({ error: "Failed to generate dashboard summary" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to generate dashboard summary" },
+      { status: 500 }
+    );
   }
 }

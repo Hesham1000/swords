@@ -1,10 +1,9 @@
-import { getInventoryLogsCollection } from "./mongoDB";
-import { ObjectId } from "mongodb";
+import { db, inventoryLogs } from "./db";
 
 export type InventoryChangeReason = "Sale" | "Initial Stock" | "Restock" | "Manual Adjustment" | "Return" | "Order Cancelled" | "Price Update";
 
 export interface InventoryLog {
-  _id?: ObjectId;
+  id?: string;
   productId: string;
   productName: string;
   changeAmount: number; // Positive for additions, negative for deductions
@@ -12,7 +11,7 @@ export interface InventoryLog {
   reason: InventoryChangeReason;
   oldPrice?: number | null;
   newPrice?: number | null;
-  referenceId?: string | ObjectId;
+  referenceId?: string;
   note?: string;
   operator?: string;
   timestamp: Date;
@@ -29,18 +28,17 @@ export async function logInventoryChange(logData: {
   reason: InventoryChangeReason;
   oldPrice?: number | null;
   newPrice?: number | null;
-  referenceId?: string | ObjectId;
+  referenceId?: string;
   note?: string;
   operator?: string;
 }) {
   try {
-    const logsCollection = await getInventoryLogsCollection();
-    const log: InventoryLog = {
-      ...logData,
-      timestamp: new Date(),
-    };
-    
-    await logsCollection.insertOne(log);
+    await db.insert(inventoryLogs).values({
+      productId: logData.productId,
+      action: logData.reason,
+      quantityChange: logData.changeAmount,
+      reason: logData.note ?? logData.productName,
+    });
     console.log(`📝 Inventory Log Created: ${logData.productName} (${logData.changeAmount > 0 ? "+" : ""}${logData.changeAmount}) - Reason: ${logData.reason}`);
     return { success: true };
   } catch (error) {
