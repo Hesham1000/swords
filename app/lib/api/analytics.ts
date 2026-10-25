@@ -1,5 +1,5 @@
 // lib/api/analytics.ts
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const apiUrl = ""
 
 export interface AnalyticsData {
   summary: {

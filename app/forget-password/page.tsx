@@ -10,7 +10,7 @@ interface ForgotPasswordData {
 }
 
 const ForgotPassword = () => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const apiUrl = ""
   const router = useRouter();
   const [isLoading, setLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);

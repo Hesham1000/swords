@@ -24,7 +24,7 @@ interface PasswordRequirements {
 }
 
 const SetPasswordContent = () => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const apiUrl = ""
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");

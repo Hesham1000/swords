@@ -75,7 +75,7 @@ const Sidebar = ({
       setIsLoggingOut(true);
 
       const baseUrl =
-        process.env.NEXT_PUBLIC_API_URL;
+        ""
       const response = await fetch(`${baseUrl}/api/auth/logout`, {
         method: "POST",
         headers: {
