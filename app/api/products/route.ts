@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, products } from "../../lib/db";
-import { and, asc, eq, ilike, or, sql } from "drizzle-orm";
+import { AnyColumn, and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { transformProduct } from "../../lib/api/utils";
 
 // GET endpoint to retrieve products with pagination and filtering
@@ -17,6 +17,17 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category");
     const productType = searchParams.get("productType");
     const brand = searchParams.get("brand");
+
+    // Sort parameters (whitelisted)
+    const sortByParam = searchParams.get("sortBy");
+    const SORT_COLUMNS: Record<string, AnyColumn> = {
+      name: products.name,
+      price: products.price,
+      quantity: products.quantity,
+      brand: products.brand,
+    };
+    const sortColumn = (sortByParam && SORT_COLUMNS[sortByParam]) || products.createdAt;
+    const sortOrder = searchParams.get("sortOrder") === "asc" ? asc : desc;
 
     const skip = (page - 1) * limit;
 
@@ -120,7 +131,7 @@ export async function GET(request: NextRequest) {
       .select()
       .from(products)
       .where(whereClause)
-      .orderBy(sql`${products.createdAt} DESC`)
+      .orderBy(sortOrder(sortColumn))
       .offset(skip)
       .limit(limit);
 

@@ -9,6 +9,7 @@ import { useState } from "react";
 interface ProductRowProps {
   product: Product;
   onEdit?: (product: Product) => void;
+  onView?: (product: Product) => void;
   onDelete?: (productId: string) => void;
   isAdmin?: boolean;
 }
@@ -16,6 +17,7 @@ interface ProductRowProps {
 const ProductRow: React.FC<ProductRowProps> = ({
   product,
   onEdit,
+  onView,
   onDelete,
   isAdmin,
 }) => {
@@ -104,7 +106,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
         </div>
         
         {product.quantity < 3 && (
-          <div className={`stock-alert-badge ${product.quantity === 0 ? 'out' : 'low'}`}>
+          <div className={`stock-alert-badge ${product.quantity === 0 ? 'out' : 'low'} inline-flex items-center gap-1 rounded-full bg-red-500/90 px-2 py-0.5 text-xs text-white`}>
             <AlertCircle size={10} />
             {product.quantity === 0 ? 'Out of Stock' : 'Low Stock'}
           </div>
@@ -116,7 +118,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
               className="floating-btn edit"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={() => onEdit(product)}
+              onClick={(e) => { e.stopPropagation(); onEdit(product); }}
               title="Edit product"
             >
               <Edit size={14} />

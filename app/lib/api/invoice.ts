@@ -14,9 +14,10 @@ export interface Invoice {
   _id?: string;
   invoiceId: string;
   customer: string;
+  customerEmail?: string;
   amount: number;
   discount: number; // total discount amount in EGP
-  status: "paid" | "pending" | "overdue";
+  status: "paid" | "pending" | "overdue" | "shipped" | "cancelled";
   paymentMethod: "cash" | "visa";
   date: string;
   items: InvoiceItem[];
@@ -45,15 +46,29 @@ export interface InvoiceResponse {
   message?: string;
 }
 
+export interface GetInvoicesOptions {
+  status?: string;
+  sortBy?: string;
+  sortOrder?: string;
+}
+
 /**
- * Fetch all invoices with pagination
+ * Fetch all invoices with pagination, optional search, status filter and sorting
  */
-export async function getInvoices(page: number = 1, limit: number = 10, search?: string): Promise<InvoicesResponse> {
+export async function getInvoices(
+  page: number = 1,
+  limit: number = 10,
+  search?: string,
+  options: GetInvoicesOptions = {}
+): Promise<InvoicesResponse> {
   try {
     const url = new URL(`${apiUrl}/api/invoices`, window.location.origin);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
     if (search) url.searchParams.append("search", search);
+    if (options.status) url.searchParams.append("status", options.status);
+    if (options.sortBy) url.searchParams.append("sortBy", options.sortBy);
+    if (options.sortOrder) url.searchParams.append("sortOrder", options.sortOrder);
 
     const response = await fetch(url.toString());
     if (!response.ok) {

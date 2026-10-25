@@ -10,6 +10,7 @@ interface ProductsListProps {
   loading: boolean;
   error?: string;
   onEdit?: (product: Product) => void;
+  onView?: (product: Product) => void;
   onDelete: (productId: string) => void;
   pagination?: {
     page: number;
@@ -28,6 +29,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
   loading,
   error,
   onEdit,
+  onView,
   onDelete,
   pagination,
   onPageChange,
@@ -71,6 +73,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
             key={product.id}
             product={product}
             onEdit={onEdit}
+            onView={onView}
             onDelete={onDelete}
             isAdmin={isAdmin}
           />

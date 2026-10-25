@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, invoices, products, users, wallet, walletTransactions } from "../../lib/db";
-import { eq, ilike, or, desc, sql, SQL } from "drizzle-orm";
+import { eq, ilike, or, desc, asc, and, sql, SQL } from "drizzle-orm";
+import type { PgColumn } from "drizzle-orm/pg-core";
 
 // Shape of the jsonb stored in invoices.items:
 // { items: [...], paymentMethod, deposit, depositCurrency, discount, date }
@@ -24,19 +25,36 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const searchVal = searchParams.get("search") || searchParams.get("customer");
+    const statusVal = searchParams.get("status");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
 
-    let where: SQL | undefined;
+    // Whitelisted sort columns to prevent SQL injection via column mapping
+    const sortColumns: Record<string, PgColumn> = {
+      invoiceNumber: invoices.invoiceNumber,
+      customer: invoices.customerName,
+      totalAmount: invoices.totalAmount,
+      date: invoices.createdAt,
+    };
+    const sortByParam = searchParams.get("sortBy");
+    const sortColumn = (sortByParam && sortColumns[sortByParam]) || invoices.createdAt;
+    const sortOrder = searchParams.get("sortOrder") === "asc" ? asc : desc;
+
+    const conditions: SQL[] = [];
     if (searchVal) {
       const pattern = `%${searchVal}%`;
-      where = or(
+      const searchCondition = or(
         ilike(invoices.customerName, pattern),
         ilike(invoices.invoiceNumber, pattern),
         sql`${invoices.items}::text ILIKE ${pattern}`
       );
+      if (searchCondition) conditions.push(searchCondition);
     }
+    if (statusVal && statusVal !== "all") {
+      conditions.push(eq(invoices.status, statusVal));
+    }
+    const where: SQL | undefined = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [{ count: totalCount }] = await db
       .select({ count: sql<number>`count(*)::int` })

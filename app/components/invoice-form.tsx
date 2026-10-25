@@ -7,7 +7,7 @@ import { getProducts, Product } from "../lib/api/product";
 
 interface InvoiceFormData {
   customer: string;
-  status: "paid" | "pending" | "overdue";
+  status: "paid" | "pending" | "overdue" | "shipped" | "cancelled";
   paymentMethod: "cash" | "visa";
   date: string;
 }
