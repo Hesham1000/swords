@@ -19,6 +19,9 @@ export default function HistoryPage() {
     hasPrevPage: boolean;
   } | null>(null);
   const lastParamsRef = useRef("");
+  const [search, setSearch] = useState("");
+  const [reasonFilter, setReasonFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("newest");
 
   useEffect(() => {
     const params = JSON.stringify({ page });
@@ -42,6 +45,23 @@ export default function HistoryPage() {
     fetchLogs();
   }, [page]);
 
+  const filteredLogs = (logs ?? [])
+    .filter((log) => {
+      const name = (log?.productName ?? "").toLowerCase();
+      const matchesSearch = name.includes(search.trim().toLowerCase());
+      const matchesReason = reasonFilter === "All" || log?.reason === reasonFilter;
+      return matchesSearch && matchesReason;
+    })
+    .sort((a, b) => {
+      if (sortBy === "oldest") {
+        return new Date(a?.timestamp ?? 0).getTime() - new Date(b?.timestamp ?? 0).getTime();
+      }
+      if (sortBy === "largest") {
+        return (b?.changeAmount ?? 0) - (a?.changeAmount ?? 0);
+      }
+      return new Date(b?.timestamp ?? 0).getTime() - new Date(a?.timestamp ?? 0).getTime();
+    });
+
   return (
     <div className="page-content">
       <div className="page-header">
@@ -61,10 +81,10 @@ export default function HistoryPage() {
 
           {loading ? (
             <div className="loading-state"><Loader2 className="animate-spin" /></div>
-          ) : logs.length === 0 ? (
+          ) : filteredLogs.length === 0 ? (
             <div className="empty-state">No transaction history found.</div>
           ) : (
-            logs.map((log) => (
+            filteredLogs.map((log) => (
               <div key={log._id} className="history-item">
                 <div className="history-col-product">
                   <span className="log-product-name">{log.productName}</span>

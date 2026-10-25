@@ -26,6 +26,9 @@ export default function WalletPage() {
     hasPrevPage: boolean;
   } | null>(null);
   const lastParamsRef = useRef("");
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
 
   useEffect(() => {
     const params = JSON.stringify({ refresh, page });
@@ -56,6 +59,20 @@ export default function WalletPage() {
     };
     fetchWalletData();
   }, [refresh, page]);
+
+  const filteredTransactions = (transactions ?? [])
+    .filter((tx) => {
+      const note = (tx?.note ?? "").toLowerCase();
+      const matchesSearch = note.includes(search.toLowerCase());
+      const matchesType = typeFilter === "all" || tx?.type === typeFilter;
+      return matchesSearch && matchesType;
+    })
+    .sort((a, b) => {
+      if (sortBy === "largest") return (b?.amount ?? 0) - (a?.amount ?? 0);
+      const aTime = new Date(a?.date ?? 0).getTime();
+      const bTime = new Date(b?.date ?? 0).getTime();
+      return sortBy === "oldest" ? aTime - bTime : bTime - aTime;
+    });
 
   return (
     <div className="page-content">
@@ -98,14 +115,49 @@ export default function WalletPage() {
       <div className="list-card full-width">
         <div className="card-header">
           <h2 className="card-title">Transaction History</h2>
+          <div className="tx-controls">
+            <input
+              type="text"
+              className="tx-search"
+              placeholder="Search transactions..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <select
+              className="tx-filter"
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              aria-label="Filter by type"
+            >
+              <option value="all">All</option>
+              <option value="deposit">Deposit</option>
+              <option value="withdraw">Withdrawal</option>
+              <option value="invoice">Purchase</option>
+              <option value="shipment">Refund</option>
+            </select>
+            <select
+              className="tx-sort"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              aria-label="Sort transactions"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="largest">Largest Amount</option>
+            </select>
+          </div>
         </div>
         <div className="transaction-list">
           {loading ? (
-            <div className="loading-state"><Loader2 className="animate-spin" /></div>
-          ) : transactions.length === 0 ? (
-            <div className="empty-state">No transactions recorded.</div>
+            <div className="loading-state"><Loader2 className="animate-spin" size={32} /></div>
+          ) : filteredTransactions.length === 0 ? (
+            <div className="empty-state tx-empty-state">
+              <Wallet size={48} className="tx-empty-icon" />
+              <h3 className="tx-empty-title">No transactions</h3>
+              <p className="tx-empty-subtext">Your wallet transactions will appear here.</p>
+            </div>
           ) : (
-            transactions.map((tx, idx) => (
+            filteredTransactions.map((tx, idx) => (
               <div key={idx} className="transaction-item">
                 <div className="tx-icon">
                   {(tx.type === "invoice" || tx.type === "deposit") ? (
@@ -194,6 +246,39 @@ export default function WalletPage() {
           background: rgba(255, 255, 255, 0.05);
           border-color: var(--accent-blue);
         }
+        .tx-controls {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+        .tx-search,
+        .tx-filter,
+        .tx-sort {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid var(--border-tech);
+          border-radius: 8px;
+          padding: 0.5rem 0.75rem;
+          color: var(--text-primary);
+          font-size: 13px;
+          outline: none;
+        }
+        .tx-search:focus,
+        .tx-filter:focus,
+        .tx-sort:focus {
+          border-color: var(--accent-blue);
+        }
+        .tx-empty-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 3rem 1rem;
+          text-align: center;
+        }
+        .tx-empty-icon { color: var(--text-secondary); }
+        .tx-empty-title { font-weight: 700; color: var(--text-primary); }
+        .tx-empty-subtext { font-size: 13px; color: var(--text-secondary); }
         .tx-details { flex: 1; }
         .tx-note { font-weight: 700; color: var(--text-primary); }
         .tx-date { font-size: 11px; color: var(--text-secondary); }
