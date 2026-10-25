@@ -423,10 +423,11 @@
   transform: translateX(4px);
 }
 
-.history-col-product { flex: 2; display: flex; flex-direction: column; }
-.history-col-change { flex: 1; display: flex; flex-direction: column; }
+.history-col-type { flex: 1; display: flex; flex-direction: column; }
+.history-col-amount { flex: 1; display: flex; flex-direction: column; }
+.history-col-status { flex: 1; display: flex; flex-direction: column; }
 .history-col-reason { flex: 2; display: flex; flex-direction: column; }
-.history-col-date { flex: 1; display: flex; flex-direction: column; align-items: flex-end; }
+.history-col-date { flex: 1.2; display: flex; flex-direction: column; align-items: flex-end; }
 
 .log-product-name { font-weight: 700; color: var(--text-primary); font-size: 14px; }
 .log-product-id { font-size: 10px; color: var(--text-secondary); opacity: 0.5; }
@@ -438,6 +439,11 @@
 
 .log-reason { font-weight: 600; font-size: 12px; color: var(--text-primary); }
 .log-note { font-size: 11px; color: var(--text-secondary); font-style: italic; }
+
+.log-type { font-weight: 700; font-size: 12px; color: var(--text-primary); }
+.log-status { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.log-status.completed { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.log-status.nochange { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
 
 .history-col-date span:first-child { font-weight: 600; color: var(--text-primary); font-size: 12px; }
 .history-col-date span:last-child { font-size: 10px; color: var(--text-secondary); }

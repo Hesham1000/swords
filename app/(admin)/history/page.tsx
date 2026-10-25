@@ -217,8 +217,21 @@ export default function HistoryPage() {
 
         <div className="history-list">
           <div className="history-header-row">
-            <div className="history-col-product">Product</div>
-            <div className="history-col-change">Change</div>
+            <div className="history-col-type">
+              <button className="history-sort-btn" onClick={() => toggleSort("type")}>
+                Type {renderSortArrow("type")}
+              </button>
+            </div>
+            <div className="history-col-amount">
+              <button className="history-sort-btn" onClick={() => toggleSort("amount")}>
+                Amount {renderSortArrow("amount")}
+              </button>
+            </div>
+            <div className="history-col-status">
+              <button className="history-sort-btn" onClick={() => toggleSort("status")}>
+                Status {renderSortArrow("status")}
+              </button>
+            </div>
             <div className="history-col-reason">Reason</div>
             <div className="history-col-date text-right">
               <button className="history-sort-btn" onClick={() => toggleSort("date")}>
@@ -226,29 +239,19 @@ export default function HistoryPage() {
               </button>
             </div>
           </div>
-          <div className="history-sort-row">
-            <button className="history-sort-btn" onClick={() => toggleSort("type")}>
-              Type {renderSortArrow("type")}
-            </button>
-            <button className="history-sort-btn" onClick={() => toggleSort("amount")}>
-              Amount {renderSortArrow("amount")}
-            </button>
-            <button className="history-sort-btn" onClick={() => toggleSort("status")}>
-              Status {renderSortArrow("status")}
-            </button>
-          </div>
 
           {loading ? (
             <div aria-busy="true" aria-label="Loading transaction history">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="history-item history-skeleton-row">
-                  <div className="history-col-product">
-                    <div className="animate-pulse bg-slate-200 rounded h-4 w-3/4 mb-2" />
-                    <div className="animate-pulse bg-slate-200 rounded h-3 w-1/2" />
+                  <div className="history-col-type">
+                    <div className="animate-pulse bg-slate-200 rounded h-4 w-16 mb-2" />
                   </div>
-                  <div className="history-col-change">
+                  <div className="history-col-amount">
                     <div className="animate-pulse bg-slate-200 rounded h-4 w-12 mb-2" />
-                    <div className="animate-pulse bg-slate-200 rounded h-3 w-20" />
+                  </div>
+                  <div className="history-col-status">
+                    <div className="animate-pulse bg-slate-200 rounded h-4 w-16 mb-2" />
                   </div>
                   <div className="history-col-reason">
                     <div className="animate-pulse bg-slate-200 rounded h-4 w-2/3 mb-2" />
@@ -284,17 +287,20 @@ export default function HistoryPage() {
                   tabIndex={0}
                   aria-label={`View details for ${log.productName}`}
                 >
-                  <div className="history-col-product">
-                    <span className="log-product-name">{log.productName}</span>
-                    <span className="log-product-id">ID: {log.productId}</span>
+                  <div className="history-col-type">
+                    <span className="log-type">{type}</span>
                   </div>
-                  <div className="history-col-change">
+                  <div className="history-col-amount">
                     <span className={`log-amount ${log.changeAmount > 0 ? "positive" : "negative"}`}>
                       {log.changeAmount > 0 ? "+" : ""}{log.changeAmount}
                     </span>
                     <span className="log-new-qty">New Stock: {log.newQuantity}</span>
                   </div>
+                  <div className="history-col-status">
+                    <span className={"log-status " + (status === "Completed" ? "completed" : "nochange")}>{status}</span>
+                  </div>
                   <div className="history-col-reason">
+                    <span className="log-product-name">{log.productName}</span>
                     <span className="log-reason">{log.reason}</span>
                     {log.note && <span className="log-note">{log.note}</span>}
                   </div>
@@ -497,13 +503,6 @@ export default function HistoryPage() {
           color: var(--text-primary);
         }
 
-        .history-sort-row {
-          display: flex;
-          gap: 0.5rem;
-          padding: 0.5rem 1.5rem;
-          border-bottom: 1px solid var(--border-tech);
-          background: rgba(255, 255, 255, 0.02);
-        }
         .history-sort-btn {
           display: inline-flex;
           align-items: center;

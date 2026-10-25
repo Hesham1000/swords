@@ -211,6 +211,25 @@ export default function ProductsPage() {
             </button>
           )}
         </div>
+
+        <div className="sort-pills">
+          {[
+            { field: "name", label: "Name" },
+            { field: "price", label: "Price" },
+            { field: "quantity", label: "Quantity" },
+            { field: "category", label: "Category" },
+          ].map(({ field, label }) => (
+            <button
+              key={field}
+              type="button"
+              onClick={() => handleSortChange(field)}
+              className={`sort-pill ${sortField === field ? "active" : ""}`}
+            >
+              {label}
+              {sortField === field && (sortDir === "asc" ? " ↑" : " ↓")}
+            </button>
+          ))}
+        </div>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
@@ -224,9 +243,6 @@ export default function ProductsPage() {
         currentPage={page}
         onPageChange={setPage}
         pagination={pagination}
-        sortField={sortField}
-        sortDir={sortDir}
-        onSortChange={handleSortChange}
         onAddProduct={() => {
           setEditingProduct(null);
           setShowForm(true);

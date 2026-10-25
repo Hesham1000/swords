@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Package, ArrowUp, ArrowDown } from "lucide-react";
+import { Package } from "lucide-react";
 import { Product } from "../lib/api/product";
 import ProductRow from "./products";
 
@@ -11,9 +11,6 @@ interface ProductsListProps {
   error?: string;
   onEdit?: (product: Product) => void;
   onDelete: (product: Product) => void;
-  sortField?: string;
-  sortDir?: "asc" | "desc";
-  onSortChange?: (field: string) => void;
   onAddProduct?: () => void;
   pagination?: {
     page: number;
@@ -36,18 +33,8 @@ const ProductsList: React.FC<ProductsListProps> = ({
   pagination,
   onPageChange,
   isAdmin,
-  sortField,
-  sortDir,
-  onSortChange,
   onAddProduct,
 }) => {
-  const sortColumns: { field: string; label: string }[] = [
-    { field: "name", label: "Name" },
-    { field: "price", label: "Price" },
-    { field: "quantity", label: "Quantity" },
-    { field: "category", label: "Category" },
-  ];
-
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -90,24 +77,6 @@ const ProductsList: React.FC<ProductsListProps> = ({
 
   return (
     <div className="products-list-container">
-      {/* Sortable Column Headers */}
-      <div className="flex items-center gap-4 px-4 py-2 bg-slate-100 rounded-lg text-sm font-semibold text-slate-700">
-        {sortColumns.map(({ field, label }) => {
-          const isActive = sortField === field;
-          return (
-            <button
-              key={field}
-              type="button"
-              onClick={() => onSortChange?.(field)}
-              className={`flex items-center gap-1 hover:text-slate-900 ${isActive ? "text-blue-600" : ""}`}
-            >
-              {label}
-              {isActive && (sortDir === "asc" ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
-            </button>
-          );
-        })}
-      </div>
-
       {/* Products Grid */}
       <div className="products-grid">
         {(products ?? []).map((product) => (
