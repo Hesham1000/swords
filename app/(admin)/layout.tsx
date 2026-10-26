@@ -183,7 +183,10 @@ export default function DashboardLayout({
             {pathname.includes("/wallet") && "Wallet Management"}
             {pathname.includes("/history") && "Inventory History"}
           </h2>
-          <div></div>
+          <div className="topbar-user">
+            <div className="topbar-avatar">{user?.username?.[0]?.toUpperCase() || "U"}</div>
+            <span className="topbar-username">{user?.username || "Guest"}</span>
+          </div>
         </div>
 
         <div className="content-wrapper">
@@ -282,6 +285,28 @@ export default function DashboardLayout({
           background: rgba(0, 0, 0, 0.5);
           backdrop-filter: blur(4px);
           z-index: 45;
+        }
+        .topbar-user {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .topbar-avatar {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: var(--grad-amber, #7c2d3a);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 14px;
+        }
+        .topbar-username {
+          color: var(--text-primary, #e2e8f0);
+          font-size: 14px;
+          font-weight: 600;
         }
         @media (max-width: 1024px) {
           .main-content {
