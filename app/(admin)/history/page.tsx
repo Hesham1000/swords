@@ -102,16 +102,20 @@ export default function HistoryPage() {
           {loading ? (
             <>
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="history-item opacity-70">
-                  <div className="history-col-product"><div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" /></div>
-                  <div className="history-col-change"><div className="h-4 bg-gray-200 rounded animate-pulse w-1/2" /></div>
-                  <div className="history-col-reason"><div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" /></div>
-                  <div className="history-col-date text-right"><div className="h-4 bg-gray-200 rounded animate-pulse w-1/3 ml-auto" /></div>
-                </div>
-              ))}
+                  <div key={i} className="history-item">
+                    <div className="history-col-product"><div className="skeleton h-4 w-3/4" /></div>
+                    <div className="history-col-change"><div className="skeleton h-4 w-1/2" /></div>
+                    <div className="history-col-reason"><div className="skeleton h-4 w-2/3" /></div>
+                    <div className="history-col-date text-right"><div className="skeleton h-4 w-1/3 ml-auto" /></div>
+                  </div>
+                ))}
             </>
           ) : logs.length === 0 ? (
-            <div className="empty-state">No transaction history found.</div>
+            <div className="empty-state-container">
+              <Search className="empty-state-icon" />
+              <h2 className="empty-state-title">No history found</h2>
+              <p className="empty-state-description">No inventory changes match your current filters.</p>
+            </div>
           ) : (
             logs.map((log) => (
               <div key={log._id} className="history-item">

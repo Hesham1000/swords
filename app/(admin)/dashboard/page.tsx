@@ -49,10 +49,10 @@ export default function DashboardOverview() {
   if (!dashboardData && !error) {
     return (
       <div className="stats-grid">
-        <div className="animate-pulse bg-slate-200 rounded-xl h-28" />
-        <div className="animate-pulse bg-slate-200 rounded-xl h-28" />
-        <div className="animate-pulse bg-slate-200 rounded-xl h-28" />
-        <div className="animate-pulse bg-slate-200 rounded-xl h-28" />
+        <div className="skeleton h-28 w-full" />
+        <div className="skeleton h-28 w-full" />
+        <div className="skeleton h-28 w-full" />
+        <div className="skeleton h-28 w-full" />
       </div>
     );
   }
@@ -71,10 +71,10 @@ export default function DashboardOverview() {
 
   if (summary?.totalOrders === 0 && recentInvoices.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 gap-4 text-center">
-        <Package className="text-slate-400" size={48} />
-        <h2 className="text-xl font-semibold text-slate-300">No orders yet</h2>
-        <p className="text-slate-400 text-sm">When you create your first invoice, it will show up here.</p>
+      <div className="empty-state-container">
+        <Package className="empty-state-icon" />
+        <h2 className="empty-state-title">No orders yet</h2>
+        <p className="empty-state-description">When you create your first invoice, it will show up here.</p>
         <button
           className="mt-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors"
           onClick={() => router.push("/invoices")}
