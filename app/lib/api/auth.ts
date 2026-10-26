@@ -9,7 +9,7 @@ export interface User {
 
 export async function getCurrentUser(): Promise<{ user: User } | null> {
   try {
-    const response = await fetch(`${API_URL}/api/auth/me`, {
+    const response = await fetch("/api/auth/me", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

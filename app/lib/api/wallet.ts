@@ -1,5 +1,5 @@
 // lib/api/wallet.ts
-const apiUrl = "";
+
 
 export type Currency = "EGP" | "USD" | "EUR";
 
@@ -44,7 +44,7 @@ export interface WalletTransactionsResponse {
  */
 export async function getWalletBalance(): Promise<WalletBalanceResponse> {
   try {
-    const response = await fetch(`${apiUrl}/api/wallet`, {
+    const response = await fetch("/api/wallet", {
       method: "GET",
       headers: { "Content-Type": "application/json" },
       cache: "no-store",
@@ -73,7 +73,7 @@ export async function walletTransaction(
   note?: string
 ): Promise<WalletBalanceResponse> {
   try {
-    const response = await fetch(`${apiUrl}/api/wallet`, {
+    const response = await fetch("/api/wallet", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ amount, type, currency, note }),
@@ -117,7 +117,7 @@ export async function getWalletTransactions(
   type?: string
 ): Promise<WalletTransactionsResponse> {
   try {
-    const url = new URL(`${apiUrl}/api/wallet/transactions`, window.location.origin);
+    const url = new URL("/api/wallet/transactions", window.location.origin);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
     if (search) url.searchParams.append("search", search);

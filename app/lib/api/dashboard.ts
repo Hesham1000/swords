@@ -3,8 +3,6 @@ import { AnalyticsData } from "./analytics";
 import { Invoice } from "./invoice";
 import { Product } from "./product";
 
-const apiUrl = "";
-
 export interface DashboardSummaryData {
   summary: {
     totalRevenue: number;
@@ -41,7 +39,7 @@ export interface DashboardSummaryResponse {
 
 export async function getDashboardSummary(): Promise<DashboardSummaryResponse> {
   try {
-    const response = await fetch(`${apiUrl}/api/dashboard/summary`, {
+    const response = await fetch("/api/dashboard/summary", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

@@ -1,5 +1,4 @@
 // lib/api/inventory.ts
-const apiUrl = "";
 
 export interface InventoryLog {
   _id?: string;
@@ -33,7 +32,7 @@ export interface InventoryLogsResponse {
  */
 export async function getInventoryLogs(page: number = 1, limit: number = 10, productId?: string, search?: string, type?: string, dateRange?: string): Promise<InventoryLogsResponse> {
   try {
-    const url = new URL(`${apiUrl}/api/inventory/logs`, window.location.origin);
+    const url = new URL("/api/inventory/logs", window.location.origin);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
     if (productId) {

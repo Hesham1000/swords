@@ -1,6 +1,5 @@
 // lib/api/invoice.ts
 import { Currency } from "./wallet";
-const apiUrl = "";
 
 export interface InvoiceItem {
   productId: string;
@@ -51,7 +50,7 @@ export interface InvoiceResponse {
  */
 export async function getInvoices(page: number = 1, limit: number = 10, search?: string, filters?: { status?: string; dateRange?: string; sort?: string }): Promise<InvoicesResponse> {
   try {
-    const url = new URL(`${apiUrl}/api/invoices`, window.location.origin);
+    const url = new URL("/api/invoices", window.location.origin);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
     if (search) url.searchParams.append("search", search);
@@ -81,7 +80,7 @@ export async function getInvoices(page: number = 1, limit: number = 10, search?:
  */
 export async function createInvoice(invoiceData: Partial<Invoice>): Promise<InvoiceResponse> {
   try {
-    const response = await fetch(`${apiUrl}/api/invoices`, {
+    const response = await fetch("/api/invoices", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -106,7 +105,7 @@ export async function createInvoice(invoiceData: Partial<Invoice>): Promise<Invo
  */
 export async function updateInvoiceStatus(id: string, status?: string, deposit?: number): Promise<unknown> {
   try {
-    const response = await fetch(`${apiUrl}/api/invoices`, {
+    const response = await fetch("/api/invoices", {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -131,7 +130,7 @@ export async function updateInvoiceStatus(id: string, status?: string, deposit?:
  */
 export async function updateInvoice(id: string, invoiceData: Partial<Invoice>): Promise<InvoiceResponse> {
   try {
-    const response = await fetch(`${apiUrl}/api/invoices`, {
+    const response = await fetch("/api/invoices", {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",

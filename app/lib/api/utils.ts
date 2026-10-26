@@ -15,7 +15,7 @@ interface MongoProduct {
 export function transformProduct(product: MongoProduct) {
     if (!product) return null;
 
-    const apiUrl = "";
+    const apiUrl = API_URL;
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
 
     const transformed: Record<string, unknown> = {

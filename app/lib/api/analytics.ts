@@ -1,5 +1,4 @@
 // lib/api/analytics.ts
-const apiUrl = "";
 
 export interface AnalyticsData {
   summary: {
@@ -35,7 +34,7 @@ export interface AnalyticsResponse {
  */
 export async function getAnalytics(): Promise<AnalyticsResponse> {
   try {
-    const response = await fetch(`${apiUrl}/api/analytics`, {
+    const response = await fetch("/api/analytics", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

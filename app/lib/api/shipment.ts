@@ -1,5 +1,5 @@
 // lib/api/shipment.ts
-const apiUrl = "";
+
 
 export interface Shipment {
   _id?: string;
@@ -30,7 +30,7 @@ export interface CreateShipmentResponse {
  */
 export async function getShipments(): Promise<ShipmentsResponse> {
   try {
-    const response = await fetch(`${apiUrl}/api/shipments`, {
+    const response = await fetch("/api/shipments", {
       method: "GET",
       headers: { "Content-Type": "application/json" },
       cache: "no-store",
@@ -59,7 +59,7 @@ export async function createShipment(shipmentData: {
   date?: string;
 }): Promise<CreateShipmentResponse> {
   try {
-    const response = await fetch(`${apiUrl}/api/shipments`, {
+    const response = await fetch("/api/shipments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(shipmentData),

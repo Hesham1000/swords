@@ -1,6 +1,6 @@
 // lib/api/products.ts
 // Separate API service file for product operations
-const apiUrl = "";
+
 
 export interface Product {
   id: string;
@@ -73,7 +73,7 @@ export async function getProducts(
   } = {}
 ): Promise<ProductsResponse> {
   try {
-    const url = new URL(`${apiUrl}/api/products`, window.location.origin);
+    const url = new URL("/api/products", window.location.origin);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
     
@@ -123,7 +123,7 @@ export async function getProducts(
  */
 export async function getProductById(id: string): Promise<ProductResponse> {
   try {
-    const response = await fetch(`${apiUrl}/api/products/${id}`, {
+    const response = await fetch(`/api/products/${id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -150,7 +150,7 @@ export async function createProduct(
   formData: FormData
 ): Promise<ProductResponse> {
   try {
-    const response = await fetch(`${apiUrl}/api/products/create`, {
+    const response = await fetch("/api/products/create", {
       method: "POST",
       body: formData,
       // Don't set Content-Type header - browser will set it with boundary
@@ -177,7 +177,7 @@ export async function updateProduct(
   formData: FormData
 ): Promise<ProductResponse> {
   try {
-    const response = await fetch(`${apiUrl}/api/products/${id}`, {
+    const response = await fetch(`/api/products/${id}`, {
       method: "PUT",
       body: formData,
     });
@@ -202,7 +202,7 @@ export async function deleteProduct(
   id: string
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const response = await fetch(`${apiUrl}/api/products/${id}`, {
+    const response = await fetch(`/api/products/${id}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -229,7 +229,7 @@ export async function getProductsByCategory(
   category: "Foil" | "Sabre" | "Epée"
 ): Promise<ProductsResponse> {
   try {
-    const response = await fetch(`${apiUrl}/api/products?category=${category}`, {
+    const response = await fetch(`/api/products?category=${category}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -255,7 +255,7 @@ export async function getProductsByCategory(
 export async function searchProducts(query: string): Promise<ProductsResponse> {
   try {
     const response = await fetch(
-      `${apiUrl}/api/products?search=${encodeURIComponent(query)}`,
+      `/api/products?search=${encodeURIComponent(query)}`,
       {
         method: "GET",
         headers: {
