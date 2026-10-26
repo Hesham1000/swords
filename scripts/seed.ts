@@ -7,6 +7,7 @@ import {
   invoices,
   wallet,
   walletTransactions,
+  inventoryLogs,
   shipments,
 } from "../app/lib/db/schema";
 import { sql } from "drizzle-orm";
@@ -69,11 +70,11 @@ async function main() {
     console.log("invoices: already seeded, skipping");
   } else {
     const invoiceRows = [
-      { invoiceNumber: "INV-2024-0001", customerName: "Ahmed Hassan", customerEmail: "ahmed.hassan@example.com", customerPhone: "+201001234567", items: [{ name: "Maraging Steel Lame - Foil", quantity: 1, price: 2450 }], totalAmount: "2450.00", currency: "EGP", status: "paid" },
-      { invoiceNumber: "INV-2024-0002", customerName: "Sara Mahmoud", customerEmail: "sara.mahmoud@example.com", customerPhone: "+201009876543", items: [{ name: "Glove Size 7.5 - Leather", quantity: 2, price: 420 }, { name: "Body Wire - 0.8mm", quantity: 1, price: 150 }], totalAmount: "990.00", currency: "EGP", status: "pending" },
-      { invoiceNumber: "INV-2024-0003", customerName: "Omar Fathy", customerEmail: "omar.fathy@example.com", customerPhone: "+201005551234", items: [{ name: "Kings Custom Guard", quantity: 1, price: 560 }, { name: "PBT Grip - Right Hand", quantity: 1, price: 320 }], totalAmount: "880.00", currency: "EGP", status: "shipped" },
-      { invoiceNumber: "INV-2024-0004", customerName: "Laila Adel", customerEmail: "laila.adel@example.com", customerPhone: "+201003334455", items: [{ name: "Sabre Wire - 1.05mm", quantity: 5, price: 85 }], totalAmount: "425.00", currency: "EGP", status: "cancelled" },
-      { invoiceNumber: "INV-2024-0005", customerName: "Karim Nabil", customerEmail: "karim.nabil@example.com", customerPhone: "+201007776655", items: [{ name: "Point Contact Springs Set", quantity: 2, price: 120 }, { name: "Socket - 6mm", quantity: 3, price: 110 }], totalAmount: "570.00", currency: "EGP", status: "paid" },
+      { invoiceNumber: "INV-2024-0001", customerName: "Ahmed Hassan", customerEmail: "ahmed.hassan@example.com", customerPhone: "+201001234567", items: [{ name: "Maraging Steel Lame - Foil", quantity: 1, price: 2450 }], totalAmount: "2450.00", currency: "EGP", status: "paid" , createdAt: new Date("2025-08-05T10:00:00Z") },
+      { invoiceNumber: "INV-2024-0002", customerName: "Sara Mahmoud", customerEmail: "sara.mahmoud@example.com", customerPhone: "+201009876543", items: [{ name: "Glove Size 7.5 - Leather", quantity: 2, price: 420 }, { name: "Body Wire - 0.8mm", quantity: 1, price: 150 }], totalAmount: "990.00", currency: "EGP", status: "pending" , createdAt: new Date("2025-09-02T11:30:00Z") },
+      { invoiceNumber: "INV-2024-0003", customerName: "Omar Fathy", customerEmail: "omar.fathy@example.com", customerPhone: "+201005551234", items: [{ name: "Kings Custom Guard", quantity: 1, price: 560 }, { name: "PBT Grip - Right Hand", quantity: 1, price: 320 }], totalAmount: "880.00", currency: "EGP", status: "shipped" , createdAt: new Date("2025-09-20T09:15:00Z") },
+      { invoiceNumber: "INV-2024-0004", customerName: "Laila Adel", customerEmail: "laila.adel@example.com", customerPhone: "+201003334455", items: [{ name: "Sabre Wire - 1.05mm", quantity: 5, price: 85 }], totalAmount: "425.00", currency: "EGP", status: "cancelled" , createdAt: new Date("2025-10-10T14:45:00Z") },
+      { invoiceNumber: "INV-2024-0005", customerName: "Karim Nabil", customerEmail: "karim.nabil@example.com", customerPhone: "+201007776655", items: [{ name: "Point Contact Springs Set", quantity: 2, price: 120 }, { name: "Socket - 6mm", quantity: 3, price: 110 }], totalAmount: "570.00", currency: "EGP", status: "paid" , createdAt: new Date("2025-10-28T16:20:00Z") },
     ];
     const inserted = await db
       .insert(invoices)
@@ -132,6 +133,23 @@ async function main() {
     ];
     await db.insert(shipments).values(shipmentRows.map((s) => ({ ...s, id: randomUUID() })));
     console.log("shipments: seeded 3 shipments");
+  }
+
+
+  // ---- inventory logs ----
+  if ((await count("inventory_logs")) > 0) {
+    console.log("inventory_logs: already seeded, skipping");
+  } else {
+    const allProducts = await db.select().from(products);
+    const logRows = [
+      { productId: allProducts[0].id, productName: allProducts[0].name, changeAmount: 5, newQuantity: allProducts[0].quantity ?? 0, reason: "restock", oldPrice: "2400.00", newPrice: allProducts[0].price, referenceId: "LOG-001", note: "Restocked foil lames", operator: "admin" },
+      { productId: allProducts[1].id, productName: allProducts[1].name, changeAmount: -3, newQuantity: allProducts[1].quantity ?? 0, reason: "sale", oldPrice: allProducts[1].price, newPrice: allProducts[1].price, referenceId: invoiceIds[3] ?? "LOG-002", note: "Sold 5 sabre wires (cancelled order)", operator: "admin" },
+      { productId: allProducts[3].id, productName: allProducts[3].name, changeAmount: -1, newQuantity: allProducts[3].quantity ?? 0, reason: "sale", oldPrice: allProducts[3].price, newPrice: allProducts[3].price, referenceId: invoiceIds[2] ?? "LOG-003", note: "Sold custom guard", operator: "admin" },
+      { productId: allProducts[4].id, productName: allProducts[4].name, changeAmount: 10, newQuantity: allProducts[4].quantity ?? 0, reason: "restock", oldPrice: "30.00", newPrice: "25.00", referenceId: "LOG-004", note: "Price reduction and restock", operator: "admin" },
+      { productId: allProducts[5].id, productName: allProducts[5].name, changeAmount: -2, newQuantity: allProducts[5].quantity ?? 0, reason: "sale", oldPrice: allProducts[5].price, newPrice: allProducts[5].price, referenceId: invoiceIds[4] ?? "LOG-005", note: "Sold spring sets", operator: "admin" },
+    ];
+    await db.insert(inventoryLogs).values(logRows.map((l) => ({ ...l, id: randomUUID() })));
+    console.log("inventory_logs: seeded 5 logs");
   }
 
   console.log("Seed complete.");
