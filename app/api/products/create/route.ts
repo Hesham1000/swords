@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
       if (model) values.model = model;
     }
 
-    const inserted = await db.insert(products).values(values as any).returning();
+    const inserted = await db.insert(products).values(values as typeof products.$inferInsert).returning();
     const insertedProduct = inserted[0];
 
     // Log the initial stock arrival

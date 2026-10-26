@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       const token = request.cookies.get("access_token")?.value;
       if (token) {
         const payload = await verifyAccessToken(token);
-        const userId = (payload as any)?.userId;
+        const userId = (payload as { userId?: unknown } | null)?.userId;
         if (typeof userId === "string" && UUID_REGEX.test(userId)) {
           const rows = await db
             .select({ id: wallet.id })

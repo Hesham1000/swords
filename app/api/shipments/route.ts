@@ -11,7 +11,7 @@ async function getCurrentUserId(request: NextRequest): Promise<string | null> {
     if (!token) return null;
     const payload = await verifyAccessToken(token);
     if (payload && typeof payload === "object" && "userId" in payload) {
-      const userId = (payload as any).userId;
+      const userId = (payload as { userId?: unknown }).userId;
       return typeof userId === "string" && UUID_REGEX.test(userId) ? userId : null;
     }
     return null;
@@ -30,7 +30,7 @@ async function getOrCreateWallet(userId: string) {
   return inserted[0];
 }
 
-function mapShipment(s: any) {
+function mapShipment(s: typeof shipments.$inferSelect) {
   return {
     id: s.id,
     invoiceId: s.invoiceId,
@@ -38,7 +38,7 @@ function mapShipment(s: any) {
     address: s.address,
     city: s.city,
     destination: s.destination,
-    cost: parseFloat(s.cost ?? 0),
+    cost: parseFloat(String(s.cost ?? 0)),
     description: s.description,
     date: s.date,
     trackingNumber: s.trackingNumber,

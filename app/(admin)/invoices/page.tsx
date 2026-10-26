@@ -14,7 +14,13 @@ export default function InvoicesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState<any>(null);
+  const [pagination, setPagination] = useState<{
+    totalPages: number;
+    totalCount: number;
+    page: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [refresh, setRefresh] = useState(false);
   const [filterStatus, setFilterStatus] = useState("");
@@ -32,9 +38,9 @@ export default function InvoicesPage() {
         setLoading(true);
         const response = await getInvoices(page, 10, searchQuery, { status: filterStatus, dateRange: filterDateRange, sort: sortBy });
         setInvoices(response.data);
-        setPagination(response.pagination);
-      } catch (err: any) {
-        setError(err.message || "Failed to load invoices");
+        setPagination(response.pagination ?? null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load invoices");
       } finally {
         setLoading(false);
       }
@@ -47,8 +53,8 @@ export default function InvoicesPage() {
     try {
       await updateInvoiceStatus(id, "paid");
       setRefresh(!refresh);
-    } catch (err: any) {
-      alert(err.message || "Failed to update status");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update status");
     }
   };
 

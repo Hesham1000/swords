@@ -149,7 +149,7 @@ async function main() {
   );
 
   // 7. Summary
-  const count = async (t: any) => (await db.select().from(t)).length;
+  const count = async (t: Parameters<ReturnType<typeof db.select>["from"]>[0]) => (await db.select().from(t)).length;
   console.log("Seed complete:");
   console.log("  users:", await count(users));
   console.log("  products:", await count(products));

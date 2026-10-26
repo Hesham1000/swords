@@ -13,11 +13,14 @@ interface ProductsListProps {
   onDelete: (productId: string) => void;
   pagination?: {
     page: number;
+    limit?: number;
+    nextPage?: number | null;
+    prevPage?: number | null;
     totalPages: number;
     hasNextPage: boolean;
     hasPrevPage: boolean;
     totalCount: number;
-  };
+  } | null;
   onPageChange?: (page: number) => void;
   isAdmin?: boolean;
   currentPage?: number;
@@ -57,7 +60,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
       <div className="no-products">
         <Package size={64} />
         <h3>No products found</h3>
-        <p>Try adjusting your search or filters to find what you're looking for.</p>
+        <p>Try adjusting your search or filters to find what you&apos;re looking for.</p>
       </div>
     );
   }

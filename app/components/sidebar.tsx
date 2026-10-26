@@ -20,7 +20,7 @@ interface SidebarProps {
   onNavigation: (page: string) => void;
   sidebarOpen: boolean;
   onLogoutSuccess?: () => void; // Optional callback after successful logout
-  user?: any; // Added user prop
+  user?: { username?: string; roles?: string[] } | null; // Added user prop
 }
 
 const Sidebar = ({

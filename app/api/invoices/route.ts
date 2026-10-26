@@ -3,10 +3,18 @@ import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { db, invoices, products, wallet, walletTransactions } from "../../lib/db";
 import { verifyAccessToken } from "../../lib/auth/token";
 
+type InvoiceRow = typeof invoices.$inferSelect;
+interface InvoiceItem {
+  productId: string;
+  name: string;
+  price: number | null;
+  quantity: number;
+}
+
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Map a Drizzle invoice row to the response shape the frontend expects
-function mapInvoice(r: any) {
+function mapInvoice(r: InvoiceRow) {
   return {
     id: r.id,
     invoiceId: r.invoiceNumber,
@@ -14,12 +22,12 @@ function mapInvoice(r: any) {
     customerEmail: r.customerEmail,
     customerPhone: r.customerPhone,
     amount: parseFloat(r.totalAmount ?? 0),
-    discount: parseFloat(r.discount ?? 0),
+    discount: parseFloat(String(r.discount ?? 0)),
     status: r.status,
     paymentMethod: r.paymentMethod,
     date: r.date,
     items: r.items,
-    deposit: parseFloat(r.deposit ?? 0),
+    deposit: parseFloat(String(r.deposit ?? 0)),
     depositCurrency: r.depositCurrency,
     notes: r.notes,
     createdAt: r.createdAt,
@@ -34,7 +42,7 @@ async function getCurrentUserId(request: NextRequest): Promise<string | null> {
     if (!token) return null;
     const payload = await verifyAccessToken(token);
     if (payload && typeof payload === "object" && "userId" in payload) {
-      const userId = (payload as any).userId;
+      const userId = (payload as { userId?: unknown }).userId;
       return typeof userId === "string" && UUID_REGEX.test(userId) ? userId : null;
     }
     return null;
@@ -251,14 +259,14 @@ export async function PATCH(request: NextRequest) {
     // 1. STOCK ADJUSTMENT AND HISTORY LOGGING (if items changed)
     if (items && Array.isArray(items)) {
       const { logInventoryChange } = await import("../../lib/inventory-server");
-      const oldItems = (invoice.items as any[]) || [];
+      const oldItems = (invoice.items as InvoiceItem[]) || [];
 
       // Track which old items were processed
       const processedOldProductIds = new Set<string>();
 
       // Process new items (Updates and Additions)
       for (const newItem of items) {
-        const oldItem = oldItems.find((oi: any) => oi.productId === newItem.productId);
+        const oldItem = oldItems.find((oi) => oi.productId === newItem.productId);
         processedOldProductIds.add(newItem.productId);
 
         const oldQty = oldItem ? oldItem.quantity : 0;
@@ -334,7 +342,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // 2. PREPARE UPDATE DATA
-    const updateData: any = {};
+    const updateData: Partial<typeof invoices.$inferInsert> = {};
     if (status) updateData.status = status;
     if (customer) updateData.customerName = customer;
     if (amount !== undefined) updateData.totalAmount = String(parseFloat(amount));

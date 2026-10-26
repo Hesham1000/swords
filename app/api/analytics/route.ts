@@ -2,28 +2,38 @@ import { NextRequest, NextResponse } from "next/server";
 import { gte } from "drizzle-orm";
 import { db, invoices, products } from "../../lib/db";
 
+type InvoiceRow = typeof invoices.$inferSelect;
+type ProductRow = typeof products.$inferSelect;
+interface InvoiceItem {
+  productId: string;
+  category?: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
 // Map a Drizzle invoice row to the response shape the frontend expects
-function mapInvoice(r: any) {
+function mapInvoice(r: InvoiceRow) {
   return {
     id: r.id,
     invoiceId: r.invoiceNumber,
     customer: r.customerName,
-    amount: parseFloat(r.totalAmount ?? 0),
+    amount: parseFloat(String(r.totalAmount ?? 0)),
     status: r.status,
     paymentMethod: r.paymentMethod,
     date: r.date,
-    items: r.items,
-    deposit: parseFloat(r.deposit ?? 0),
+    items: r.items as InvoiceItem[] | null,
+    deposit: parseFloat(String(r.deposit ?? 0)),
     createdAt: r.createdAt,
   };
 }
 
 // Map a Drizzle product row to the response shape the frontend expects
-function mapProduct(p: any) {
+function mapProduct(p: ProductRow) {
   return {
     id: p.id,
     name: p.name,
-    price: parseFloat(p.price ?? 0),
+    price: parseFloat(String(p.price ?? 0)),
     category: p.category,
     quantity: p.quantity,
   };
@@ -83,7 +93,7 @@ export async function GET(request: NextRequest) {
 
     const categorySales: Record<string, number> = {};
     periodInvoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
+      (inv.items || []).forEach((item) => {
         const cat = productCategoryMap[item.productId] || item.category || "General";
         categorySales[cat] = (categorySales[cat] || 0) + (item.price * item.quantity);
       });
@@ -92,7 +102,7 @@ export async function GET(request: NextRequest) {
     // 5. TOP PRODUCTS
     const productSales: Record<string, {name: string, revenue: number, quantity: number}> = {};
     periodInvoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
+      (inv.items || []).forEach((item) => {
         if (!productSales[item.productId]) {
           productSales[item.productId] = { name: item.name, revenue: 0, quantity: 0 };
         }

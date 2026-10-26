@@ -14,7 +14,7 @@ async function getCurrentUserId(request: NextRequest): Promise<string | null> {
     if (!token) return null;
     const payload = await verifyAccessToken(token);
     if (payload && typeof payload === "object" && "userId" in payload) {
-      const userId = (payload as any).userId;
+      const userId = (payload as { userId?: unknown }).userId;
       return typeof userId === "string" && UUID_REGEX.test(userId) ? userId : null;
     }
     return null;
