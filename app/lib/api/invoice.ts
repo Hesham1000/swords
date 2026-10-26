@@ -21,6 +21,7 @@ export interface Invoice {
   date: string;
   items: InvoiceItem[];
   deposit?: number; // amount paid as deposit
+  customerEmail?: string;
   depositCurrency?: Currency; // currency of the deposit, default EGP
   createdAt?: string;
 }
@@ -48,12 +49,14 @@ export interface InvoiceResponse {
 /**
  * Fetch all invoices with pagination
  */
-export async function getInvoices(page: number = 1, limit: number = 10, search?: string): Promise<InvoicesResponse> {
+export async function getInvoices(page: number = 1, limit: number = 10, search?: string, status?: string, sort?: string): Promise<InvoicesResponse> {
   try {
     const url = new URL(`${apiUrl}/api/invoices`, window.location.origin);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
     if (search) url.searchParams.append("search", search);
+    if (status) url.searchParams.append("status", status);
+    if (sort) url.searchParams.append("sort", sort);
 
     const response = await fetch(url.toString());
     if (!response.ok) {

@@ -70,6 +70,7 @@ export async function getProducts(
     productType?: string;
     brand?: string;
     dashboard?: boolean;
+    sort?: string;
   } = {}
 ): Promise<ProductsResponse> {
   try {
@@ -95,6 +96,9 @@ export async function getProducts(
     }
     if (filters.dashboard) {
       url.searchParams.append("dashboard", "true");
+    }
+    if (filters.sort) {
+      url.searchParams.append("sort", filters.sort);
     }
 
     const response = await fetch(url.toString(), {

@@ -24,9 +24,10 @@ export default function ProductsPage() {
   const [filterCategory, setFilterCategory] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
+  const [sort, setSort] = useState("name_asc");
 
   useEffect(() => {
-    const params = JSON.stringify({ page, searchQuery, filterCategory, filterType, filterBrand, refresh });
+    const params = JSON.stringify({ page, searchQuery, filterCategory, filterType, filterBrand, sort, refresh });
     if (params === lastParamsRef.current) return;
     lastParamsRef.current = params;
 
@@ -175,18 +176,66 @@ export default function ProductsPage() {
         </div>
       </div>
 
+      <select
+        value={sort}
+        onChange={(e) => {
+          setSort(e.target.value);
+          setPage(1);
+        }}
+        className="filter-select"
+      >
+        <option value="name_asc">Name A-Z</option>
+        <option value="name_desc">Name Z-A</option>
+        <option value="price_asc">Price Low-High</option>
+        <option value="price_desc">Price High-Low</option>
+        <option value="quantity_asc">Quantity Low-High</option>
+        <option value="quantity_desc">Quantity High-Low</option>
+      </select>
+
       {error && <div className="error-banner">{error}</div>}
 
-      <ProductsList
-        products={products}
-        loading={loading}
-        onDelete={handleDelete}
-        onEdit={handleEdit}
-        isAdmin={isAdmin}
-        currentPage={page}
-        onPageChange={setPage}
-        pagination={pagination}
-      />
+      {loading ? (
+        <div className="products-grid">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="rounded border border-gray-200 p-4">
+              <div className="animate-pulse flex flex-col gap-4">
+                <div className="bg-gray-200 rounded aspect-square"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : products.length === 0 && !error ? (
+        <div className="flex flex-col items-center py-16">
+          <Package size={48} className="text-gray-400" />
+          <h3 className="text-lg font-semibold mt-4">No products found</h3>
+          <p className="text-gray-500 mt-1">Try adjusting your search or filters.</p>
+          {isAdmin && (
+            <button
+              className="primary-btn mt-4"
+              onClick={() => {
+                setEditingProduct(null);
+                setShowForm(true);
+              }}
+            >
+              <Plus size={18} />
+              Add your first product
+            </button>
+          )}
+        </div>
+      ) : (
+        <ProductsList
+          products={products}
+          loading={loading}
+          onDelete={handleDelete}
+          onEdit={handleEdit}
+          isAdmin={isAdmin}
+          currentPage={page}
+          onPageChange={setPage}
+          pagination={pagination}
+        />
+      )}
 
       {showForm && (
         <ProductForm

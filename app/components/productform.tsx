@@ -86,8 +86,37 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>(initialData?.images || []);
+
+  const validate = (): { name?: string; price?: string; quantity?: string; category?: string } => {
+    const validationErrors: { name?: string; price?: string; quantity?: string; category?: string } = {};
+
+    if (!formData.name.trim() || formData.name.trim().length < 2) {
+      validationErrors.name = "Name is required (at least 2 characters).";
+    }
+
+    if (formData.price !== "") {
+      const price = Number(formData.price);
+      if (!Number.isFinite(price) || price < 0) {
+        validationErrors.price = "Price must be a non-negative number.";
+      }
+    }
+
+    if (formData.quantity !== "") {
+      const quantity = Number(formData.quantity);
+      if (!Number.isInteger(quantity) || quantity < 0) {
+        validationErrors.quantity = "Quantity must be a non-negative integer.";
+      }
+    }
+
+    if (formData.category.length < 1) {
+      validationErrors.category = "Select at least one category.";
+    }
+
+    return validationErrors;
+  };
 
   useEffect(() => {
     if (isEdit && initialData?.images) {
@@ -195,6 +224,11 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
     setLoading(true);
     setError("");
 
@@ -297,6 +331,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     required
                     disabled={loading}
                   />
+                  {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
                 </div>
                 <div className="form-group full-width">
                   <label>Disciplines (Select all that apply) *</label>
@@ -334,6 +369,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                       </>
                     )}
                   </div>
+                  {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
                 </div>
                 <div className="form-group">
                   <label>Manufacturer *</label>

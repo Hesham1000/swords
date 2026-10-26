@@ -16,18 +16,20 @@ export default function InvoicesPage() {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState("");
+    const [sortOrder, setSortOrder] = useState("newest");
   const [refresh, setRefresh] = useState(false);
   const lastParamsRef = useRef("");
 
   useEffect(() => {
-    const params = JSON.stringify({ page, searchQuery, refresh });
+    const params = JSON.stringify({ page, searchQuery, statusFilter, sortOrder, refresh });
     if (params === lastParamsRef.current) return;
     lastParamsRef.current = params;
 
     const fetchInvoices = async () => {
       try {
         setLoading(true);
-        const response = await getInvoices(page, 10, searchQuery);
+        const response = await getInvoices(page, 10, searchQuery, statusFilter, sortOrder);
         setInvoices(response.data);
         setPagination(response.pagination);
       } catch (err: any) {
@@ -37,7 +39,7 @@ export default function InvoicesPage() {
       }
     };
     fetchInvoices();
-  }, [page, searchQuery, refresh]);
+  }, [page, searchQuery, statusFilter, sortOrder, refresh]);
 
   const handleMarkAsPaid = async (id: string) => {
     if (!confirm("Are you sure you want to mark this invoice as Paid?")) return;
@@ -102,7 +104,7 @@ export default function InvoicesPage() {
                   <div className="invoice-customer">{invoice.customer}</div>
                 </div>
                 <div className="invoice-amount-col">
-                  <div className="invoice-amount">{invoice.amount.toLocaleString()} EGP</div>
+                  <div className="invoice-amount">{parseFloat(String(invoice.amount ?? 0)).toLocaleString()} EGP</div>
                   <div className="invoice-date">{invoice.date}</div>
                 </div>
                 <div className="invoice-actions-col">

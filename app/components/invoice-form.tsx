@@ -7,6 +7,7 @@ import { getProducts, Product } from "../lib/api/product";
 
 interface InvoiceFormData {
   customer: string;
+  customerEmail: string;
   status: "paid" | "pending" | "overdue";
   paymentMethod: "cash" | "visa";
   date: string;
@@ -21,6 +22,7 @@ interface InvoiceFormProps {
 const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialData }) => {
   const [formData, setFormData] = useState<InvoiceFormData>({
     customer: initialData?.customer || "",
+      customerEmail: initialData?.customerEmail || "",
     status: initialData?.status || "pending",
     paymentMethod: initialData?.paymentMethod || "cash",
     date: initialData?.date || new Date().toISOString().split('T')[0],
@@ -32,6 +34,11 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
   const [loading, setLoading] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
   const [error, setError] = useState<string>("");
+    const [validationErrors, setValidationErrors] = useState<{
+      customer?: string;
+      customerEmail?: string;
+      items?: string;
+    }>({});
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -154,10 +161,40 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
     }));
   };
 
+  const validate = (data: InvoiceFormData, currentItems: InvoiceItem[]) => {
+    const errs: { customer?: string; customerEmail?: string; items?: string } = {};
+    if (!data.customer || data.customer.trim().length < 2) {
+      errs.customer = "Customer name is required (minimum 2 characters).";
+    }
+    if (!data.customerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.customerEmail.trim())) {
+      errs.customerEmail = "Please enter a valid email address.";
+    }
+    if (currentItems.length === 0) {
+      errs.items = "Please add at least one item to the invoice.";
+    } else {
+      const badItem = currentItems.find(
+        (i) => !i.name || i.name.trim().length === 0 || !(i.quantity > 0)
+      );
+      if (badItem) {
+        errs.items = "Each item must have a product name and a quantity greater than 0.";
+      }
+    }
+    return errs;
+  };
+
+  const hasValidationErrors = Object.keys(validationErrors).length > 0;
+
+  // Live validation as the user edits
+  useEffect(() => {
+    setValidationErrors(validate(formData, items));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData, items]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (items.length === 0) {
-      setError("Please add at least one product.");
+    const errs = validate(formData, items);
+    setValidationErrors(errs);
+    if (Object.keys(errs).length > 0) {
       return;
     }
     setLoading(true);
@@ -418,7 +455,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
           <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
             CANCEL
           </button>
-          <button type="submit" className="btn-primary" disabled={loading}>
+          <button type="submit" className="btn-primary" disabled={loading || hasValidationErrors}>
             {loading ? "PROCESSING..." : initialData ? "UPDATE INVOICE" : "CREATE INVOICE"}
           </button>
         </div>
