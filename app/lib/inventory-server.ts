@@ -1,7 +1,7 @@
 import { db } from "./db";
 import { inventoryLogs } from "./db/schema";
 
-export type InventoryChangeReason = "Sale" | "Initial Stock" | "Restock" | "Manual Adjustment" | "Return" | "Order Cancelled" | "Price Update";
+export type InventoryChangeReason = "Sale" | "Initial Stock" | "Restock" | "Manual Adjustment" | "Return" | "Order Cancelled" | "Price Update" | "Product Created";
 
 export interface InventoryLog {
   id?: string;

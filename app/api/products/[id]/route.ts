@@ -162,6 +162,82 @@ export async function PUT(
     }
 }
 
+// PATCH (Partial Update) a product via JSON body
+export async function PATCH(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        if (!UUID_RE.test(id)) {
+            return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
+        }
+
+        const body = await request.json();
+
+        // Find existing product
+        const [existingProduct] = await db.select().from(products).where(eq(products.id, id)).limit(1);
+        if (!existingProduct) {
+            return NextResponse.json({ error: "Product not found" }, { status: 404 });
+        }
+
+        // Build update object containing ONLY provided fields
+        const updateData: Record<string, unknown> = {};
+
+        if (body.name !== undefined) updateData.name = body.name;
+        if (body.description !== undefined) updateData.description = body.description;
+        if (body.price !== undefined) updateData.price = String(parseFloat(body.price));
+        if (body.category !== undefined) updateData.category = body.category;
+        if (body.productType !== undefined) updateData.productType = body.productType;
+        if (body.brand !== undefined) updateData.brand = body.brand;
+        if (body.model !== undefined) updateData.model = body.model;
+        if (body.quantity !== undefined) updateData.quantity = parseInt(body.quantity);
+        if (body.isMini !== undefined) updateData.isMini = Boolean(body.isMini);
+        if (body.lameColor !== undefined) updateData.lameColor = body.lameColor;
+        if (body.material !== undefined) updateData.material = body.material;
+        if (body.subCategory !== undefined) updateData.subCategory = body.subCategory;
+        if (body.isKings !== undefined) updateData.isKings = Boolean(body.isKings);
+        if (body.hand !== undefined) updateData.hand = body.hand;
+
+        updateData.updatedAt = new Date();
+
+        await db.update(products).set(updateData).where(eq(products.id, id));
+
+        // 📝 AUDIT LOGGING
+        try {
+            const { logInventoryChange } = await import("../../../lib/inventory-server");
+
+            // Log manual stock adjustment if quantity changed
+            if (body.quantity !== undefined) {
+                const newQuantity = parseInt(body.quantity);
+                const quantityChange = newQuantity - (existingProduct.quantity || 0);
+
+                if (quantityChange !== 0) {
+                    await logInventoryChange({
+                        productId: id,
+                        productName: body.name || existingProduct.name || "",
+                        changeAmount: quantityChange,
+                        newQuantity: newQuantity,
+                        reason: "Manual Adjustment",
+                        note: `Quantity updated from ${existingProduct.quantity} to ${newQuantity}`
+                    });
+                }
+            }
+        } catch (logError) {
+            console.error("Failed to log inventory update:", logError);
+        }
+
+        return NextResponse.json({
+            success: true,
+            message: "Product updated successfully"
+        }, { status: 200 });
+
+    } catch (error) {
+        console.error("Error updating product:", error);
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+}
+
 // DELETE a product
 export async function DELETE(
     request: NextRequest,

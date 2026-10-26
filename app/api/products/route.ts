@@ -4,6 +4,124 @@ import { products } from "../../lib/db/schema";
 import { eq, ilike, or, and, desc, asc, sql, lt } from "drizzle-orm";
 import { transformProduct } from "../../lib/api/utils";
 
+// Define the product data structure with optional fields
+interface ProductData {
+  name: string;
+  description: string;
+  price: string | null;
+  category: string[];
+  productType: string;
+  brand?: string;
+  model?: string;
+  subCategory?: string;
+  isKings?: boolean;
+  isMini?: boolean;
+  lameColor?: string;
+  material?: string;
+  hand?: string;
+  quantity: number;
+  images: string[];
+}
+
+// POST endpoint to create a new product (JSON body)
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const description = typeof body.description === "string" ? body.description.trim() : "";
+    const price = body.price;
+    const category = Array.isArray(body.category) ? body.category : [];
+    const productType = body.productType;
+    const brand = typeof body.brand === "string" ? body.brand.trim() : "";
+    const model = typeof body.model === "string" ? body.model.trim() : "";
+    const quantity = body.quantity;
+
+    // Validate essential fields
+    if (!name || price === undefined || price === null || quantity === undefined || quantity === null) {
+      return NextResponse.json(
+        { error: "Missing required fields (name, price, quantity)" },
+        { status: 400 }
+      );
+    }
+
+    // Base product data - only common fields
+    const productData: ProductData = {
+      name,
+      description: description || "",
+      price: String(parseFloat(price)),
+      category,
+      productType: productType,
+      quantity: parseInt(quantity),
+      images: Array.isArray(body.images) ? body.images : [],
+    };
+
+    // Add type-specific fields conditionally — only include what's relevant
+    if (productType === "lame") {
+      productData.brand = brand || "";
+      if (model) productData.model = model;
+      if (body.isKings !== undefined) productData.isKings = Boolean(body.isKings);
+      if (body.isMini !== undefined) productData.isMini = Boolean(body.isMini);
+      if (body.lameColor) productData.lameColor = body.lameColor;
+      if (body.material) productData.material = body.material;
+      if (body.subCategory) productData.subCategory = body.subCategory;
+    }
+    else if (["grip", "guard", "guard_padding"].includes(productType)) {
+      productData.brand = brand || "pbt";
+      if (body.subCategory) productData.subCategory = body.subCategory;
+      if (body.hand) productData.hand = body.hand;
+      if (body.material) productData.material = body.material;
+      if (productType === "guard" && body.isMini !== undefined) {
+        productData.isMini = Boolean(body.isMini);
+      }
+    }
+    else if (productType === "socket") {
+      productData.brand = brand || "pbt";
+      if (body.subCategory) productData.subCategory = body.subCategory;
+    }
+    else if (productType === "glove") {
+      if (body.hand) productData.hand = body.hand;
+    }
+    else {
+      // Simple types (wire, french_pommel, nut, point, etc.)
+      productData.brand = brand || "pbt";
+      if (model) productData.model = model;
+    }
+
+    const [created] = await db.insert(products).values(productData).returning();
+    const insertedProduct = transformProduct(created);
+
+    // Log the initial stock arrival
+    try {
+      const { logInventoryChange } = await import("../../lib/inventory-server");
+      await logInventoryChange({
+        productId: created.id,
+        productName: productData.name,
+        changeAmount: productData.quantity,
+        newQuantity: productData.quantity,
+        reason: "Product Created",
+        note: "Initial stock load from product creation"
+      });
+    } catch (logError) {
+      console.error("Failed to log initial inventory:", logError);
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: insertedProduct,
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Error creating product:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
 // GET endpoint to retrieve products with pagination and filtering
 export async function GET(request: NextRequest) {
   try {
