@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { TrendingUp, Loader2 } from "lucide-react";
+import { TrendingUp, Search } from "lucide-react";
 import { getInventoryLogs, InventoryLog } from "../../lib/api/inventory";
 import { useDashboard } from "../layout";
 
@@ -19,18 +19,27 @@ export default function HistoryPage() {
     hasPrevPage: boolean;
   } | null>(null);
   const lastParamsRef = useRef("");
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
 
   useEffect(() => {
-    const params = JSON.stringify({ page });
+    const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  useEffect(() => {
+    const params = JSON.stringify({ page, search, typeFilter, sortOrder });
     if (params === lastParamsRef.current) return;
     lastParamsRef.current = params;
     
     const fetchLogs = async () => {
       try {
         setLoading(true);
-        const response = await getInventoryLogs(page);
-        setLogs(response.data);
-        if (response.pagination) {
+        const response = await getInventoryLogs(page, 10, undefined, search || undefined, typeFilter || undefined, sortOrder);
+        setLogs(response.data ?? []);
+        if (response?.pagination) {
           setPagination(response.pagination);
         }
       } catch (err: any) {
@@ -40,7 +49,7 @@ export default function HistoryPage() {
       }
     };
     fetchLogs();
-  }, [page]);
+  }, [page, search, typeFilter, sortOrder]);
 
   return (
     <div className="page-content">
@@ -51,6 +60,37 @@ export default function HistoryPage() {
       {error && <div className="error-banner">{error}</div>}
 
       <div className="list-card full-width">
+        <div className="flex flex-wrap gap-3 items-center mb-4 px-4 pt-4">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search product, invoice, reason..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <select
+            value={typeFilter}
+            onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">All Types</option>
+            <option value="deposit">Deposit</option>
+            <option value="withdrawal">Withdrawal</option>
+            <option value="shipment">Shipment</option>
+            <option value="product_update">Product Update</option>
+          </select>
+          <select
+            value={sortOrder}
+            onChange={(e) => { setSortOrder(e.target.value as "desc" | "asc"); setPage(1); }}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="desc">Newest First</option>
+            <option value="asc">Oldest First</option>
+          </select>
+        </div>
         <div className="history-list">
           <div className="history-header-row">
             <div className="history-col-product">Product</div>
@@ -60,7 +100,16 @@ export default function HistoryPage() {
           </div>
 
           {loading ? (
-            <div className="loading-state"><Loader2 className="animate-spin" /></div>
+            <>
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="history-item opacity-70">
+                  <div className="history-col-product"><div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" /></div>
+                  <div className="history-col-change"><div className="h-4 bg-gray-200 rounded animate-pulse w-1/2" /></div>
+                  <div className="history-col-reason"><div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" /></div>
+                  <div className="history-col-date text-right"><div className="h-4 bg-gray-200 rounded animate-pulse w-1/3 ml-auto" /></div>
+                </div>
+              ))}
+            </>
           ) : logs.length === 0 ? (
             <div className="empty-state">No transaction history found.</div>
           ) : (

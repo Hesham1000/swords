@@ -21,12 +21,15 @@ export default function DashboardOverview() {
   const { user, isAdmin, dashboardData, refreshDashboard } = useDashboard();
   const router = useRouter();
   const [error, setError] = useState("");
+  const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
 
   if (!dashboardData && !error) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 gap-4">
-        <Loader2 className="animate-spin text-blue-500" size={40} />
-        <p className="text-slate-400 font-medium">Gathering command data...</p>
+      <div className="stats-grid">
+        <div className="animate-pulse bg-slate-200 rounded-xl h-28" />
+        <div className="animate-pulse bg-slate-200 rounded-xl h-28" />
+        <div className="animate-pulse bg-slate-200 rounded-xl h-28" />
+        <div className="animate-pulse bg-slate-200 rounded-xl h-28" />
       </div>
     );
   }
@@ -36,6 +39,28 @@ export default function DashboardOverview() {
   }
 
   const { summary, recentInvoices, lowStockItems, analytics } = dashboardData!;
+
+  const sortedInvoices = [...recentInvoices].sort((a, b) => {
+    const aTime = new Date(a.date || a.createdAt || 0).getTime();
+    const bTime = new Date(b.date || b.createdAt || 0).getTime();
+    return sortDir === "desc" ? bTime - aTime : aTime - bTime;
+  });
+
+  if (summary?.totalOrders === 0 && recentInvoices.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-20 gap-4 text-center">
+        <Package className="text-slate-400" size={48} />
+        <h2 className="text-xl font-semibold text-slate-300">No orders yet</h2>
+        <p className="text-slate-400 text-sm">When you create your first invoice, it will show up here.</p>
+        <button
+          className="mt-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+          onClick={() => router.push("/invoices")}
+        >
+          Create your first invoice
+        </button>
+      </div>
+    );
+  }
 
   const StatCard = ({
     title,
@@ -204,9 +229,20 @@ export default function DashboardOverview() {
 
         {/* Recent Invoices */}
         <div className="list-card">
-          <div className="card-header"><h2 className="card-title">Recent Invoices</h2></div>
+          <div className="card-header">
+            <h2 className="card-title">Recent Invoices</h2>
+            <select
+              value={sortDir}
+              onChange={(e) => setSortDir(e.target.value as "desc" | "asc")}
+              className="border border-slate-600 rounded-md px-2 py-1 text-sm bg-transparent text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              aria-label="Sort invoices"
+            >
+              <option value="desc">Newest First</option>
+              <option value="asc">Oldest First</option>
+            </select>
+          </div>
           <div className="invoice-list">
-            {recentInvoices.map((invoice) => (
+            {sortedInvoices.map((invoice) => (
               <div key={invoice._id || invoice.invoiceId} className={`invoice-item status-${invoice.status}`}>
                 <div className="invoice-id-col"><div className="invoice-id">{invoice.invoiceId}</div><div className="invoice-customer">{invoice.customer}</div></div>
                 <div className="invoice-amount-col"><div className="invoice-amount">{invoice.amount.toLocaleString()} EGP</div><div className="invoice-date">{invoice.date}</div></div>

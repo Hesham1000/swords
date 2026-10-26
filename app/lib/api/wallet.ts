@@ -11,11 +11,13 @@ export interface WalletBalances {
 
 export interface WalletTransaction {
   _id?: string;
+  id?: string;
   type: "deposit" | "withdraw" | "invoice" | "shipment";
-  amount: number;
-  currency?: Currency;
-  note: string;
-  date: string;
+  amount: number | string;
+  currency?: string;
+  description?: string;
+  note?: string;
+  date?: string;
   createdAt?: string;
   referenceId?: string;
 }
@@ -100,22 +102,24 @@ export async function depositToWallet(amount: number, note?: string, currency: C
 }
 
 /**
- * Shorthand: Withdraw cash from the wallet
+ * Fetch wallet transactions with optional search, filters and sort
  */
-export async function withdrawFromWallet(amount: number, note?: string, currency: Currency = "EGP"): Promise<WalletBalanceResponse> {
-  return walletTransaction(amount, "withdraw", currency, note);
-}
-
-/**
- * Fetch wallet transaction history
- */
-export async function getWalletTransactions(page: number = 1, limit: number = 10): Promise<WalletTransactionsResponse> {
+export async function getWalletTransactions(
+  page: number = 1,
+  search: string = "",
+  currency: string = "all",
+  type: string = "all",
+  sort: "asc" | "desc" = "desc"
+): Promise<WalletTransactionsResponse> {
   try {
-    const url = new URL(`${apiUrl}/api/wallet/transactions`, window.location.origin);
-    url.searchParams.append("page", page.toString());
-    url.searchParams.append("limit", limit.toString());
+    const searchParams = new URLSearchParams();
+    searchParams.append("page", String(page));
+    if (search) searchParams.append("search", search);
+    if (currency && currency !== "all") searchParams.append("currency", currency);
+    if (type && type !== "all") searchParams.append("type", type);
+    searchParams.append("sort", sort);
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(`${window.location.origin}/api/wallet/transactions?${searchParams.toString()}`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
       cache: "no-store",
@@ -127,9 +131,16 @@ export async function getWalletTransactions(page: number = 1, limit: number = 10
     }
 
     const data = await response.json();
-    return { success: true, data: data.data, pagination: data.pagination };
+    return { success: data.success, data: data.data, pagination: data.pagination };
   } catch (error) {
     console.error("Error fetching wallet transactions:", error);
     throw error;
   }
 }
+
+/**
+ * Shorthand: Withdraw cash from the wallet
+ */
+export async function withdrawFromWallet(amount: number, note?: string, currency: Currency = "EGP"): Promise<WalletBalanceResponse> {
+    return walletTransaction(amount, "withdraw", currency, note);
+  }

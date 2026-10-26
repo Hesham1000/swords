@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Wallet, Plus, ArrowUpCircle, ArrowDownCircle, Truck, Loader2 } from "lucide-react";
+import { Wallet, Plus, ArrowUpCircle, ArrowDownCircle, Truck, Search } from "lucide-react";
 import WalletDepositForm from "../../components/wallet-deposit-form";
 import ShipmentForm from "../../components/shipment-form";
 import { getWalletBalance, getWalletTransactions, WalletTransaction } from "../../lib/api/wallet";
@@ -27,8 +27,18 @@ export default function WalletPage() {
   } | null>(null);
   const lastParamsRef = useRef("");
 
+  const [search, setSearch] = useState("");
+  const [currencyFilter, setCurrencyFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
+
+  // Reset to first page whenever search, filters or sort change
   useEffect(() => {
-    const params = JSON.stringify({ refresh, page });
+    setPage(1);
+  }, [search, currencyFilter, typeFilter, sortOrder]);
+
+  useEffect(() => {
+    const params = JSON.stringify({ refresh, page, search, currencyFilter, typeFilter, sortOrder });
     if (params === lastParamsRef.current) return;
     lastParamsRef.current = params;
 
@@ -37,15 +47,15 @@ export default function WalletPage() {
         setLoading(true);
         const [balanceRes, transactionsRes] = await Promise.all([
           getWalletBalance(),
-          getWalletTransactions(page),
+          getWalletTransactions(page, search, currencyFilter || "all", typeFilter || "all", sortOrder),
         ]);
         setBalance({
-          EGP: balanceRes.data.balanceEGP,
-          USD: balanceRes.data.balanceUSD,
-          EUR: balanceRes.data.balanceEUR,
+          EGP: balanceRes?.data?.balanceEGP ?? 0,
+          USD: balanceRes?.data?.balanceUSD ?? 0,
+          EUR: balanceRes?.data?.balanceEUR ?? 0,
         });
-        setTransactions(transactionsRes.data);
-        if (transactionsRes.pagination) {
+        setTransactions(transactionsRes?.data ?? []);
+        if (transactionsRes?.pagination) {
           setPagination(transactionsRes.pagination);
         }
       } catch (err: any) {
@@ -55,7 +65,7 @@ export default function WalletPage() {
       }
     };
     fetchWalletData();
-  }, [refresh, page]);
+  }, [refresh, page, search, currencyFilter, typeFilter, sortOrder]);
 
   return (
     <div className="page-content">
@@ -78,51 +88,132 @@ export default function WalletPage() {
       </div>
 
       <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon"><Wallet size={20} /></div>
-          <h3 className="stat-title">EGP Balance</h3>
-          <p className="stat-value">EGP {balance.EGP.toLocaleString()}</p>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon"><Wallet size={20} /></div>
-          <h3 className="stat-title">USD Balance</h3>
-          <p className="stat-value">$ {balance.USD.toLocaleString()}</p>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon"><Wallet size={20} /></div>
-          <h3 className="stat-title">EUR Balance</h3>
-          <p className="stat-value">€ {balance.EUR.toLocaleString()}</p>
-        </div>
+        {loading ? (
+          <>
+            <div className="stat-card animate-pulse">
+              <div className="h-4 w-24 rounded bg-white/10" />
+              <div className="mt-3 h-6 w-32 rounded bg-white/10" />
+            </div>
+            <div className="stat-card animate-pulse">
+              <div className="h-4 w-24 rounded bg-white/10" />
+              <div className="mt-3 h-6 w-32 rounded bg-white/10" />
+            </div>
+            <div className="stat-card animate-pulse">
+              <div className="h-4 w-24 rounded bg-white/10" />
+              <div className="mt-3 h-6 w-32 rounded bg-white/10" />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="stat-card">
+              <div className="stat-icon"><Wallet size={20} /></div>
+              <h3 className="stat-title">EGP Balance</h3>
+              <p className="stat-value">EGP {balance.EGP.toLocaleString()}</p>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon"><Wallet size={20} /></div>
+              <h3 className="stat-title">USD Balance</h3>
+              <p className="stat-value">$ {balance.USD.toLocaleString()}</p>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon"><Wallet size={20} /></div>
+              <h3 className="stat-title">EUR Balance</h3>
+              <p className="stat-value">€ {balance.EUR.toLocaleString()}</p>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="list-card full-width">
         <div className="card-header">
           <h2 className="card-title">Transaction History</h2>
         </div>
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-[var(--border-tech)]">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by description or reference ID..."
+              className="w-full rounded-lg border border-[var(--border-tech)] bg-white/5 py-2 pl-9 pr-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] outline-none focus:border-[var(--accent-blue)]"
+            />
+          </div>
+          <select
+            value={currencyFilter}
+            onChange={(e) => setCurrencyFilter(e.target.value)}
+            className="rounded-lg border border-[var(--border-tech)] bg-white/5 px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-blue)]"
+          >
+            <option value="">All Currencies</option>
+            <option value="EGP">EGP</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="rounded-lg border border-[var(--border-tech)] bg-white/5 px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-blue)]"
+          >
+            <option value="">All Types</option>
+            <option value="deposit">Deposit</option>
+            <option value="withdraw">Withdrawal</option>
+            <option value="invoice">Invoice</option>
+            <option value="shipment">Shipment</option>
+          </select>
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as "desc" | "asc")}
+            className="rounded-lg border border-[var(--border-tech)] bg-white/5 px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-blue)]"
+          >
+            <option value="desc">Newest First</option>
+            <option value="asc">Oldest First</option>
+          </select>
+        </div>
         <div className="transaction-list">
           {loading ? (
-            <div className="loading-state"><Loader2 className="animate-spin" /></div>
+            <div className="flex flex-col gap-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="animate-pulse flex items-center gap-4 rounded-xl border border-[var(--border-tech)] bg-white/[0.02] p-4">
+                  <div className="h-10 w-10 shrink-0 rounded-full bg-white/10" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 w-48 rounded bg-white/10" />
+                    <div className="h-3 w-32 rounded bg-white/10" />
+                  </div>
+                  <div className="h-4 w-24 rounded bg-white/10" />
+                </div>
+              ))}
+            </div>
           ) : transactions.length === 0 ? (
-            <div className="empty-state">No transactions recorded.</div>
+            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+              <Wallet size={48} className="text-[var(--text-secondary)]" />
+              <h3 className="text-lg font-bold text-[var(--text-primary)]">No transactions yet</h3>
+              <p className="text-sm text-[var(--text-secondary)]">Deposits, withdrawals and invoice payments will appear here.</p>
+              <button className="deposit-btn" onClick={() => { setWalletFormMode("deposit"); setShowDepositForm(true); }}>
+                Make your first deposit
+              </button>
+            </div>
           ) : (
-            transactions.map((tx, idx) => (
-              <div key={idx} className="transaction-item">
-                <div className="tx-icon">
-                  {(tx.type === "invoice" || tx.type === "deposit") ? (
-                    <ArrowUpCircle className="text-emerald-500" />
-                  ) : (
-                    <ArrowDownCircle className="text-rose-500" />
-                  )}
+            transactions.map((tx, idx) => {
+              const isPositive = tx.type === "invoice" || tx.type === "deposit";
+              return (
+                <div key={idx} className="transaction-item">
+                  <div className="tx-icon">
+                    {isPositive ? (
+                      <ArrowUpCircle className="text-emerald-500" />
+                    ) : (
+                      <ArrowDownCircle className="text-rose-500" />
+                    )}
+                  </div>
+                  <div className="tx-details">
+                    <div className="tx-note">{tx.description || tx.note}</div>
+                    <div className="tx-date">{new Date(tx.createdAt || tx.date || "").toLocaleString()}</div>
+                  </div>
+                  <div className={`tx-amount ${isPositive ? "positive" : "negative"}`}>
+                    {isPositive ? "+" : "-"}{parseFloat(String(tx.amount)).toLocaleString()} {tx.currency}
+                  </div>
                 </div>
-                <div className="tx-details">
-                  <div className="tx-note">{tx.note}</div>
-                  <div className="tx-date">{new Date(tx.date).toLocaleString()}</div>
-                </div>
-                <div className={`tx-amount ${(tx.type === "invoice" || tx.type === "deposit") ? "positive" : "negative"}`}>
-                  {(tx.type === "invoice" || tx.type === "deposit") ? "+" : "-"}{tx.amount.toLocaleString()} {tx.currency}
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
