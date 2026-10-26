@@ -180,7 +180,7 @@ export default function WalletPage() {
                 </div>
                 <div className="tx-details">
                   <div className="tx-note">{tx?.note ?? ""}</div>
-                  <div className="tx-date">{new Date(tx?.date).toLocaleString()}</div>
+                  <div className="tx-date">{new Date(tx?.date).toLocaleDateString()}</div>
                 </div>
                 <div className={`tx-amount ${(tx.type === "invoice" || tx.type === "deposit") ? "positive" : "negative"}`}>
                   {(tx.type === "invoice" || tx.type === "deposit") ? "+" : "-"}{(tx.amount ?? 0).toLocaleString()} {tx.currency ?? ""}

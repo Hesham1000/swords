@@ -328,7 +328,7 @@ export default function InvoicesPage() {
                 <span className="invoice-modal-value">
                   {detailInvoice?.createdAt
                     ? new Date(detailInvoice.createdAt).toLocaleDateString()
-                    : detailInvoice?.date ?? "—"}
+                    : detailInvoice?.date ? new Date(detailInvoice.date).toLocaleDateString() : "—"}
                 </span>
               </div>
               <div>

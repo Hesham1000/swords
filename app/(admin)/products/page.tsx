@@ -201,11 +201,7 @@ export default function ProductsPage() {
             </button>
           )}
         </div>
-      </div>
-
-      {error && <div className="error-banner">{error}</div>}
-
-      <div className="flex flex-wrap items-center gap-2 mb-4">
+      <div className="flex flex-wrap items-center gap-2 ml-auto">
         <span className="text-sm text-gray-500 mr-1">Sort by:</span>
         {sortFields.map((field) => (
           <button
@@ -224,6 +220,9 @@ export default function ProductsPage() {
           </button>
         ))}
       </div>
+      </div>
+
+      {error && <div className="error-banner">{error}</div>}
 
       <ProductsList
         products={products}

@@ -256,7 +256,7 @@ export default function DashboardOverview() {
               />
             </svg>
             <div className="chart-labels">
-              <span>{analytics?.trends?.[0]?.date}</span>
+              <span>{new Date(analytics?.trends?.[0]?.date ?? "").toLocaleDateString()}</span>
               <span>{analytics?.trends?.[(analytics?.trends?.length ?? 1) - 1]?.date}</span>
             </div>
           </div>
