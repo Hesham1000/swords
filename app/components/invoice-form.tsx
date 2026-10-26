@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, ChangeEvent, FormEvent, useEffect, useRef, useCallback } from "react";
-import { DollarSign, User, Calendar, FileText, CheckCircle, Clock, AlertCircle, Plus, Trash2, Package, Percent, X } from "lucide-react";
+import { DollarSign, User, Calendar, Plus, Trash2, Package, X } from "lucide-react";
 import { createInvoice, updateInvoice, Invoice, InvoiceItem } from "../lib/api/invoice";
 import { getProducts, Product } from "../lib/api/product";
 
@@ -187,7 +187,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
   // Live validation as the user edits
   useEffect(() => {
     setValidationErrors(validate(formData, items));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData, items]);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -217,8 +216,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
       
       if (onSuccess) onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+    } catch (err) {
+      setError((err instanceof Error ? err.message : undefined) || "An error occurred");
     } finally {
       setLoading(false);
     }

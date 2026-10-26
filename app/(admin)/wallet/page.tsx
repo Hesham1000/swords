@@ -8,11 +8,11 @@ import { getWalletBalance, getWalletTransactions, WalletTransaction } from "../.
 import { useDashboard } from "../layout";
 
 export default function WalletPage() {
-  const { user, isAdmin } = useDashboard();
+  useDashboard();
   const [balance, setBalance] = useState({ EGP: 0, USD: 0, EUR: 0 });
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [showDepositForm, setShowDepositForm] = useState(false);
   const [walletFormMode, setWalletFormMode] = useState<"deposit" | "withdraw">("deposit");
   const [showShipmentForm, setShowShipmentForm] = useState(false);
@@ -58,8 +58,8 @@ export default function WalletPage() {
         if (transactionsRes?.pagination) {
           setPagination(transactionsRes.pagination);
         }
-      } catch (err: any) {
-        setError(err.message || "Failed to load wallet data");
+      } catch (err) {
+        setError((err instanceof Error ? err.message : undefined) || "Failed to load wallet data");
       } finally {
         setLoading(false);
       }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "../../lib/db";
 import { products, invoices, wallet, walletTransactions } from "../../lib/db/schema";
-import { eq, ilike, or, and, desc, sql } from "drizzle-orm";
+import { eq, ilike, or, desc, sql } from "drizzle-orm";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -86,16 +86,8 @@ export async function POST(request: NextRequest) {
 
     // Decrease product quantities in inventory
     if (items && items.length > 0) {
-      const { logInventoryChange } = await import("../../lib/inventory-server");
-
       for (const item of items) {
         try {
-          // Get current quantity first for logging
-          const [product] = await db
-            .select()
-            .from(products)
-            .where(eq(products.id, item.productId));
-
           await db
             .update(products)
             .set({ quantity: sql`${products.quantity} - ${item.quantity}` })
@@ -180,14 +172,14 @@ export async function PATCH(request: NextRequest) {
     // 1. STOCK ADJUSTMENT AND HISTORY LOGGING (if items changed)
     if (items && Array.isArray(items)) {
       const { logInventoryChange } = await import("../../lib/inventory-server");
-      const oldItems = (invoice.items as any[]) || [];
+      const oldItems = (invoice.items as { productId: string; quantity: number; price: number; name?: string }[]) || [];
 
       // Track which old items were processed
       const processedOldProductIds = new Set<string>();
 
       // Process new items (Updates and Additions)
       for (const newItem of items) {
-        const oldItem = oldItems.find((oi: any) => oi.productId === newItem.productId);
+        const oldItem = oldItems.find((oi) => oi.productId === newItem.productId);
         processedOldProductIds.add(newItem.productId);
 
         const oldQty = oldItem ? oldItem.quantity : 0;
@@ -249,7 +241,7 @@ export async function PATCH(request: NextRequest) {
               .where(eq(products.id, oldItem.productId));
             await logInventoryChange({
               productId: oldItem.productId,
-              productName: oldItem.name,
+              productName: oldItem.name ?? "",
               changeAmount: oldItem.quantity,
               newQuantity: product?.quantity || 0,
               reason: "Order Cancelled",
@@ -272,7 +264,7 @@ export async function PATCH(request: NextRequest) {
     if (items) updateData.items = items;
     if (body.notes !== undefined) updateData.notes = body.notes;
 
-    const result = await db
+    await db
       .update(invoices)
       .set(updateData)
       .where(eq(invoices.id, id))

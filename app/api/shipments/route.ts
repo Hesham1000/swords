@@ -16,7 +16,7 @@ async function getOrCreateWallet() {
 }
 
 // GET: Return all shipments
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const data = await db.select().from(shipments).orderBy(desc(shipments.createdAt));
 

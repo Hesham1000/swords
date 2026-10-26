@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -8,19 +8,42 @@ import {
   ShoppingCart, 
   Package, 
   Users, 
-  Loader2, 
   AlertCircle, 
   CheckCircle 
 } from "lucide-react";
-import { DashboardSummaryData } from "../../lib/api/dashboard";
-import { updateInvoiceStatus } from "../../lib/api/invoice";
 import { useRouter } from "next/navigation";
 import { useDashboard } from "../layout";
 
+type StatCardProps = {
+  title: string;
+  value: number;
+  change: number;
+  icon: React.ElementType;
+  prefix?: string;
+};
+
+function StatCard({ title, value, change, icon: Icon, prefix = "" }: StatCardProps) {
+  return (
+    <div className="stat-card">
+      <div className="stat-icon">
+        <Icon size={20} />
+      </div>
+      <div className={`stat-badge ${change >= 0 ? "positive" : "negative"}`}>
+        {change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+        <span>{Math.abs(change)}%</span>
+      </div>
+      <h3 className="stat-title">{title}</h3>
+      <p className="stat-value">
+        {prefix}{value.toLocaleString()}
+      </p>
+    </div>
+  );
+}
+
 export default function DashboardOverview() {
-  const { user, isAdmin, dashboardData, refreshDashboard } = useDashboard();
+  const { dashboardData, refreshDashboard } = useDashboard();
   const router = useRouter();
-  const [error, setError] = useState("");
+  const [error] = useState("");
   const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
 
   if (!dashboardData && !error) {
@@ -61,34 +84,6 @@ export default function DashboardOverview() {
       </div>
     );
   }
-
-  const StatCard = ({
-    title,
-    value,
-    change,
-    icon: Icon,
-    prefix = ""
-  }: {
-    title: string;
-    value: number;
-    change: number;
-    icon: React.ElementType;
-    prefix?: string;
-  }) => (
-    <div className="stat-card">
-      <div className="stat-icon">
-        <Icon size={20} />
-      </div>
-      <div className={`stat-badge ${change >= 0 ? "positive" : "negative"}`}>
-        {change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-        <span>{Math.abs(change)}%</span>
-      </div>
-      <h3 className="stat-title">{title}</h3>
-      <p className="stat-value">
-        {prefix}{value.toLocaleString()}
-      </p>
-    </div>
-  );
 
   return (
     <>

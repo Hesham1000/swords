@@ -1,21 +1,21 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Package, Plus, X, Loader2 } from "lucide-react";
+import { Package, Plus, X } from "lucide-react";
 import ProductForm from "../../components/productform";
 import ProductsList from "../../components/products-list";
 import { getProducts, deleteProduct, Product } from "../../lib/api/product";
 import { useDashboard } from "../layout";
 
 export default function ProductsPage() {
-  const { user, isAdmin } = useDashboard();
+  const { isAdmin } = useDashboard();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState<any>(null);
+  const [pagination, setPagination] = useState<{ page: number; limit: number; totalCount: number; totalPages: number; hasNextPage: boolean; hasPrevPage: boolean; nextPage: number | null; prevPage: number | null } | null>(null);
   const [refresh, setRefresh] = useState(false);
   const lastParamsRef = useRef("");
 
@@ -39,25 +39,26 @@ export default function ProductsPage() {
           category: filterCategory,
           productType: filterType,
           brand: filterBrand,
+          sort,
         });
         setProducts(response.data);
-        setPagination(response.pagination);
-      } catch (err: any) {
-        setError(err.message || "Failed to load products");
+        setPagination(response.pagination ?? null);
+      } catch (err) {
+        setError((err instanceof Error ? err.message : undefined) || "Failed to load products");
       } finally {
         setLoading(false);
       }
     };
     fetchProducts();
-  }, [page, searchQuery, filterCategory, filterType, filterBrand, refresh]);
+  }, [page, searchQuery, filterCategory, filterType, filterBrand, sort, refresh]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this product?")) return;
     try {
       await deleteProduct(id);
       setRefresh(!refresh);
-    } catch (err: any) {
-      alert(err.message || "Failed to delete product");
+    } catch (err) {
+      alert((err instanceof Error ? err.message : undefined) || "Failed to delete product");
     }
   };
 
@@ -233,7 +234,7 @@ export default function ProductsPage() {
           isAdmin={isAdmin}
           currentPage={page}
           onPageChange={setPage}
-          pagination={pagination}
+          pagination={pagination ? { page: pagination.page, totalPages: pagination.totalPages, hasNextPage: pagination.hasNextPage, hasPrevPage: pagination.hasPrevPage, totalCount: pagination.totalCount } : undefined}
         />
       )}
 

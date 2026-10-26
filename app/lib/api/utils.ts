@@ -6,7 +6,9 @@ export const API_URL = "";
  * - id is already a string uuid (no _id)
  * - Prepends the API URL to image paths if they are relative
  */
-export function transformProduct(product: any) {
+type ProductRow = { id?: string; _id?: unknown; images?: unknown; [key: string]: unknown };
+
+export function transformProduct(product: ProductRow | null) {
     if (!product) return null;
 
     const apiUrl = "";
@@ -17,7 +19,7 @@ export function transformProduct(product: any) {
     return {
         ...rest,
         id: product.id ?? (_id ? _id.toString() : undefined),
-        images: (product.images || []).map((img: string) => {
+        images: ((product.images as string[]) || []).map((img: string) => {
             if (img.startsWith("http")) {
                 return img;
             }

@@ -34,10 +34,6 @@ export async function logInventoryChange(logData: {
   operator?: string;
 }) {
   try {
-    const log: InventoryLog = {
-      ...logData,
-      timestamp: new Date(),
-    };
 
     await db.insert(inventoryLogs).values({
       productId: logData.productId,

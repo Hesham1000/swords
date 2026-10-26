@@ -31,7 +31,7 @@ export interface InventoryLogsResponse {
 /**
  * Fetch inventory logs from the API
  */
-export async function getInventoryLogs(page: number = 1, limit: number = 10, productId?: string, search?: string, type?: string, sort?: "asc" | "desc"): Promise<InventoryLogsResponse> {
+export async function getInventoryLogs(page: number = 1, limit: number = 10, productId?: string, _search?: string, _type?: string, _sort?: "asc" | "desc"): Promise<InventoryLogsResponse> {
   try {
     const url = new URL(`${apiUrl}/api/inventory/logs`, window.location.origin);
     url.searchParams.append("page", page.toString());

@@ -1,4 +1,3 @@
-import { Pool } from "pg";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 import { db } from "../app/lib/db";
@@ -14,7 +13,7 @@ import { sql } from "drizzle-orm";
 
 async function count(table: string): Promise<number> {
   const res = await db.execute(sql.raw(`SELECT COUNT(*)::int AS c FROM ${table}`));
-  const rows = (res as any).rows ?? res;
+  const rows = (res as { rows?: { c?: number }[] }).rows ?? [];
   return Number(rows[0]?.c ?? 0);
 }
 

@@ -28,7 +28,6 @@ export class AuthError extends Error {
 // Generate Access + Refresh Tokens
 export async function generateToken(
   userId: string,
-  timezone: string = "UTC",
   expiresIn: number = 6 * 60 * 60 // 6 hours
 ): Promise<{ accessToken: string; refreshToken: string }> {
   const now = Math.floor(Date.now() / 1000);
@@ -148,8 +147,7 @@ export async function isTokenBlacklisted(token: string): Promise<boolean> {
 // Revoke token and clear cookies
 export async function revokeAndDeleteToken(
   token: string,
-  userId?: string,
-  refresh?: string
+  userId?: string
 ): Promise<void> {
   // Blacklist token
   if (!(await isTokenBlacklisted(token))) {

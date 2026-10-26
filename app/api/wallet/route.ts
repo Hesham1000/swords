@@ -4,7 +4,6 @@ import { wallet, walletTransactions } from "../../lib/db/schema";
 import { and, eq } from "drizzle-orm";
 
 const CURRENCIES = ["EGP", "USD", "EUR"] as const;
-type Currency = typeof CURRENCIES[number];
 
 async function getOrCreateWallet() {
   let [w] = await db.select().from(wallet).limit(1);
@@ -30,7 +29,7 @@ async function getOrCreateWallet() {
 }
 
 // GET: Return wallet balances for all currencies
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const w = await getOrCreateWallet();
 

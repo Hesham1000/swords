@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "../../../lib/db";
 import { walletTransactions } from "../../../lib/db/schema";
-import { and, desc, asc, eq, ilike, or, sql } from "drizzle-orm";
+import { desc, sql } from "drizzle-orm";
 
 // GET: Return wallet transaction history
 export async function GET(request: NextRequest) {

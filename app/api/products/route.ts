@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category");
     const productType = searchParams.get("productType");
     const brand = searchParams.get("brand");
-    const sort = searchParams.get("sort");
 
     const skip = (page - 1) * limit;
 
