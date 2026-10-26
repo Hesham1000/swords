@@ -20,7 +20,7 @@ interface ApiError {
 }
 
 const FencingLogin = () => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const apiUrl = "";
   const router = useRouter();
   const [isLoading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
