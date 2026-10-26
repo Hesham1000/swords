@@ -1,9 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
-import { ObjectId } from "mongodb";
-import {
-  getUserCollection,
-  getBlacklistCollection,
-} from "../mongoDB";
+import { eq } from "drizzle-orm";
+import { db } from "../db";
+import { tokenBlacklist, users } from "../db/schema";
 import { verifyAccessTokenEdge as verifyAccessToken } from "./edge";
 
 // export { verifyAccessToken }; // If needed by other non-edge files
@@ -142,17 +140,9 @@ export async function decodePasswordSetupToken(
 
 
 
-// Lazy DB initialization (no top-level await)
-async function getCollections() {
-  const blacklist = await getBlacklistCollection();
-  const users = await getUserCollection();
-  return { blacklist, users };
-}
-
 // Blacklist check
 export async function isTokenBlacklisted(token: string): Promise<boolean> {
-  const { blacklist } = await getCollections();
-  return !!(await blacklist.findOne({ token }));
+  return !!(await db.select().from(tokenBlacklist).where(eq(tokenBlacklist.token, token)).limit(1)).length;
 }
 
 // Revoke token and clear cookies
@@ -161,21 +151,22 @@ export async function revokeAndDeleteToken(
   userId?: string,
   refresh?: string
 ): Promise<void> {
-  const { blacklist, users } = await getCollections();
-
   // Blacklist token
   if (!(await isTokenBlacklisted(token))) {
-    await blacklist.insertOne({
+    await db.insert(tokenBlacklist).values({
       token,
-      revoked_at: new Date(),
-      ...(userId ? { user_id: new ObjectId(userId) } : {}),
+      revokedAt: new Date(),
+      ...(userId ? { userId } : {}),
     });
   }
 
   // Remove session
   if (userId) {
-    await users.updateOne({ _id: new ObjectId(userId) }, {
-      $pull: { sessions: { token } },
-    } as any);
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (user) {
+      const sessions = (user.sessions as Array<Record<string, unknown>> | null) ?? [];
+      const filtered = sessions.filter((s) => s?.token !== token);
+      await db.update(users).set({ sessions: filtered }).where(eq(users.id, userId));
+    }
   }
 }

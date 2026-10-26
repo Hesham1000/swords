@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyPassword } from "../../../lib/auth/password";
 import { generateToken } from "../../../lib/auth/token";
 import { v4 as uuidv4 } from "uuid";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { db } from "../../../lib/db";
+import { users } from "../../../lib/db/schema";
+import { eq } from "drizzle-orm";
 import ApiError from "../../../utils/ApiError";
 
 // Failed login attempts tracking
@@ -29,21 +31,34 @@ export async function POST(request: NextRequest) {
       throw ApiError.badRequest("Email/Username and password are required!");
     }
 
-    const userCollection = await getUserCollection();
-
     // Find user by either email or username
     let user;
     if (isEmail(identifier)) {
       // Search by email
-      user = await userCollection.findOne({ email: identifier });
+      const rows = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, identifier))
+        .limit(1);
+      user = rows[0];
     } else {
       // Search by username
-      user = await userCollection.findOne({ username: identifier });
+      const rows = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, identifier))
+        .limit(1);
+      user = rows[0];
     }
 
     // If not found with email, also check username for email input (fallback)
     if (!user && isEmail(identifier)) {
-      user = await userCollection.findOne({ email: identifier });
+      const rows = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, identifier))
+        .limit(1);
+      user = rows[0];
     }
 
     if (!user) {
@@ -53,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Use email for lockout tracking (consistent identifier)
-    const lockoutKey = user.email;
+    const lockoutKey = user.email as string;
 
     if (user) {
       if (!user.isActive) {
@@ -83,7 +98,7 @@ export async function POST(request: NextRequest) {
       }
 
       // 🔑 Verify password
-      const isValidPassword = await verifyPassword(password, user.password);
+      const isValidPassword = await verifyPassword(password, user.password ?? "");
       if (!isValidPassword) {
         // Track failed attempt
         if (!failedAttempts[lockoutKey]) {
@@ -110,11 +125,8 @@ export async function POST(request: NextRequest) {
     // Update user login status
     const now = new Date();
 
-    // Generate tokens - adjust this based on your token generation logic
-    // You might want to pass user._id instead of "1"
-    const { accessToken, refreshToken } = await generateToken(
-      user._id.toString()
-    );
+    // Generate tokens - user.id is already a string uuid
+    const { accessToken, refreshToken } = await generateToken(user.id);
 
     // Create new session
     const newSession = {
@@ -125,17 +137,17 @@ export async function POST(request: NextRequest) {
     };
 
     // Add session to user
-    await userCollection.updateOne(
-      { _id: user._id },
-      {
-        $push: { sessions: newSession as any },
-        $set: { lastLogin: now }, // Update last login time
-      }
-    );
+    await db
+      .update(users)
+      .set({
+        sessions: [...((user.sessions as unknown[]) || []), newSession],
+        lastLogin: now, // Update last login time
+      })
+      .where(eq(users.id, user.id));
 
     // Prepare user data (exclude sensitive fields)
     const userData = {
-      id: user._id.toString(),
+      id: user.id,
       username: user.username,
       email: user.email,
       roles: user.roles ?? [], // 👈 roles array

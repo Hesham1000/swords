@@ -1,18 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getShipmentsCollection, getWalletCollection, getWalletTransactionsCollection } from "../../lib/mongoDB";
+import { db } from "../../lib/db";
+import { shipments, wallet, walletTransactions } from "../../lib/db/schema";
+import { desc, eq } from "drizzle-orm";
+
+async function getOrCreateWallet() {
+  let [w] = await db.select().from(wallet).limit(1);
+  if (!w) {
+    const [created] = await db
+      .insert(wallet)
+      .values({ balanceEGP: "0", balanceUSD: "0", balanceEUR: "0" })
+      .returning();
+    w = created;
+  }
+  return w;
+}
 
 // GET: Return all shipments
 export async function GET(request: NextRequest) {
   try {
-    const shipmentsCollection = await getShipmentsCollection();
-    const shipments = await shipmentsCollection
-      .find({})
-      .sort({ createdAt: -1 })
-      .toArray();
+    const data = await db.select().from(shipments).orderBy(desc(shipments.createdAt));
 
     return NextResponse.json({
       message: "Shipments retrieved successfully",
-      data: shipments,
+      data,
     }, { status: 200 });
   } catch (error) {
     console.error("Error fetching shipments:", error);
@@ -34,45 +44,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Cost must be greater than 0" }, { status: 400 });
     }
 
-    const walletCollection = await getWalletCollection();
-    const transactionsCollection = await getWalletTransactionsCollection();
-    const shipmentsCollection = await getShipmentsCollection();
+    const w = await getOrCreateWallet();
+
+    const parsedCost = parseFloat(cost);
 
     // Deduct from wallet (EGP)
-    await walletCollection.updateOne(
-      { _id: "main" as any },
-      { $inc: { balanceEGP: -parseFloat(cost) } },
-      { upsert: true }
-    );
+    await db
+      .update(wallet)
+      .set({
+        balanceEGP: String(parseFloat(w.balanceEGP || "0") - parsedCost),
+        updatedAt: new Date(),
+      })
+      .where(eq(wallet.id, w.id));
 
     // Create shipment record
-    const shipment = {
-      destination: destination.toLowerCase(),
-      cost: parseFloat(cost),
-      description: description || "",
-      date: date || new Date().toISOString().split("T")[0],
-      createdAt: new Date(),
-    };
-    const result = await shipmentsCollection.insertOne(shipment);
+    const [createdShipment] = await db
+      .insert(shipments)
+      .values({
+        destination: destination.toLowerCase(),
+        cost: String(parsedCost),
+        description: description || "",
+        date: date || new Date().toISOString().split("T")[0],
+      })
+      .returning();
 
     // Log wallet transaction
-    const transaction = {
+    await db.insert(walletTransactions).values({
+      walletId: w.id,
       type: "shipment",
-      amount: -parseFloat(cost),
+      amount: String(-parsedCost),
       currency: "EGP",
-      note: `Shipment to ${destination} — ${description || "No description"}`,
-      date: new Date(),
-      createdAt: new Date(),
-      referenceId: result.insertedId,
-    };
-    await transactionsCollection.insertOne(transaction);
-
-    // Get updated balance
-    const wallet = await walletCollection.findOne({ _id: "main" as any });
+      description: `Shipment to ${destination} — ${description || "No description"}`,
+      referenceId: createdShipment.id,
+    });
 
     return NextResponse.json({
       message: "Shipment created successfully",
-      data: { shipment: { ...shipment, _id: result.insertedId }, balanceEGP: wallet?.balanceEGP || 0 },
+      data: { shipment: createdShipment, balanceEGP: parseFloat(w.balanceEGP || "0") - parsedCost },
     }, { status: 201 });
   } catch (error) {
     console.error("Error creating shipment:", error);
