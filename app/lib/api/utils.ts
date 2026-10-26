@@ -1,5 +1,5 @@
 // app/lib/api/utils.ts
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+export const API_URL = "";
 
 /**
  * Transforms a product row (Drizzle) into the format expected by the frontend.
@@ -9,7 +9,7 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 export function transformProduct(product: any) {
     if (!product) return null;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+    const apiUrl = "";
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
 
     const { _id, ...rest } = product;

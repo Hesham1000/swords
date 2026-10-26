@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const periodInvoices = await db
       .select()
       .from(invoices)
-      .where(gte(invoices.date, threeMonthsAgo.toISOString().split("T")[0]));
+      .where(gte(invoices.createdAt, threeMonthsAgo));
 
     const allInvoices = await db.select().from(invoices);
     const totalRevenue = allInvoices.reduce(
@@ -56,7 +56,9 @@ export async function GET(request: NextRequest) {
     }).reverse();
 
     const revenueTrend = last30Days.map((day) => {
-      const dayInvoices = periodInvoices.filter((inv) => inv.date === day);
+      const dayInvoices = periodInvoices.filter(
+        (inv) => inv.createdAt?.toISOString().split("T")[0] === day
+      );
       return {
         date: day,
         revenue: dayInvoices.reduce(
