@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { asc, desc, eq, sql, type AnyColumn } from "drizzle-orm";
+import { and, asc, desc, eq, sql, type AnyColumn } from "drizzle-orm";
 import { db, walletTransactions } from "../../../lib/db";
 
 // GET: Return wallet transaction history
@@ -11,6 +11,15 @@ export async function GET(request: NextRequest) {
     const walletId = searchParams.get("walletId") || undefined;
     const sort = searchParams.get("sort") || "date";
     const order = searchParams.get("order") || "desc";
+
+    // Map frontend type param to DB type values ('withdrawal' -> 'withdraw')
+    const rawType = searchParams.get("type") || undefined;
+    const mappedType =
+      rawType === "withdrawal"
+        ? "withdraw"
+        : rawType === "deposit"
+          ? "deposit"
+          : undefined;
 
     const sortColumns: Record<string, AnyColumn> = {
       date: walletTransactions.createdAt,
@@ -31,21 +40,28 @@ export async function GET(request: NextRequest) {
       .select({ count: sql<number>`count(*)::int` })
       .from(walletTransactions);
 
+    const conditions = [
+      walletId ? eq(walletTransactions.walletId, walletId) : undefined,
+      mappedType ? eq(walletTransactions.type, mappedType) : undefined,
+    ].filter(Boolean);
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
     const [transactions, totalResult] = await Promise.all([
-      walletId
+      whereClause
         ? db
             .select()
             .from(walletTransactions)
-            .where(eq(walletTransactions.walletId, walletId))
+            .where(whereClause)
             .orderBy(order === "asc" ? asc(sortColumn) : desc(sortColumn))
             .limit(limit)
             .offset(offset)
         : baseQuery,
-      walletId
+      whereClause
         ? db
             .select({ count: sql<number>`count(*)::int` })
             .from(walletTransactions)
-            .where(eq(walletTransactions.walletId, walletId))
+            .where(whereClause)
         : countQuery,
     ]);
 
