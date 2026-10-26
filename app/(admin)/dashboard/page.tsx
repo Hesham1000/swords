@@ -57,7 +57,7 @@ export default function DashboardOverview() {
 
   const sortedInvoices = [...recentInvoices].sort((a, b) => {
     if (invoiceSort === "amount") {
-      return parseFloat(String(b.totalAmount ?? 0)) - parseFloat(String(a.totalAmount ?? 0));
+      return parseFloat(String(b.amount ?? 0)) - parseFloat(String(a.amount ?? 0));
     }
     const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;

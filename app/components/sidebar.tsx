@@ -10,8 +10,8 @@ import {
   Sun,
   Moon,
   Wallet,
-  TrendingUp,
   PieChart,
+  History,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -67,7 +67,7 @@ const Sidebar = ({
     { id: "products", label: "Products", icon: Package, adminOnly: false },
     { id: "invoices", label: "Invoices", icon: FileText, adminOnly: true },
     { id: "wallet", label: "Wallet", icon: Wallet, adminOnly: true },
-    { id: "history", label: "History", icon: TrendingUp, adminOnly: true },
+    { id: "history", label: "History", icon: History, adminOnly: true },
   ].filter(item => !item.adminOnly || isAdmin);
 
   const handleLogout = async () => {
