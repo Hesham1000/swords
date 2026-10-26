@@ -196,34 +196,16 @@ export default function ProductsPage() {
       {error && <div className="error-banner">{error}</div>}
 
       {loading ? (
-        <div className="products-grid">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="rounded border border-gray-200 p-4">
-              <div className="animate-pulse flex flex-col gap-4">
-                <div className="bg-gray-200 rounded aspect-square"></div>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="skeleton h-64 w-full rounded-xl" />
           ))}
         </div>
       ) : products.length === 0 && !error ? (
-        <div className="flex flex-col items-center py-16">
-          <Package size={48} className="text-gray-400" />
-          <h3 className="text-lg font-semibold mt-4">No products found</h3>
-          <p className="text-gray-500 mt-1">Try adjusting your search or filters.</p>
-          {isAdmin && (
-            <button
-              className="primary-btn mt-4"
-              onClick={() => {
-                setEditingProduct(null);
-                setShowForm(true);
-              }}
-            >
-              <Plus size={18} />
-              Add your first product
-            </button>
-          )}
+        <div className="empty-state-container">
+          <Package className="empty-state-icon" />
+          <h2 className="empty-state-title">No products found</h2>
+          <p className="empty-state-description">No products match your current search or filters.</p>
         </div>
       ) : (
         <ProductsList

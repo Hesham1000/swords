@@ -90,18 +90,18 @@ export default function WalletPage() {
       <div className="stats-grid">
         {loading ? (
           <>
-            <div className="stat-card animate-pulse">
-              <div className="h-4 w-24 rounded bg-white/10" />
-              <div className="mt-3 h-6 w-32 rounded bg-white/10" />
-            </div>
-            <div className="stat-card animate-pulse">
-              <div className="h-4 w-24 rounded bg-white/10" />
-              <div className="mt-3 h-6 w-32 rounded bg-white/10" />
-            </div>
-            <div className="stat-card animate-pulse">
-              <div className="h-4 w-24 rounded bg-white/10" />
-              <div className="mt-3 h-6 w-32 rounded bg-white/10" />
-            </div>
+            <div className="stat-card">
+                <div className="skeleton h-4 w-24" />
+                <div className="mt-3 skeleton h-6 w-32" />
+              </div>
+            <div className="stat-card">
+                <div className="skeleton h-4 w-24" />
+                <div className="mt-3 skeleton h-6 w-32" />
+              </div>
+            <div className="stat-card">
+                <div className="skeleton h-4 w-24" />
+                <div className="mt-3 skeleton h-6 w-32" />
+              </div>
           </>
         ) : (
           <>
@@ -173,21 +173,21 @@ export default function WalletPage() {
           {loading ? (
             <div className="flex flex-col gap-2">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="animate-pulse flex items-center gap-4 rounded-xl border border-[var(--border-tech)] bg-white/[0.02] p-4">
-                  <div className="h-10 w-10 shrink-0 rounded-full bg-white/10" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3.5 w-48 rounded bg-white/10" />
-                    <div className="h-3 w-32 rounded bg-white/10" />
+                  <div key={i} className="flex items-center gap-4 rounded-xl border border-[var(--border-tech)] bg-white/[0.02] p-4">
+                    <div className="skeleton h-10 w-10 shrink-0 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <div className="skeleton h-3.5 w-48" />
+                      <div className="skeleton h-3 w-32" />
+                    </div>
+                    <div className="skeleton h-4 w-24" />
                   </div>
-                  <div className="h-4 w-24 rounded bg-white/10" />
-                </div>
-              ))}
+                ))}
             </div>
           ) : transactions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-              <Wallet size={48} className="text-[var(--text-secondary)]" />
-              <h3 className="text-lg font-bold text-[var(--text-primary)]">No transactions yet</h3>
-              <p className="text-sm text-[var(--text-secondary)]">Deposits, withdrawals and invoice payments will appear here.</p>
+            <div className="empty-state-container">
+                <Wallet className="empty-state-icon" />
+                <h2 className="empty-state-title">No transactions yet</h2>
+                <p className="empty-state-description">Deposits, withdrawals and invoice payments will appear here.</p>
               <button className="deposit-btn" onClick={() => { setWalletFormMode("deposit"); setShowDepositForm(true); }}>
                 Make your first deposit
               </button>
