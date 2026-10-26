@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import "./globals.css";
 
@@ -17,7 +18,7 @@ const KingsLogo = () => (
     left: 0, 
     zIndex: 100 
   }}>
-    <img src="/icon.png" alt="Kings Logo" width="120" height="120" />
+    <Image src="/icon.png" alt="Kings Logo" width={120} height={120} />
   </div>
 );
 
@@ -55,9 +56,10 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="landing-hero" style={{ position: "relative" }}>
         <div className="hero-bg-container">
-          <img
+          <Image
             src="/images/fencing_hero.png"
             alt="Fencing Duel"
+            fill
             className="hero-bg-image"
           />
           <div className="hero-overlay-gradient" style={{ background: 'radial-gradient(circle at center, rgba(0,0,0,0.3) 0%, var(--bg-deep) 100%)' }}></div>
@@ -118,7 +120,7 @@ export default function LandingPage() {
                 className="arsenal-card"
               >
                 <div style={{ position: 'relative', height: '200px', borderRadius: '16px', overflow: 'hidden', marginBottom: '1.5rem' }}>
-                  <img src={cat.image} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <Image src={cat.image} alt={cat.name} fill style={{ objectFit: 'cover' }} />
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}></div>
                   <div style={{ position: 'absolute', bottom: '1rem', left: '1rem' }}>
                   </div>

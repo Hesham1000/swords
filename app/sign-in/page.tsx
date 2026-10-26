@@ -403,7 +403,7 @@ const FencingLogin = () => {
                   animate={{ textShadow: ["0 0 0px var(--accent-gold)", "0 0 8px var(--accent-gold)", "0 0 0px var(--accent-gold)"] }}
                   transition={{ duration: 3, repeat: Infinity }}
                 >
-                  <img src="/icon.png" alt="Kings Logo" width="120" height="120" />
+                  <Image src="/icon.png" alt="Kings Logo" width={120} height={120} />
                 </motion.div>
               </div>
               <AnimatePresence mode="wait">{renderLoginForm()}</AnimatePresence>
@@ -431,7 +431,7 @@ const FencingLogin = () => {
                   animate={{ textShadow: ["0 0 0px var(--accent-gold)", "0 0 8px var(--accent-gold)", "0 0 0px var(--accent-gold)"] }}
                   transition={{ duration: 3, repeat: Infinity }}
                 >
-                  <img src="/icon.png" alt="Kings Logo" width="120" height="120" />
+                  <Image src="/icon.png" alt="Kings Logo" width={120} height={120} />
                 </motion.div>
               </div>
               <AnimatePresence mode="wait">

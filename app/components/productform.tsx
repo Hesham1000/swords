@@ -589,6 +589,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     <div className="media-previews">
                       {existingImages.map((src, index) => (
                         <div key={`existing-${index}`} className="media-card">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={src} alt="Server" />
                           <button type="button" className="remove-media" onClick={() => removeImage(index, true)} disabled={loading}><X size={12} /></button>
                           <div className="media-tag">OFFICIAL</div>
@@ -596,6 +597,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                       ))}
                       {imagePreviews.map((preview, index) => (
                         <div key={`new-${index}`} className="media-card new">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={preview} alt="New" />
                           <button type="button" className="remove-media" onClick={() => removeImage(index, false)} disabled={loading}><X size={12} /></button>
                           <div className="media-tag">NEW</div>

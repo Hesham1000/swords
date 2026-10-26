@@ -18,7 +18,7 @@ import { useDashboard } from "../layout";
 export default function DashboardOverview() {
   const { dashboardData, refreshDashboard } = useDashboard();
   const router = useRouter();
-  const [error, setError] = useState("");
+  const [error] = useState("");
   const [loading, setLoading] = useState(true);
 const [searchInput, setSearchInput] = useState("");
 const [searchQuery, setSearchQuery] = useState("");

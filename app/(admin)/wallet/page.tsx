@@ -7,7 +7,7 @@ import ShipmentForm from "../../components/shipment-form";
 import { getWalletBalance, getWalletTransactions, WalletTransaction } from "../../lib/api/wallet";
 
 export default function WalletPage() {
-  const [error, setError] = useState("");
+  const [, setError] = useState("");
   const [balance, setBalance] = useState({ EGP: 0, USD: 0, EUR: 0 });
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [loading, setLoading] = useState(true);

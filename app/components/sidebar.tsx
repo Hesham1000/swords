@@ -1,5 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import React, { useState, useEffect } from "react";
 import {
   LayoutDashboard,
@@ -126,7 +127,7 @@ const Sidebar = ({
           animate={{ textShadow: ["0 0 0px var(--accent-gold)", "0 0 8px var(--accent-gold)", "0 0 0px var(--accent-gold)"] }}
           transition={{ duration: 3, repeat: Infinity }}
         >
-          <img src="/icon.png" alt="Kings Logo" width="40" height="40" />
+          <Image src="/icon.png" alt="Kings Logo" width={40} height={40} />
           <span
             style={{
               fontWeight: 800,
