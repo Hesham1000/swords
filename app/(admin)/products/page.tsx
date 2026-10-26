@@ -77,7 +77,7 @@ export default function ProductsPage() {
       }
     };
     fetchProducts();
-  }, [page, searchQuery, filterCategory, filterType, filterBrand, refresh]);
+  }, [page, searchQuery, filterCategory, filterType, filterBrand, sortField, sortOrder, refresh]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this product?")) return;

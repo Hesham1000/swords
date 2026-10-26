@@ -138,7 +138,7 @@ export default function InvoicesPage() {
                   <div className="invoice-customer">{invoice.customer}</div>
                 </div>
                 <div className="invoice-amount-col">
-                  <div className="invoice-amount">{invoice.amount.toLocaleString()} EGP</div>
+                  <div className="invoice-amount">{parseFloat(String(invoice.amount)).toLocaleString()} EGP</div>
                   <div className="invoice-date">{invoice.date}</div>
                 </div>
                 <div className="invoice-actions-col">
