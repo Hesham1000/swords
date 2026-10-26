@@ -1,14 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
-import { ObjectId } from "mongodb";
-import {
-  getUserCollection,
-  getBlacklistCollection,
-} from "../mongoDB";
+import { eq } from "drizzle-orm";
+import { db, blacklistTokens, users } from "../db";
 import { verifyAccessTokenEdge as verifyAccessToken } from "./edge";
-
-// export { verifyAccessToken }; // If needed by other non-edge files
-
-// import { JWTPayloadCustom } from "@/types/auth";
 
 export const INACTIVITY_TIMEOUT = 30 * 60; // 30 mins
 export const PASSWORD_TOKEN_EXPIRATION_MINUTES = 8; // 8 minutes
@@ -64,35 +57,6 @@ export async function generateToken(
 
 export { verifyAccessToken };
 
-// Verify Refresh Token (Edge Runtime Compatible)
-// export async function verifyRefreshToken(
-//   token: string
-// ): Promise<JWTPayloadCustom | null> {
-//   try {
-//     const { payload } = await jwtVerify(token, JWT_REFRESH_SECRET);
-
-//     // Type guard for refresh token payload
-//     if (
-//       typeof payload === "object" &&
-//       payload !== null &&
-//       "userId" in payload &&
-//       typeof payload.userId === "string" &&
-//       "exp" in payload &&
-//       typeof payload.exp === "number"
-//     ) {
-//       return {
-//         userId: payload.userId as string,
-//         exp: payload.exp as number,
-//         iat: (payload.iat as number) || 0,
-//       };
-//     }
-
-//     return null;
-//   } catch {
-//     return null;
-//   }
-// }
-
 // Password Setup Token
 export async function generatePasswordSetupToken(
   email: string
@@ -128,31 +92,15 @@ export async function decodePasswordSetupToken(
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Lazy DB initialization (no top-level await)
-async function getCollections() {
-  const blacklist = await getBlacklistCollection();
-  const users = await getUserCollection();
-  return { blacklist, users };
-}
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Blacklist check
 export async function isTokenBlacklisted(token: string): Promise<boolean> {
-  const { blacklist } = await getCollections();
-  return !!(await blacklist.findOne({ token }));
+  const rows = await db
+    .select({ id: blacklistTokens.id })
+    .from(blacklistTokens)
+    .where(eq(blacklistTokens.token, token));
+  return rows.length > 0;
 }
 
 // Revoke token and clear cookies
@@ -161,21 +109,13 @@ export async function revokeAndDeleteToken(
   userId?: string,
   refresh?: string
 ): Promise<void> {
-  const { blacklist, users } = await getCollections();
-
   // Blacklist token
   if (!(await isTokenBlacklisted(token))) {
-    await blacklist.insertOne({
+    await db.insert(blacklistTokens).values({
       token,
-      revoked_at: new Date(),
-      ...(userId ? { user_id: new ObjectId(userId) } : {}),
+      ...(userId && UUID_REGEX.test(userId) ? { userId } : {}),
     });
   }
 
-  // Remove session
-  if (userId) {
-    await users.updateOne({ _id: new ObjectId(userId) }, {
-      $pull: { sessions: { token } },
-    } as any);
-  }
+  // Sessions are no longer stored per-user in the Drizzle schema; nothing to remove.
 }

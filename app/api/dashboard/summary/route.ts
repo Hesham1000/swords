@@ -1,41 +1,94 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getInvoicesCollection, getProductsCollection } from "../../../lib/mongoDB";
-import { transformProduct } from "../../../lib/api/utils";
+import { desc, gte, lt, sql } from "drizzle-orm";
+import { db, invoices, products } from "../../../lib/db";
+
+// Map a Drizzle invoice row to the response shape the frontend expects
+function mapInvoice(r: any) {
+  return {
+    id: r.id,
+    invoiceId: r.invoiceNumber,
+    customer: r.customerName,
+    customerEmail: r.customerEmail,
+    customerPhone: r.customerPhone,
+    amount: parseFloat(r.totalAmount ?? 0),
+    discount: parseFloat(r.discount ?? 0),
+    status: r.status,
+    paymentMethod: r.paymentMethod,
+    date: r.date,
+    items: r.items,
+    deposit: parseFloat(r.deposit ?? 0),
+    depositCurrency: r.depositCurrency,
+    notes: r.notes,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+  };
+}
+
+// Map a Drizzle product row to the response shape the frontend expects
+function mapProduct(p: any) {
+  return {
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    price: parseFloat(p.price ?? 0),
+    category: p.category,
+    productType: p.productType,
+    brand: p.brand,
+    model: p.model,
+    subCategory: p.subCategory,
+    hand: p.hand,
+    isKings: p.isKings,
+    isMini: p.isMini,
+    lameColor: p.lameColor,
+    material: p.material,
+    gloveSize: p.gloveSize,
+    quantity: p.quantity,
+    images: p.images,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+  };
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const invoicesCollection = await getInvoicesCollection();
-    const productsCollection = await getProductsCollection();
-
     // 1. RECENT INVOICES (Latest 5)
-    const recentInvoices = await invoicesCollection
-      .find({})
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .toArray();
+    const recentRows = await db
+      .select()
+      .from(invoices)
+      .orderBy(desc(invoices.createdAt))
+      .limit(5);
+    const recentInvoices = recentRows.map(mapInvoice);
 
     // 2. ANALYTICS DATA (Revenue, Orders, Customers)
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    const periodStart = threeMonthsAgo.toISOString().split('T')[0];
 
-    const periodInvoices = await invoicesCollection.find({
-      date: { $gte: threeMonthsAgo.toISOString().split('T')[0] }
-    }).toArray();
+    const periodRows = await db
+      .select()
+      .from(invoices)
+      .where(gte(invoices.date, periodStart));
+    const periodInvoices = periodRows.map(mapInvoice);
 
-    const allInvoices = await invoicesCollection.find({}).toArray();
+    const allRows = await db.select().from(invoices);
+    const allInvoices = allRows.map(mapInvoice);
     const totalRevenue = allInvoices.reduce((acc, inv) => acc + (inv.amount || 0), 0);
     const totalOrders = allInvoices.length;
     const uniqueCustomers = new Set(allInvoices.map(inv => inv.customer)).size;
 
     // 3. PRODUCT SUMMARY & LOW STOCK
-    const allProducts = await productsCollection.find({}).toArray();
+    const allProductRows = await db.select().from(products);
+    const allProducts = allProductRows.map(mapProduct);
     const totalInventoryCount = allProducts.reduce((acc, prod) => acc + (prod.quantity || 0), 0);
     const inventoryValue = allProducts.reduce((acc, prod) => acc + ((prod.price || 0) * (prod.quantity || 0)), 0);
-    
-    const lowStockItems = allProducts
-      .filter(p => (p.quantity || 0) < 3)
-      .sort((a, b) => (a.quantity || 0) - (b.quantity || 0))
-      .slice(0, 5);
+
+    const lowStockRows = await db
+      .select()
+      .from(products)
+      .where(lt(products.quantity, 3))
+      .orderBy(sql`${products.quantity} ASC`)
+      .limit(5);
+    const lowStockItems = lowStockRows.map(mapProduct);
 
     // 4. TRENDS (Last 30 Days)
     const last30Days = Array.from({ length: 30 }).map((_, i) => {
@@ -56,10 +109,10 @@ export async function GET(request: NextRequest) {
     // 5. CATEGORY DISTRIBUTION
     const productCategoryMap: Record<string, string> = {};
     allProducts.forEach(prod => {
-      const cat = prod.category && Array.isArray(prod.category) && prod.category.length > 0 
-        ? prod.category[0] 
+      const cat = prod.category && Array.isArray(prod.category) && prod.category.length > 0
+        ? prod.category[0]
         : (typeof prod.category === 'string' ? prod.category : "Equipment");
-      productCategoryMap[prod._id.toString()] = cat;
+      productCategoryMap[prod.id] = cat;
     });
 
     const categorySales: Record<string, number> = {};
@@ -98,7 +151,7 @@ export async function GET(request: NextRequest) {
           averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0
         },
         recentInvoices,
-        lowStockItems: lowStockItems.map(transformProduct),
+        lowStockItems,
         analytics: {
           trends: revenueTrend,
           categories: Object.entries(categorySales).map(([name, value]) => ({ name, value })),

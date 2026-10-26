@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { eq, or } from "drizzle-orm";
 import { verifyPassword } from "../../../lib/auth/password";
 import { generateToken } from "../../../lib/auth/token";
-import { v4 as uuidv4 } from "uuid";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { db, users } from "../../../lib/db";
 import ApiError from "../../../utils/ApiError";
 
 // Failed login attempts tracking
@@ -29,22 +29,17 @@ export async function POST(request: NextRequest) {
       throw ApiError.badRequest("Email/Username and password are required!");
     }
 
-    const userCollection = await getUserCollection();
-
     // Find user by either email or username
-    let user;
-    if (isEmail(identifier)) {
-      // Search by email
-      user = await userCollection.findOne({ email: identifier });
-    } else {
-      // Search by username
-      user = await userCollection.findOne({ username: identifier });
-    }
-
-    // If not found with email, also check username for email input (fallback)
-    if (!user && isEmail(identifier)) {
-      user = await userCollection.findOne({ email: identifier });
-    }
+    const found = await db
+      .select()
+      .from(users)
+      .where(
+        or(
+          eq(users.email, identifier),
+          eq(users.username, identifier)
+        )
+      );
+    const user = found[0];
 
     if (!user) {
       // Determine whether the identifier was an email or username for error message
@@ -55,91 +50,74 @@ export async function POST(request: NextRequest) {
     // Use email for lockout tracking (consistent identifier)
     const lockoutKey = user.email;
 
-    if (user) {
-      if (!user.isActive) {
+    if (!user.isActive) {
+      throw ApiError.badRequest(
+        "You do not complete the registration process. Please check your email to set your password"
+      );
+    }
+
+    // 🔒 Lockout handling
+    if (failedAttempts[lockoutKey]) {
+      const lockoutTime = failedAttempts[lockoutKey].lockoutTime;
+      if (lockoutTime) {
+        const remaining =
+          LOCKOUT_PERIOD - (Date.now() - lockoutTime.getTime());
+        if (remaining > 0) {
+          throw ApiError.badRequest(
+            "Account locked out for " +
+              Math.ceil(remaining / 60000) +
+              " minutes"
+          );
+        } else {
+          // Reset lockout
+          failedAttempts[lockoutKey].attempts = 0;
+          delete failedAttempts[lockoutKey].lockoutTime;
+        }
+      }
+    }
+
+    // 🔑 Verify password
+    const isValidPassword = await verifyPassword(password, user.password);
+    if (!isValidPassword) {
+      // Track failed attempt
+      if (!failedAttempts[lockoutKey]) {
+        failedAttempts[lockoutKey] = { attempts: 1 };
+      } else {
+        failedAttempts[lockoutKey].attempts++;
+      }
+
+      // Lock account if max attempts exceeded
+      if (failedAttempts[lockoutKey].attempts > MAX_FAILED_ATTEMPTS) {
+        failedAttempts[lockoutKey].lockoutTime = new Date();
         throw ApiError.badRequest(
-          "You do not complete the registration process. Please check your email to set your password"
+          "Account locked out for " + LOCKOUT_PERIOD / 60000 + " minutes"
         );
       }
 
-      // 🔒 Lockout handling
-      if (failedAttempts[lockoutKey]) {
-        const lockoutTime = failedAttempts[lockoutKey].lockoutTime;
-        if (lockoutTime) {
-          const remaining =
-            LOCKOUT_PERIOD - (Date.now() - lockoutTime.getTime());
-          if (remaining > 0) {
-            throw ApiError.badRequest(
-              "Account locked out for " +
-                Math.ceil(remaining / 60000) +
-                " minutes"
-            );
-          } else {
-            // Reset lockout
-            failedAttempts[lockoutKey].attempts = 0;
-            delete failedAttempts[lockoutKey].lockoutTime;
-          }
-        }
-      }
-
-      // 🔑 Verify password
-      const isValidPassword = await verifyPassword(password, user.password);
-      if (!isValidPassword) {
-        // Track failed attempt
-        if (!failedAttempts[lockoutKey]) {
-          failedAttempts[lockoutKey] = { attempts: 1 };
-        } else {
-          failedAttempts[lockoutKey].attempts++;
-        }
-
-        // Lock account if max attempts exceeded
-        if (failedAttempts[lockoutKey].attempts > MAX_FAILED_ATTEMPTS) {
-          failedAttempts[lockoutKey].lockoutTime = new Date();
-          throw ApiError.badRequest(
-            "Account locked out for " + LOCKOUT_PERIOD / 60000 + " minutes"
-          );
-        }
-
-        throw ApiError.badRequest("Incorrect email/username or password!");
-      }
-
-      // ✅ Clear failed attempts on successful login
-      delete failedAttempts[lockoutKey];
+      throw ApiError.badRequest("Incorrect email/username or password!");
     }
+
+    // ✅ Clear failed attempts on successful login
+    delete failedAttempts[lockoutKey];
 
     // Update user login status
     const now = new Date();
 
-    // Generate tokens - adjust this based on your token generation logic
-    // You might want to pass user._id instead of "1"
-    const { accessToken, refreshToken } = await generateToken(
-      user._id.toString()
-    );
+    // Generate tokens
+    const { accessToken, refreshToken } = await generateToken(user.id);
 
-    // Create new session
-    const newSession = {
-      session_id: uuidv4(),
-      token: accessToken,
-      refresh: refreshToken,
-      last_action: now,
-    };
-
-    // Add session to user
-    await userCollection.updateOne(
-      { _id: user._id },
-      {
-        $push: { sessions: newSession as any },
-        $set: { lastLogin: now }, // Update last login time
-      }
-    );
+    await db
+      .update(users)
+      .set({ updatedAt: now })
+      .where(eq(users.id, user.id));
 
     // Prepare user data (exclude sensitive fields)
     const userData = {
-      id: user._id.toString(),
+      id: user.id,
       username: user.username,
       email: user.email,
       roles: user.roles ?? [], // 👈 roles array
-      dateJoined: user.dateJoined,
+      dateJoined: user.createdAt,
       lastLogin: now,
       isActive: user.isActive,
     };

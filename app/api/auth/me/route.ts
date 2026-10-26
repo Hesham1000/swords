@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { eq } from "drizzle-orm";
+import { db, users } from "../../../lib/db";
 import { verifyAccessToken } from "../../../lib/auth/token";
-import { ObjectId } from "mongodb";
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,11 +17,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    const userCollection = await getUserCollection();
-    const user = await userCollection.findOne(
-      { _id: new ObjectId(payload.userId) },
-      { projection: { password: 0, sessions: 0 } }
-    );
+    const found = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, payload.userId));
+    const user = found[0];
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       user: {
-        id: user._id,
+        id: user.id,
         username: user.username,
         email: user.email,
         roles: user.roles || ["user"],

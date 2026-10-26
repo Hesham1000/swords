@@ -1,31 +1,59 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getInvoicesCollection, getProductsCollection } from "../../lib/mongoDB";
-import { ObjectId } from "mongodb";
+import { gte } from "drizzle-orm";
+import { db, invoices, products } from "../../lib/db";
+
+// Map a Drizzle invoice row to the response shape the frontend expects
+function mapInvoice(r: any) {
+  return {
+    id: r.id,
+    invoiceId: r.invoiceNumber,
+    customer: r.customerName,
+    amount: parseFloat(r.totalAmount ?? 0),
+    status: r.status,
+    paymentMethod: r.paymentMethod,
+    date: r.date,
+    items: r.items,
+    deposit: parseFloat(r.deposit ?? 0),
+    createdAt: r.createdAt,
+  };
+}
+
+// Map a Drizzle product row to the response shape the frontend expects
+function mapProduct(p: any) {
+  return {
+    id: p.id,
+    name: p.name,
+    price: parseFloat(p.price ?? 0),
+    category: p.category,
+    quantity: p.quantity,
+  };
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const invoicesCollection = await getInvoicesCollection();
-    const productsCollection = await getProductsCollection();
-
-    // 1. GET ALL INVOICES FOR PROCESSING
-    // We fetch a reasonable range (last 90 days) for detailed analytics
+    // 1. GET ALL INVOICES FOR PROCESSING (last 90 days for detailed analytics)
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    const periodStart = threeMonthsAgo.toISOString().split('T')[0];
 
-    const invoices = await invoicesCollection.find({
-      date: { $gte: threeMonthsAgo.toISOString().split('T')[0] }
-    }).toArray();
+    const periodRows = await db
+      .select()
+      .from(invoices)
+      .where(gte(invoices.date, periodStart));
+    const periodInvoices = periodRows.map(mapInvoice);
 
     // 2. SUMMARY STATS (Total from all time)
-    const allInvoices = await invoicesCollection.find({}).toArray();
+    const allRows = await db.select().from(invoices);
+    const allInvoices = allRows.map(mapInvoice);
     const totalRevenue = allInvoices.reduce((acc, inv) => acc + (inv.amount || 0), 0);
     const totalOrders = allInvoices.length;
-    
+
     // Unique customers
     const uniqueCustomers = new Set(allInvoices.map(inv => inv.customer)).size;
 
     // Inventory Value
-    const allProducts = await productsCollection.find({}).toArray();
+    const allProductRows = await db.select().from(products);
+    const allProducts = allProductRows.map(mapProduct);
     const inventoryValue = allProducts.reduce((acc, prod) => acc + ((prod.price || 0) * (prod.quantity || 0)), 0);
 
     // 3. TRENDS (Last 30 Days)
@@ -36,7 +64,7 @@ export async function GET(request: NextRequest) {
     }).reverse();
 
     const revenueTrend = last30Days.map(day => {
-      const dayInvoices = invoices.filter(inv => inv.date === day);
+      const dayInvoices = periodInvoices.filter(inv => inv.date === day);
       return {
         date: day,
         revenue: dayInvoices.reduce((acc, inv) => acc + (inv.amount || 0), 0),
@@ -47,14 +75,14 @@ export async function GET(request: NextRequest) {
     // 4. CATEGORY DISTRIBUTION
     const productCategoryMap: Record<string, string> = {};
     allProducts.forEach(prod => {
-      const cat = prod.category && Array.isArray(prod.category) && prod.category.length > 0 
-        ? prod.category[0] 
+      const cat = prod.category && Array.isArray(prod.category) && prod.category.length > 0
+        ? prod.category[0]
         : (typeof prod.category === 'string' ? prod.category : "Equipment");
-      productCategoryMap[prod._id.toString()] = cat;
+      productCategoryMap[prod.id] = cat;
     });
 
     const categorySales: Record<string, number> = {};
-    invoices.forEach(inv => {
+    periodInvoices.forEach(inv => {
       (inv.items || []).forEach((item: any) => {
         const cat = productCategoryMap[item.productId] || item.category || "General";
         categorySales[cat] = (categorySales[cat] || 0) + (item.price * item.quantity);
@@ -63,7 +91,7 @@ export async function GET(request: NextRequest) {
 
     // 5. TOP PRODUCTS
     const productSales: Record<string, {name: string, revenue: number, quantity: number}> = {};
-    invoices.forEach(inv => {
+    periodInvoices.forEach(inv => {
       (inv.items || []).forEach((item: any) => {
         if (!productSales[item.productId]) {
           productSales[item.productId] = { name: item.name, revenue: 0, quantity: 0 };
