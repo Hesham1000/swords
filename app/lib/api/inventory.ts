@@ -31,13 +31,22 @@ export interface InventoryLogsResponse {
 /**
  * Fetch inventory logs from the API
  */
-export async function getInventoryLogs(page: number = 1, limit: number = 10, productId?: string): Promise<InventoryLogsResponse> {
+export async function getInventoryLogs(page: number = 1, limit: number = 10, productId?: string, search?: string, type?: string, dateRange?: string): Promise<InventoryLogsResponse> {
   try {
     const url = new URL(`${apiUrl}/api/inventory/logs`, window.location.origin);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
     if (productId) {
       url.searchParams.append("productId", productId);
+    }
+    if (search && search !== "all") {
+      url.searchParams.append("search", search);
+    }
+    if (type && type !== "all") {
+      url.searchParams.append("type", type);
+    }
+    if (dateRange && dateRange !== "all") {
+      url.searchParams.append("dateRange", dateRange);
     }
 
     const response = await fetch(url.toString(), {

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { Wallet, Plus, ArrowUpCircle, ArrowDownCircle, Truck, Loader2 } from "lucide-react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { Wallet, Plus, ArrowUpCircle, ArrowDownCircle, Truck, Loader2, Search } from "lucide-react";
 import WalletDepositForm from "../../components/wallet-deposit-form";
 import ShipmentForm from "../../components/shipment-form";
 import { getWalletBalance, getWalletTransactions, WalletTransaction } from "../../lib/api/wallet";
@@ -26,9 +26,19 @@ export default function WalletPage() {
     hasPrevPage: boolean;
   } | null>(null);
   const lastParamsRef = useRef("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filterCurrency, setFilterCurrency] = useState("");
+  const [filterType, setFilterType] = useState("");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "amount">("newest");
 
   useEffect(() => {
-    const params = JSON.stringify({ refresh, page });
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const params = JSON.stringify({ refresh, page, debouncedSearch, filterCurrency, filterType });
     if (params === lastParamsRef.current) return;
     lastParamsRef.current = params;
 
@@ -37,15 +47,15 @@ export default function WalletPage() {
         setLoading(true);
         const [balanceRes, transactionsRes] = await Promise.all([
           getWalletBalance(),
-          getWalletTransactions(page),
+          getWalletTransactions(page, 10, debouncedSearch, filterCurrency, filterType),
         ]);
         setBalance({
-          EGP: balanceRes.data.balanceEGP,
-          USD: balanceRes.data.balanceUSD,
-          EUR: balanceRes.data.balanceEUR,
+          EGP: balanceRes?.data?.balanceEGP ?? 0,
+          USD: balanceRes?.data?.balanceUSD ?? 0,
+          EUR: balanceRes?.data?.balanceEUR ?? 0,
         });
-        setTransactions(transactionsRes.data);
-        if (transactionsRes.pagination) {
+        setTransactions(transactionsRes?.data ?? []);
+        if (transactionsRes?.pagination) {
           setPagination(transactionsRes.pagination);
         }
       } catch (err: any) {
@@ -55,7 +65,19 @@ export default function WalletPage() {
       }
     };
     fetchWalletData();
-  }, [refresh, page]);
+  }, [refresh, page, debouncedSearch, filterCurrency, filterType]);
+
+  const sortedTransactions = useMemo(() => {
+    const sorted = [...transactions];
+    if (sortBy === "newest") {
+      sorted.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    } else if (sortBy === "oldest") {
+      sorted.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    } else {
+      sorted.sort((a, b) => b.amount - a.amount);
+    }
+    return sorted;
+  }, [transactions, sortBy]);
 
   return (
     <div className="page-content">
@@ -77,6 +99,12 @@ export default function WalletPage() {
         </div>
       </div>
 
+      {loading ? (
+        <div className="flex items-center justify-center gap-3 py-16">
+          <Loader2 className="animate-spin text-[var(--accent-blue)]" size={28} />
+          <span className="text-sm text-[var(--text-secondary)]">Loading wallet data...</span>
+        </div>
+      ) : (
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon"><Wallet size={20} /></div>
@@ -94,18 +122,67 @@ export default function WalletPage() {
           <p className="stat-value">€ {balance.EUR.toLocaleString()}</p>
         </div>
       </div>
+      )}
 
       <div className="list-card full-width">
         <div className="card-header">
           <h2 className="card-title">Transaction History</h2>
         </div>
+        <div className="flex flex-wrap items-center gap-3 px-4 pb-2">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+              placeholder="Search transactions..."
+              className="w-full rounded-lg border border-[var(--border-tech)] bg-white/5 py-2 pl-9 pr-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-blue)]"
+            />
+          </div>
+          <select
+            value={filterCurrency}
+            onChange={(e) => { setFilterCurrency(e.target.value); setPage(1); }}
+            className="rounded-lg border border-[var(--border-tech)] bg-white/5 px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-blue)]"
+          >
+            <option value="">All Currencies</option>
+            <option value="EGP">EGP</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+          <select
+            value={filterType}
+            onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
+            className="rounded-lg border border-[var(--border-tech)] bg-white/5 px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-blue)]"
+          >
+            <option value="">All Types</option>
+            <option value="deposit">Deposit</option>
+            <option value="withdraw">Withdraw</option>
+            <option value="shipment">Shipment</option>
+          </select>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as "newest" | "oldest" | "amount")}
+            className="rounded-lg border border-[var(--border-tech)] bg-white/5 px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-blue)]"
+          >
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="amount">Highest Amount</option>
+          </select>
+        </div>
         <div className="transaction-list">
           {loading ? (
-            <div className="loading-state"><Loader2 className="animate-spin" /></div>
+            <div className="flex items-center justify-center gap-3 py-12">
+              <Loader2 className="animate-spin text-[var(--accent-blue)]" size={24} />
+              <span className="text-sm text-[var(--text-secondary)]">Loading wallet data...</span>
+            </div>
           ) : transactions.length === 0 ? (
-            <div className="empty-state">No transactions recorded.</div>
+            <div className="flex flex-col items-center justify-center gap-2 py-12">
+              <Wallet size={40} className="text-[var(--text-secondary)]" />
+              <h3 className="text-base font-bold text-[var(--text-primary)]">No transactions yet</h3>
+              <p className="text-sm text-[var(--text-secondary)]">Deposit funds to get started.</p>
+            </div>
           ) : (
-            transactions.map((tx, idx) => (
+            sortedTransactions.map((tx, idx) => (
               <div key={idx} className="transaction-item">
                 <div className="tx-icon">
                   {(tx.type === "invoice" || tx.type === "deposit") ? (

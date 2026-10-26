@@ -21,6 +21,7 @@ export default function DashboardOverview() {
   const { user, isAdmin, dashboardData, refreshDashboard } = useDashboard();
   const router = useRouter();
   const [error, setError] = useState("");
+  const [invoiceSort, setInvoiceSort] = useState<"newest"|"oldest"|"amount">("newest");
 
   if (!dashboardData && !error) {
     return (
@@ -35,7 +36,33 @@ export default function DashboardOverview() {
     return <div className="error-banner">{error}</div>;
   }
 
-  const { summary, recentInvoices, lowStockItems, analytics } = dashboardData!;
+  const summary = dashboardData?.summary ?? { totalRevenue: 0, totalOrders: 0, totalInventoryCount: 0, uniqueCustomers: 0 };
+  const recentInvoices = dashboardData?.recentInvoices ?? [];
+  const lowStockItems = dashboardData?.lowStockItems ?? [];
+  const analytics = dashboardData?.analytics ?? { trends: [], categories: [], topProducts: [] };
+
+  if (summary.totalOrders === 0 && recentInvoices.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-20 gap-4">
+        <Package size={40} className="text-slate-500" />
+        <p className="text-slate-400 font-medium">No data yet</p>
+        <p className="text-slate-500 text-sm">Create your first invoice to see analytics here.</p>
+      </div>
+    );
+  }
+
+  const trends = analytics?.trends ?? [];
+  const categories = analytics?.categories ?? [];
+  const topProducts = analytics?.topProducts ?? [];
+
+  const sortedInvoices = [...recentInvoices].sort((a, b) => {
+    if (invoiceSort === "amount") {
+      return parseFloat(String(b.totalAmount ?? 0)) - parseFloat(String(a.totalAmount ?? 0));
+    }
+    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return invoiceSort === "newest" ? bTime - aTime : aTime - bTime;
+  });
 
   const StatCard = ({
     title,
@@ -116,18 +143,18 @@ export default function DashboardOverview() {
                 </linearGradient>
               </defs>
               <path
-                d={`M 0 200 ${analytics.trends.map((t, i) => {
-                  const maxRev = Math.max(...analytics.trends.map(d => d.revenue), 1);
-                  const x = (i / (analytics.trends.length - 1)) * 800;
+                d={`M 0 200 ${trends.map((t, i) => {
+                  const maxRev = Math.max(...trends.map(d => d.revenue), 1);
+                  const x = (i / (trends.length - 1)) * 800;
                   const y = 200 - (t.revenue / maxRev) * 150;
                   return `L ${x} ${y}`;
                 }).join(' ')} L 800 200 Z`}
                 fill="url(#areaGradient)"
               />
               <path
-                d={analytics.trends.map((t, i) => {
-                  const maxRev = Math.max(...analytics.trends.map(d => d.revenue), 1);
-                  const x = (i / (analytics.trends.length - 1)) * 800;
+                d={trends.map((t, i) => {
+                  const maxRev = Math.max(...trends.map(d => d.revenue), 1);
+                  const x = (i / (trends.length - 1)) * 800;
                   const y = 200 - (t.revenue / maxRev) * 150;
                   return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
                 }).join(' ')}
@@ -138,8 +165,8 @@ export default function DashboardOverview() {
               />
             </svg>
             <div className="chart-labels">
-              <span>{analytics.trends[0]?.date}</span>
-              <span>{analytics.trends[analytics.trends.length-1]?.date}</span>
+              <span>{trends[0]?.date}</span>
+              <span>{trends[trends.length-1]?.date}</span>
             </div>
           </div>
         </div>
@@ -149,9 +176,9 @@ export default function DashboardOverview() {
           <div className="card-header"><h2 className="card-title">Sales by Category</h2></div>
           <div className="donut-container">
             <svg viewBox="0 0 200 200" className="svg-donut">
-              {analytics.categories.map((cat, i) => {
-                const total = analytics.categories.reduce((sum, c) => sum + c.value, 0);
-                const startAngle = (analytics.categories.slice(0, i).reduce((sum, c) => sum + c.value, 0) / (total || 1)) * 360;
+              {categories.map((cat, i) => {
+               const total = categories.reduce((sum, c) => sum + c.value, 0);
+               const startAngle = (categories.slice(0, i).reduce((sum, c) => sum + c.value, 0) / (total || 1)) * 360;
                 const angle = (cat.value / (total || 1)) * 360;
                 const x1 = 100 + 70 * Math.cos((startAngle - 90) * Math.PI / 180);
                 const y1 = 100 + 70 * Math.sin((startAngle - 90) * Math.PI / 180);
@@ -163,12 +190,12 @@ export default function DashboardOverview() {
               })}
               <circle cx="100" cy="100" r="50" fill="var(--bg-deep)" />
               <text x="100" y="105" textAnchor="middle" className="donut-center-text" fill="var(--text-primary)" style={{ fontSize: '12px', fontWeight: 'bold' }}>
-                {analytics.categories.length} CATS
+                {categories.length} CATS
               </text>
             </svg>
             <div className="donut-legend">
-              {analytics.categories.map((cat, i) => {
-                const total = analytics.categories.reduce((sum, c) => sum + c.value, 0);
+              {categories.map((cat, i) => {
+               const total = categories.reduce((sum, c) => sum + c.value, 0);
                 const percentage = Math.round((cat.value / (total || 1)) * 100);
                 return (
                   <div key={cat.name} className="legend-item">
@@ -204,9 +231,20 @@ export default function DashboardOverview() {
 
         {/* Recent Invoices */}
         <div className="list-card">
-          <div className="card-header"><h2 className="card-title">Recent Invoices</h2></div>
+          <div className="card-header">
+            <h2 className="card-title">Recent Invoices</h2>
+            <select
+              value={invoiceSort}
+              onChange={(e) => setInvoiceSort(e.target.value as "newest"|"oldest"|"amount")}
+              className="bg-slate-800 text-slate-200 text-xs rounded-md border border-slate-700 px-2 py-1"
+            >
+              <option value="newest">newest</option>
+              <option value="oldest">oldest</option>
+              <option value="amount">amount</option>
+            </select>
+          </div>
           <div className="invoice-list">
-            {recentInvoices.map((invoice) => (
+            {sortedInvoices.map((invoice) => (
               <div key={invoice._id || invoice.invoiceId} className={`invoice-item status-${invoice.status}`}>
                 <div className="invoice-id-col"><div className="invoice-id">{invoice.invoiceId}</div><div className="invoice-customer">{invoice.customer}</div></div>
                 <div className="invoice-amount-col"><div className="invoice-amount">{invoice.amount.toLocaleString()} EGP</div><div className="invoice-date">{invoice.date}</div></div>
@@ -221,8 +259,8 @@ export default function DashboardOverview() {
       <div className="chart-card">
         <div className="card-header"><h2 className="card-title">Top Selling Products</h2></div>
         <div className="products-leaderboard">
-          {analytics.topProducts.map((product, idx) => {
-            const maxRev = Math.max(...analytics.topProducts.map(p => p.revenue), 1);
+          {topProducts.map((product, idx) => {
+            const maxRev = Math.max(...topProducts.map(p => p.revenue), 1);
             const progressWidth = (product.revenue / maxRev) * 100;
             return (
               <div key={idx} className="leaderboard-item">
