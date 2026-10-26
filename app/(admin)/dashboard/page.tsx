@@ -8,7 +8,6 @@ import {
   ShoppingCart, 
   Package, 
   Users, 
-  Loader2, 
   AlertCircle, 
   CheckCircle 
 } from "lucide-react";
@@ -21,12 +20,62 @@ export default function DashboardOverview() {
   const { user, isAdmin, dashboardData, refreshDashboard } = useDashboard();
   const router = useRouter();
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+const [searchInput, setSearchInput] = useState("");
+const [searchQuery, setSearchQuery] = useState("");
+const [localData, setLocalData] = useState<DashboardSummaryData | null>(null);
+const [searching, setSearching] = useState(false);
 
-  if (!dashboardData && !error) {
+  useEffect(() => {
+    if (dashboardData) {
+      setLoading(false);
+    }
+  }, [dashboardData]);
+
+  // Debounce search input into searchQuery
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Fetch filtered summary when searchQuery changes
+  useEffect(() => {
+    if (!searchQuery) {
+      setLocalData(null);
+      return;
+    }
+    const fetchSearch = async () => {
+      setSearching(true);
+      try {
+        const response = await fetch(`/api/dashboard/summary?search=${encodeURIComponent(searchQuery)}`);
+        if (!response.ok) return;
+        const json = await response.json();
+        setLocalData(json.data);
+      } catch (err) {
+        console.error("Dashboard search failed:", err);
+      } finally {
+        setSearching(false);
+      }
+    };
+    fetchSearch();
+  }, [searchQuery]);
+
+  const displayData = localData ?? dashboardData;
+
+  if (loading && !displayData && !error) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 gap-4">
-        <Loader2 className="animate-spin text-blue-500" size={40} />
-        <p className="text-slate-400 font-medium">Gathering command data...</p>
+      <div
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+        role="status"
+        aria-label="Loading dashboard"
+      >
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="stat-card">
+            <div className="animate-pulse bg-gray-200 rounded-lg h-24" />
+          </div>
+        ))}
       </div>
     );
   }
@@ -35,7 +84,56 @@ export default function DashboardOverview() {
     return <div className="error-banner">{error}</div>;
   }
 
-  const { summary, recentInvoices, lowStockItems, analytics } = dashboardData!;
+  const {
+    summary = {
+      totalRevenue: 0,
+      totalOrders: 0,
+      uniqueCustomers: 0,
+      inventoryValue: 0,
+      totalInventoryCount: 0,
+      averageOrderValue: 0,
+    },
+    recentInvoices = [],
+    lowStockItems = [],
+    analytics = { trends: [], categories: [], topProducts: [] },
+  } = displayData ?? {};
+
+  const allEmpty =
+    recentInvoices.length === 0 &&
+    lowStockItems.length === 0 &&
+    analytics.trends.length === 0 &&
+    analytics.categories.length === 0 &&
+    analytics.topProducts.length === 0;
+
+  if (!loading && allEmpty) {
+    return (
+      <div className="flex flex-col items-center justify-center p-20 gap-4 text-center">
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-slate-400"
+          aria-hidden="true"
+        >
+          <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+          <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+        </svg>
+        <h2 className="text-xl font-bold text-slate-200">No data available</h2>
+        <p className="text-sm text-slate-400">
+          There is nothing to display yet. Try refreshing the dashboard.
+        </p>
+        <button className="refresh-btn" onClick={refreshDashboard}>
+          <TrendingUp size={14} className="refresh-icon" />
+          <span>Refresh</span>
+        </button>
+      </div>
+    );
+  }
 
   const StatCard = ({
     title,
@@ -67,6 +165,20 @@ export default function DashboardOverview() {
 
   return (
     <>
+      <div className="relative mb-6 max-w-md">
+        <input
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Search products, invoices..."
+          aria-label="Search products and invoices"
+          className="w-full px-4 py-2.5 rounded-lg bg-white/5 border border-[var(--border-tech)] text-sm text-[var(--text-primary)] placeholder:text-slate-500 outline-none focus:border-[var(--accent-blue)]"
+        />
+        {searching && (
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400" role="status">
+            Searching…
+          </span>
+        )}
+      </div>
       <div className="stats-grid">
         <StatCard
           title="Revenue"
@@ -193,9 +305,9 @@ export default function DashboardOverview() {
               <div className="empty-alerts"><CheckCircle size={32} /><p>All healthy</p></div>
             ) : (
               lowStockItems.slice(0, 5).map(product => (
-                <div key={product.id} className={`alert-item ${product.quantity === 0 ? 'critical' : 'warning'}`}>
+                <div key={product?.id} className={`alert-item ${product?.quantity === 0 ? 'critical' : 'warning'}`}>
                   <AlertCircle size={14} className="alert-icon" />
-                  <div className="alert-info"><span className="alert-name">{product.name}</span><span className="alert-stock">{product.quantity} left</span></div>
+                  <div className="alert-info"><span className="alert-name">{product?.name}</span><span className="alert-stock">{product?.quantity} left</span></div>
                 </div>
               ))
             )}
@@ -207,9 +319,9 @@ export default function DashboardOverview() {
           <div className="card-header"><h2 className="card-title">Recent Invoices</h2></div>
           <div className="invoice-list">
             {recentInvoices.map((invoice) => (
-              <div key={invoice._id || invoice.invoiceId} className={`invoice-item status-${invoice.status}`}>
-                <div className="invoice-id-col"><div className="invoice-id">{invoice.invoiceId}</div><div className="invoice-customer">{invoice.customer}</div></div>
-                <div className="invoice-amount-col"><div className="invoice-amount">{invoice.amount.toLocaleString()} EGP</div><div className="invoice-date">{invoice.date}</div></div>
+              <div key={invoice?._id || invoice?.invoiceId} className={`invoice-item status-${invoice?.status}`}>
+                <div className="invoice-id-col"><div className="invoice-id">{invoice?.invoiceId}</div><div className="invoice-customer">{invoice?.customer}</div></div>
+                <div className="invoice-amount-col"><div className="invoice-amount">{invoice?.amount?.toLocaleString()} EGP</div><div className="invoice-date">{invoice?.date}</div></div>
               </div>
             ))}
           </div>

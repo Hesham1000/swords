@@ -17,17 +17,19 @@ export default function InvoicesPage() {
   const [pagination, setPagination] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [refresh, setRefresh] = useState(false);
+  const [sortField, setSortField] = useState("date");
+  const [sortOrder, setSortOrder] = useState("desc");
   const lastParamsRef = useRef("");
 
   useEffect(() => {
-    const params = JSON.stringify({ page, searchQuery, refresh });
+    const params = JSON.stringify({ page, searchQuery, refresh, sortField, sortOrder });
     if (params === lastParamsRef.current) return;
     lastParamsRef.current = params;
 
     const fetchInvoices = async () => {
       try {
         setLoading(true);
-        const response = await getInvoices(page, 10, searchQuery);
+        const response = await getInvoices(page, 10, searchQuery, sortField, sortOrder);
         setInvoices(response.data);
         setPagination(response.pagination);
       } catch (err: any) {
@@ -37,7 +39,17 @@ export default function InvoicesPage() {
       }
     };
     fetchInvoices();
-  }, [page, searchQuery, refresh]);
+  }, [page, searchQuery, refresh, sortField, sortOrder]);
+
+  const handleSort = (field: string) => {
+    if (field === sortField) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+    setPage(1);
+  };
 
   const handleMarkAsPaid = async (id: string) => {
     if (!confirm("Are you sure you want to mark this invoice as Paid?")) return;
@@ -87,6 +99,25 @@ export default function InvoicesPage() {
 
       <div className="list-card full-width">
         <div className="invoice-list">
+          <div className="invoice-header">
+            <div className="invoice-id-col">
+              <button className="invoice-header-btn" onClick={() => handleSort("date")}>
+                Date {sortField === "date" && (sortOrder === "asc" ? "▲" : "▼")}
+              </button>
+              <button className="invoice-header-btn" onClick={() => handleSort("customer")}>
+                Customer {sortField === "customer" && (sortOrder === "asc" ? "▲" : "▼")}
+              </button>
+            </div>
+            <div className="invoice-amount-col">
+              <button className="invoice-header-btn" onClick={() => handleSort("amount")}>
+                Amount {sortField === "amount" && (sortOrder === "asc" ? "▲" : "▼")}
+              </button>
+              <button className="invoice-header-btn" onClick={() => handleSort("status")}>
+                Status {sortField === "status" && (sortOrder === "asc" ? "▲" : "▼")}
+              </button>
+            </div>
+            <div className="invoice-actions-col"></div>
+          </div>
           {loading ? (
             <div className="loading-state">
               <Loader2 className="animate-spin" />

@@ -15,14 +15,28 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
   const [currency, setCurrency] = useState<"EGP" | "USD" | "EUR">("EGP");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const isDeposit = mode === "deposit";
 
+  const validate = (): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    if (amount === "" || isNaN(parseFloat(amount))) {
+      errs.amount = "Please enter a valid amount.";
+    } else if (parseFloat(amount) < 1) {
+      errs.amount = "Amount must be at least 1.";
+    }
+    if (!["EGP", "USD", "EUR"].includes(currency)) {
+      errs.currency = "Please select a currency.";
+    }
+    return errs;
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const numAmount = parseFloat(amount);
-    if (!numAmount || numAmount <= 0) {
-      setError("Please enter a valid amount.");
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       return;
     }
 
@@ -31,7 +45,7 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
 
     try {
       const { walletTransaction } = await import("../lib/api/wallet");
-      await walletTransaction(numAmount, mode, currency, note || undefined);
+      await walletTransaction(parseFloat(amount), mode, currency, note || undefined);
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: any) {
@@ -69,7 +83,15 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
                       key={cur}
                       type="button"
                       className={`wallet-currency-option ${currency === cur ? "active" : ""}`}
-                      onClick={() => setCurrency(cur)}
+                      onClick={() => {
+                        setCurrency(cur);
+                        setErrors((prev) => {
+                          if (!prev.currency) return prev;
+                          const next = { ...prev };
+                          delete next.currency;
+                          return next;
+                        });
+                      }}
                       disabled={loading}
                     >
                       <span className="wallet-currency-symbol">{currencySymbols[cur]}</span>
@@ -86,7 +108,15 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
                   <input
                     type="number"
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    onChange={(e) => {
+                      setAmount(e.target.value);
+                      setErrors((prev) => {
+                        if (!prev.amount) return prev;
+                        const next = { ...prev };
+                        delete next.amount;
+                        return next;
+                      });
+                    }}
                     placeholder={`e.g. ${currency === "EGP" ? "5000" : "100"}`}
                     required
                     min="0.01"
@@ -94,6 +124,7 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
                     disabled={loading}
                   />
                 </div>
+                {errors.amount && <p className="field-error">{errors.amount}</p>}
               </div>
               <div className="form-group full-width">
                 <label>Note (optional)</label>
@@ -108,13 +139,14 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
                   />
                 </div>
               </div>
+              {errors.currency && <p className="field-error">{errors.currency}</p>}
             </div>
 
             <div className="form-actions">
               <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
                 CANCEL
               </button>
-              <button type="submit" className={`btn-primary ${!isDeposit ? "btn-withdraw" : ""}`} disabled={loading}>
+              <button type="submit" className={`btn-primary ${!isDeposit ? "btn-withdraw" : ""}`} disabled={loading || Object.keys(errors).length > 0}>
                 {loading
                   ? isDeposit ? "DEPOSITING..." : "WITHDRAWING..."
                   : isDeposit ? `DEPOSIT ${currency}` : `WITHDRAW ${currency}`
@@ -144,6 +176,7 @@ const WalletDepositForm: React.FC<WalletDepositFormProps> = ({ onClose, onSucces
             font-size: 13px;
             text-align: center;
           }
+          .field-error { color: #e11d48; font-size: 11px; font-weight: 600; margin: 0; letter-spacing: 0.2px; }
           .form-section {
             display: flex;
             flex-direction: column;

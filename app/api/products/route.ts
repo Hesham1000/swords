@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, eq, ilike, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, lt, or, sql } from "drizzle-orm";
 import { db, products } from "../../lib/db";
 import { transformProduct } from "../../lib/api/utils";
 
@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category");
     const productType = searchParams.get("productType");
     const brand = searchParams.get("brand");
+    const sort = searchParams.get("sort") || "createdAt";
+    const order = searchParams.get("order") || "desc";
 
     const skip = (page - 1) * limit;
 
@@ -63,6 +65,15 @@ export async function GET(request: NextRequest) {
     }
 
     const query = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const sortColumns: Record<string, any> = {
+      name: products.name,
+      price: products.price,
+      quantity: products.quantity,
+      brand: products.brand,
+      createdAt: products.createdAt,
+    };
+    const sortColumn = sortColumns[sort] ?? products.createdAt;
 
     // DASHBOARD OPTIMIZED RESPONSE
     if (dashboard) {
@@ -120,7 +131,7 @@ export async function GET(request: NextRequest) {
       .select()
       .from(products)
       .where(query)
-      .orderBy(sql`${products.createdAt} desc`)
+      .orderBy(order === "asc" ? asc(sortColumn) : desc(sortColumn))
       .limit(limit)
       .offset(skip);
 

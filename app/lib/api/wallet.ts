@@ -109,25 +109,28 @@ export async function withdrawFromWallet(amount: number, note?: string, currency
 /**
  * Fetch wallet transaction history
  */
-export async function getWalletTransactions(page: number = 1, limit: number = 10): Promise<WalletTransactionsResponse> {
+export async function getWalletTransactions(page: number = 1, type?: string, limit: number = 10, sort?: string, order?: string): Promise<WalletTransactionsResponse> {
   try {
-    const url = new URL(`${apiUrl}/api/wallet/transactions`, window.location.origin);
-    url.searchParams.append("page", page.toString());
-    url.searchParams.append("limit", limit.toString());
-
-    const response = await fetch(url.toString(), {
+    const typeParam = type && type !== "all" ? `&type=${encodeURIComponent(type)}` : "";
+    const response = await fetch(`/api/wallet/transactions?page=${page}&limit=${limit}${typeParam}${sort ? `&sort=${encodeURIComponent(sort)}` : ""}${order ? `&order=${encodeURIComponent(order)}` : ""}`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
       cache: "no-store",
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "Failed to fetch wallet transactions");
+      let message = "Failed to fetch wallet transactions";
+      try {
+        const errorData = await response.json();
+        message = errorData.error || errorData.message || message;
+      } catch {
+        // keep default message
+      }
+      throw new Error(message);
     }
 
     const data = await response.json();
-    return { success: true, data: data.data, pagination: data.pagination };
+    return { success: true, data: data.data ?? [], pagination: data.pagination };
   } catch (error) {
     console.error("Error fetching wallet transactions:", error);
     throw error;

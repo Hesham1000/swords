@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { desc, eq, sql } from "drizzle-orm";
+import { asc, desc, eq, sql } from "drizzle-orm";
 import { db, walletTransactions } from "../../../lib/db";
 
 // GET: Return wallet transaction history
@@ -9,12 +9,21 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const walletId = searchParams.get("walletId") || undefined;
+    const sort = searchParams.get("sort") || "date";
+    const order = searchParams.get("order") || "desc";
+
+    const sortColumns: Record<string, any> = {
+      date: walletTransactions.createdAt,
+      type: walletTransactions.type,
+      amount: walletTransactions.amount,
+    };
+    const sortColumn = sortColumns[sort] || walletTransactions.createdAt;
     const offset = (page - 1) * limit;
 
     const baseQuery = db
       .select()
       .from(walletTransactions)
-      .orderBy(desc(walletTransactions.createdAt))
+      .orderBy(order === "asc" ? asc(sortColumn) : desc(sortColumn))
       .limit(limit)
       .offset(offset);
 
@@ -28,7 +37,7 @@ export async function GET(request: NextRequest) {
             .select()
             .from(walletTransactions)
             .where(eq(walletTransactions.walletId, walletId))
-            .orderBy(desc(walletTransactions.createdAt))
+            .orderBy(order === "asc" ? asc(sortColumn) : desc(sortColumn))
             .limit(limit)
             .offset(offset)
         : baseQuery,

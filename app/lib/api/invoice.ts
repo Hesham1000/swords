@@ -48,7 +48,7 @@ export interface InvoiceResponse {
 /**
  * Fetch all invoices with pagination
  */
-export async function getInvoices(page: number = 1, limit: number = 10, search?: string): Promise<InvoicesResponse> {
+export async function getInvoices(page: number = 1, limit: number = 10, search?: string, sort?: string, order?: string): Promise<InvoicesResponse> {
   try {
     const url = new URL(`${apiUrl}/api/invoices`, window.location.origin);
     url.searchParams.append("page", page.toString());

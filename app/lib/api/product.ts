@@ -70,6 +70,8 @@ export async function getProducts(
     productType?: string;
     brand?: string;
     dashboard?: boolean;
+    sort?: string;
+    order?: string;
   } = {}
 ): Promise<ProductsResponse> {
   try {

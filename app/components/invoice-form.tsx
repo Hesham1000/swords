@@ -32,6 +32,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
   const [loading, setLoading] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -98,7 +99,32 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
     return items.reduce((sum, item) => sum + (item.discount || 0) * item.quantity, 0);
   };
 
+  const validate = (): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    if (!formData.customer.trim()) {
+      errs.customer = "Customer name is required.";
+    }
+    if (calculateTotal() <= 0) {
+      errs.amount = "Invoice amount must be greater than zero.";
+    }
+    if (!formData.date || isNaN(new Date(formData.date).getTime())) {
+      errs.date = "Please enter a valid date.";
+    }
+    if (items.length < 1) {
+      errs.items = "Add at least one product.";
+    } else if (items.some(item => !item.productId || !(item.quantity > 0))) {
+      errs.items = "Each item needs a valid product and quantity greater than zero.";
+    }
+    return errs;
+  };
+
   const addItem = (product: Product) => {
+    setErrors((prev) => {
+      if (!prev.items) return prev;
+      const next = { ...prev };
+      delete next.items;
+      return next;
+    });
     setItems((prev) => {
       const existing = prev.find((i) => i.productId === product.id);
       if (existing) {
@@ -120,11 +146,23 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
   };
 
   const removeItem = (productId: string) => {
+    setErrors((prev) => {
+      if (!prev.items) return prev;
+      const next = { ...prev };
+      delete next.items;
+      return next;
+    });
     setItems((prev) => prev.filter((i) => i.productId !== productId));
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
     if (quantity < 1) return;
+    setErrors((prev) => {
+      if (!prev.items) return prev;
+      const next = { ...prev };
+      delete next.items;
+      return next;
+    });
     setItems((prev) =>
       prev.map((i) => (i.productId === productId ? { ...i, quantity } : i))
     );
@@ -132,6 +170,12 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
 
   const updatePrice = (productId: string, price: number) => {
     if (price < 0) return;
+    setErrors((prev) => {
+      if (!prev.items) return prev;
+      const next = { ...prev };
+      delete next.items;
+      return next;
+    });
     setItems((prev) =>
       prev.map((i) => (i.productId === productId ? { ...i, price } : i))
     );
@@ -139,6 +183,12 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
 
   const updateDiscount = (productId: string, discount: number) => {
     if (discount < 0) return;
+    setErrors((prev) => {
+      if (!prev.items) return prev;
+      const next = { ...prev };
+      delete next.items;
+      return next;
+    });
     setItems((prev) =>
       prev.map((i) => (i.productId === productId ? { ...i, discount } : i))
     );
@@ -152,12 +202,19 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
       ...prev,
       [name]: value,
     }));
+    setErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (items.length === 0) {
-      setError("Please add at least one product.");
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       return;
     }
     setLoading(true);
@@ -318,6 +375,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
                   ))
                 )}
               </div>
+              {errors.items && <p className="field-error">{errors.items}</p>}
             </div>
           </div>
         </div>
@@ -389,6 +447,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
             <span className="total-label">Total Amount:</span>
             <span className="total-value">{calculateTotal().toLocaleString()} EGP</span>
           </div>
+          {errors.amount && <p className="field-error">{errors.amount}</p>}
         </div>
 
         <div className="form-section">
@@ -410,6 +469,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
                   disabled={loading}
                 />
               </div>
+              {errors.date && <p className="field-error">{errors.date}</p>}
+              {errors.customer && <p className="field-error">{errors.customer}</p>}
             </div>
           </div>
         </div>
@@ -418,7 +479,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
           <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
             CANCEL
           </button>
-          <button type="submit" className="btn-primary" disabled={loading}>
+          <button type="submit" className="btn-primary" disabled={loading || Object.keys(errors).length > 0}>
             {loading ? "PROCESSING..." : initialData ? "UPDATE INVOICE" : "CREATE INVOICE"}
           </button>
         </div>
@@ -444,6 +505,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
           font-size: 13px;
           text-align: center;
         }
+        .field-error { color: #e11d48; font-size: 11px; font-weight: 600; margin: 0; letter-spacing: 0.2px; }
         .form-section {
           display: flex;
           flex-direction: column;

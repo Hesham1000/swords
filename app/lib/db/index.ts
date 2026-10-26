@@ -3,9 +3,14 @@ import postgres from "postgres";
 
 import * as schema from "./schema";
 
-const connectionString = process.env.DATABASE_URL!;
+const rawUrl = process.env.DATABASE_URL!;
+const url = new URL(rawUrl);
+url.searchParams.delete("sslmode");
 
-const client = postgres(connectionString);
+const client = postgres(url.toString(), {
+  ssl: { rejectUnauthorized: false },
+  connect_timeout: 8,
+});
 
 export const db = drizzle(client, { schema });
 

@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, invoices, products, shipments } from "../../../lib/db";
 import { transformProduct } from "../../../lib/api/utils";
-import { desc, gte, asc, sql } from "drizzle-orm";
+import { desc, gte, asc, sql, or, ilike, and } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
+    const search = request.nextUrl.searchParams.get("search")?.trim() || "";
+
     // 1. RECENT INVOICES (Latest 5)
     const recentInvoices = await db
       .select()
       .from(invoices)
+      .where(
+        search
+          ? or(
+              ilike(invoices.customer, `%${search}%`),
+              ilike(invoices.invoiceId, `%${search}%`)
+            )
+          : undefined
+      )
       .orderBy(desc(invoices.createdAt))
       .limit(5);
 
@@ -44,7 +54,18 @@ export async function GET(request: NextRequest) {
     const lowStockRows = await db
       .select()
       .from(products)
-      .where(sql`coalesce(${products.quantity}, 0) < 3`)
+      .where(
+        and(
+          sql`coalesce(${products.quantity}, 0) < 3`,
+          search
+            ? or(
+                ilike(products.name, `%${search}%`),
+                ilike(products.description, `%${search}%`),
+                ilike(products.model, `%${search}%`)
+              )
+            : undefined
+        )
+      )
       .orderBy(asc(products.quantity))
       .limit(5);
 

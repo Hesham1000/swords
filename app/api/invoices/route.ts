@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, invoices, products, wallet, walletTransactions, inventoryLogs } from "../../lib/db";
-import { eq, ilike, or, desc, sql } from "drizzle-orm";
+import { eq, ilike, or, desc, asc, sql } from "drizzle-orm";
 import ApiError from "../../utils/ApiError";
 import { v4 as uuidv4 } from "uuid";
 
@@ -30,7 +30,19 @@ export async function GET(request: NextRequest) {
       .select()
       .from(invoices)
       .where(query)
-      .orderBy(desc(invoices.createdAt))
+      .orderBy((() => {
+          const sortColumns: Record<string, any> = {
+            date: invoices.date,
+            customer: invoices.customer,
+            amount: invoices.amount,
+            status: invoices.status,
+            createdAt: invoices.createdAt,
+          };
+          const sortField = searchParams.get("sort") || "createdAt";
+          const order = searchParams.get("order") || "desc";
+          const sortColumn = sortColumns[sortField] || invoices.createdAt;
+          return order === "asc" ? asc(sortColumn) : desc(sortColumn);
+        })())
       .limit(limit)
       .offset(skip);
 
