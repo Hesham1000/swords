@@ -89,7 +89,7 @@ export default function DashboardLayout({
           getDashboardSummary()
         ]);
         
-        if (userData) setUser(userData.user);
+        if (userData?.user) setUser(userData.user);
         if (summaryRes.success) {
           setDashboardData(summaryRes.data);
           setDashboardError(null);
