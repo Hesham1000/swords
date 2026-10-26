@@ -7,6 +7,7 @@ import { getProducts, Product } from "../lib/api/product";
 
 interface InvoiceFormData {
   customer: string;
+  customerEmail: string;
   status: "paid" | "pending" | "overdue";
   paymentMethod: "cash" | "visa";
   date: string;
@@ -21,6 +22,7 @@ interface InvoiceFormProps {
 const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialData }) => {
   const [formData, setFormData] = useState<InvoiceFormData>({
     customer: initialData?.customer || "",
+    customerEmail: initialData?.customerEmail || "",
     status: initialData?.status || "pending",
     paymentMethod: initialData?.paymentMethod || "cash",
     date: initialData?.date || new Date().toISOString().split('T')[0],
@@ -32,6 +34,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
   const [loading, setLoading] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -98,6 +101,43 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
     return items.reduce((sum, item) => sum + (item.discount || 0) * item.quantity, 0);
   };
 
+  const validate = (): Record<string, string> => {
+    const validationErrors: Record<string, string> = {};
+
+    if (!formData.customer.trim()) {
+      validationErrors.customerName = "Customer name is required";
+    }
+
+    if (!formData.customerEmail.trim()) {
+      validationErrors.customerEmail = "Customer email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.customerEmail.trim())) {
+      validationErrors.customerEmail = "Please enter a valid email address";
+    }
+
+    if (items.length === 0) {
+      validationErrors.items = "Please add at least one product";
+    }
+
+    items.forEach((item, index) => {
+      if (!item.name || !item.name.trim()) {
+        validationErrors[`items_${index}_name`] = "Each item must have a name";
+      }
+      if (!(item.quantity > 0)) {
+        validationErrors[`items_${index}_quantity`] = "Quantity must be positive";
+      }
+      if (!((item.price ?? 0) > 0)) {
+        validationErrors[`items_${index}_price`] = "Price must be positive";
+      }
+    });
+
+    return validationErrors;
+  };
+
+  useEffect(() => {
+    setErrors(validate());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData, items]);
+
   const addItem = (product: Product) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.productId === product.id);
@@ -156,12 +196,15 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (items.length === 0) {
-      setError("Please add at least one product.");
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setError("Please fix the errors below");
       return;
     }
     setLoading(true);
     setError("");
+    setErrors({});
 
     try {
       const invoiceData: Partial<Invoice> = {
@@ -410,6 +453,22 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
                   disabled={loading}
                 />
               </div>
+              {errors.customerName && <small className="field-error">{errors.customerName}</small>}
+            </div>
+            <div className="form-group full-width">
+              <label>Customer Email</label>
+              <div className="input-with-icon">
+                <User size={14} />
+                <input
+                  type="email"
+                  name="customerEmail"
+                  value={formData.customerEmail}
+                  onChange={handleChange}
+                  placeholder="e.g. billing@elitefencing.com"
+                  disabled={loading}
+                />
+              </div>
+              {errors.customerEmail && <small className="field-error">{errors.customerEmail}</small>}
             </div>
           </div>
         </div>
@@ -490,6 +549,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ onClose, onSuccess, initialDa
           color: var(--text-secondary);
           opacity: 0.8;
           font-style: italic;
+        }
+        .field-error {
+          color: #e11d48;
+          font-size: 11px;
         }
         .form-group input, .form-group select {
           padding: 0.75rem 1rem;

@@ -17,17 +17,20 @@ export default function InvoicesPage() {
   const [pagination, setPagination] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [refresh, setRefresh] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterDateRange, setFilterDateRange] = useState("");
+  const [sortBy, setSortBy] = useState<"newest"|"oldest"|"amount_desc"|"amount_asc">("newest");
   const lastParamsRef = useRef("");
 
   useEffect(() => {
-    const params = JSON.stringify({ page, searchQuery, refresh });
+    const params = JSON.stringify({ page, searchQuery, refresh, filterStatus, filterDateRange, sortBy });
     if (params === lastParamsRef.current) return;
     lastParamsRef.current = params;
 
     const fetchInvoices = async () => {
       try {
         setLoading(true);
-        const response = await getInvoices(page, 10, searchQuery);
+        const response = await getInvoices(page, 10, searchQuery, { status: filterStatus, dateRange: filterDateRange, sort: sortBy });
         setInvoices(response.data);
         setPagination(response.pagination);
       } catch (err: any) {
@@ -37,7 +40,7 @@ export default function InvoicesPage() {
       }
     };
     fetchInvoices();
-  }, [page, searchQuery, refresh]);
+  }, [page, searchQuery, refresh, filterStatus, filterDateRange, sortBy]);
 
   const handleMarkAsPaid = async (id: string) => {
     if (!confirm("Are you sure you want to mark this invoice as Paid?")) return;
@@ -81,6 +84,45 @@ export default function InvoicesPage() {
             className="search-input"
           />
         </div>
+        <select
+          className="filter-select"
+          value={filterStatus}
+          onChange={(e) => {
+            setFilterStatus(e.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="paid">Paid</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <select
+          className="filter-select"
+          value={filterDateRange}
+          onChange={(e) => {
+            setFilterDateRange(e.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="">All Time</option>
+          <option value="last7">Last 7 Days</option>
+          <option value="last30">Last 30 Days</option>
+          <option value="last90">Last 90 Days</option>
+        </select>
+        <select
+          className="filter-select"
+          value={sortBy}
+          onChange={(e) => {
+            setSortBy(e.target.value as "newest"|"oldest"|"amount_desc"|"amount_asc");
+            setPage(1);
+          }}
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="amount_desc">Amount: High to Low</option>
+          <option value="amount_asc">Amount: Low to High</option>
+        </select>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
@@ -102,7 +144,7 @@ export default function InvoicesPage() {
                   <div className="invoice-customer">{invoice.customer}</div>
                 </div>
                 <div className="invoice-amount-col">
-                  <div className="invoice-amount">{invoice.amount.toLocaleString()} EGP</div>
+                  <div className="invoice-amount">{(invoice.amount ?? 0).toLocaleString()} EGP</div>
                   <div className="invoice-date">{invoice.date}</div>
                 </div>
                 <div className="invoice-actions-col">

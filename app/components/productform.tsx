@@ -86,6 +86,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; price?: string; quantity?: string; productType?: string }>({});
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>(initialData?.images || []);
 
@@ -193,7 +194,44 @@ const ProductForm: React.FC<ProductFormProps> = ({
     }
   };
 
+  const validate = (): boolean => {
+    const errors: { name?: string; price?: string; quantity?: string; productType?: string } = {};
+
+    if (!formData.name || formData.name.trim() === "") {
+      errors.name = "Product name is required.";
+    }
+
+    if (formData.price !== "") {
+      const priceNum = parseFloat(formData.price);
+      if (isNaN(priceNum) || priceNum <= 0) {
+        errors.price = "Price must be a positive number.";
+      }
+    }
+
+    const qtyNum = parseInt(formData.quantity, 10);
+    if (formData.quantity === "" || isNaN(qtyNum) || qtyNum < 0 || !Number.isInteger(qtyNum)) {
+      errors.quantity = "Quantity must be a non-negative whole number.";
+    }
+
+    if (!formData.productType) {
+      errors.productType = "Please select a product type.";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const isFormInvalid =
+    !formData.name.trim() ||
+    (formData.price !== "" && (isNaN(parseFloat(formData.price)) || parseFloat(formData.price) <= 0)) ||
+    formData.quantity === "" ||
+    isNaN(parseInt(formData.quantity, 10)) ||
+    parseInt(formData.quantity, 10) < 0 ||
+    !Number.isInteger(parseInt(formData.quantity, 10)) ||
+    !formData.productType;
+
   const handleSubmit = async (e: FormEvent) => {
+    if (!validate()) return;
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -560,7 +598,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
             <div className="form-actions">
               <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>CANCEL</button>
-              <button type="submit" className="btn-primary" disabled={loading}>
+              <button type="submit" className="btn-primary" disabled={loading || isFormInvalid}>
                 {loading ? (isEdit ? "UPDATING..." : "CREATING...") : (isEdit ? "SAVE CHANGES" : "ADD TO INVENTORY")}
               </button>
             </div>
@@ -569,7 +607,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
         <style jsx>{`
           .product-form-container { padding: 2.5rem; max-height: 85dvh; overflow-y: auto; }
           .product-form { display: flex; flex-direction: column; gap: 2.5rem; }
-          .error-message { background: rgba(225, 29, 72, 0.1); border: 1px solid var(--accent-red); color: var(--accent-red); padding: 1rem; border-radius: 12px; font-size: 13px; text-align: center; }
+          .field-error { color: var(--accent-red, #ef4444); font-size: 12px; margin: 0; font-weight: 600; }
+            .error-message { background: rgba(225, 29, 72, 0.1); border: 1px solid var(--accent-red); color: var(--accent-red); padding: 1rem; border-radius: 12px; font-size: 13px; text-align: center; }
           .form-section { display: flex; flex-direction: column; gap: 1.25rem; }
           .section-header { display: flex; align-items: center; gap: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-tech); color: var(--accent-blue); }
           .section-header h3 { font-family: var(--font-display); font-size: 10px; font-weight: 900; letter-spacing: 1.5px; margin: 0; text-transform: uppercase; }

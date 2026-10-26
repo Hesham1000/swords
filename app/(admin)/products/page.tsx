@@ -24,9 +24,10 @@ export default function ProductsPage() {
   const [filterCategory, setFilterCategory] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "price_asc" | "price_desc" | "quantity" | "newest">("newest");
 
   useEffect(() => {
-    const params = JSON.stringify({ page, searchQuery, filterCategory, filterType, filterBrand, refresh });
+    const params = JSON.stringify({ page, searchQuery, filterCategory, filterType, filterBrand, sortBy, refresh });
     if (params === lastParamsRef.current) return;
     lastParamsRef.current = params;
 
@@ -48,7 +49,7 @@ export default function ProductsPage() {
       }
     };
     fetchProducts();
-  }, [page, searchQuery, filterCategory, filterType, filterBrand, refresh]);
+  }, [page, searchQuery, filterCategory, filterType, filterBrand, sortBy, refresh]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this product?")) return;
@@ -155,6 +156,22 @@ export default function ProductsPage() {
             <option value="allstar">Allstar</option>
             <option value="folo">Folo</option>
             <option value="chinese">Chinese</option>
+          </select>
+
+          <select
+            value={sortBy}
+            onChange={(e) => {
+              setSortBy(e.target.value as "name" | "price_asc" | "price_desc" | "quantity" | "newest");
+              setPage(1);
+            }}
+            className="filter-select"
+            aria-label="Sort products"
+          >
+            <option value="newest">Newest First</option>
+            <option value="name">Name (A-Z)</option>
+            <option value="price_asc">Price: Low to High</option>
+            <option value="price_desc">Price: High to Low</option>
+            <option value="quantity">Quantity</option>
           </select>
 
           {(searchQuery || filterCategory || filterType || filterBrand) && (
