@@ -101,7 +101,13 @@ const Sidebar = ({
   };
 
   return (
-    <aside className={`sidebar ${sidebarOpen ? 'mobile-open' : 'closed'}`}>
+    <aside
+      className={`sidebar ${sidebarOpen ? 'mobile-open' : 'closed'}`}
+      style={{
+        borderRight: '1px solid var(--border-tech, #e2e8f0)',
+        boxShadow: 'var(--shadow-md, 0 4px 6px -1px rgba(37,99,235,0.08))',
+      }}
+    >
       <motion.div
         className="sidebar-header"
         initial={{ opacity: 0, y: -20 }}
@@ -114,7 +120,19 @@ const Sidebar = ({
           animate={{ textShadow: ["0 0 0px var(--accent-gold)", "0 0 8px var(--accent-gold)", "0 0 0px var(--accent-gold)"] }}
           transition={{ duration: 3, repeat: Infinity }}
         >
-          <img src="/icon.png" alt="Kings Logo" width="100" height="100" />
+          <img src="/icon.png" alt="Kings Logo" width="40" height="40" />
+          <span
+            style={{
+              fontWeight: 800,
+              fontFamily: 'var(--font-display)',
+              color: 'var(--text-primary)',
+              fontSize: '1.25rem',
+              letterSpacing: '-0.02em',
+              marginLeft: '0.5rem',
+            }}
+          >
+            Swords
+          </span>
         </motion.div>
       </motion.div>
 
@@ -125,9 +143,19 @@ const Sidebar = ({
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
-            whileHover={{ x: 5, backgroundColor: "var(--glass-bg)" }}
+            whileHover={{ x: 5, backgroundColor: "#f9fafb" }}
             whileTap={{ scale: 0.95 }}
             className={`nav-item ${currentPage === item.id ? "active" : ""}`}
+            style={
+              currentPage === item.id
+                ? {
+                    backgroundColor: "#eff6ff",
+                    color: "#1d4ed8",
+                    borderLeft: "4px solid #2563eb",
+                    fontWeight: 600,
+                  }
+                : undefined
+            }
             onClick={() => {
               const target = item.id === "dashboard" ? "/dashboard" : `/${item.id}`;
               router.push(target);

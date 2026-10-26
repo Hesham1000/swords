@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
-import { Menu, X, Loader2 } from "lucide-react";
+import { Menu, X, Loader2, ChevronDown, LogOut } from "lucide-react";
 import Sidebar from "../components/sidebar";
 import { getCurrentUser, User } from "../lib/api/auth";
 import { getDashboardSummary, DashboardSummaryData } from "../lib/api/dashboard";
@@ -39,7 +39,30 @@ export default function DashboardLayout({
   const [dashboardData, setDashboardData] = useState<DashboardSummaryData | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const fetchedRef = useRef(false);
+
+  // Close user dropdown on outside click
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const handleMouseDown = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [userMenuOpen]);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+      router.push("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   // Check for mobile on mount and window resize
   useEffect(() => {
@@ -182,8 +205,45 @@ export default function DashboardLayout({
             {pathname.includes("/invoices") && "Invoices Management"}
             {pathname.includes("/wallet") && "Wallet Management"}
             {pathname.includes("/history") && "Inventory History"}
+            {!["/dashboard", "/products", "/invoices", "/wallet", "/history"].some((route) =>
+              pathname.includes(route)
+            ) && "Dashboard"}
           </h2>
-          <div></div>
+          <div className="user-menu" ref={userMenuRef}>
+            <button
+              className="user-menu-trigger"
+              onClick={() => setUserMenuOpen((open) => !open)}
+              aria-haspopup="menu"
+              aria-expanded={userMenuOpen}
+              aria-label="User account menu"
+            >
+              <span className="user-avatar">
+                {user?.username ? user.username.charAt(0).toUpperCase() : "U"}
+              </span>
+              <span className="user-name">{user?.username || "User"}</span>
+              <ChevronDown
+                size={16}
+                className={`user-menu-chevron ${userMenuOpen ? "open" : ""}`}
+              />
+            </button>
+            {userMenuOpen && (
+              <div className="user-dropdown" role="menu">
+                {user?.email && (
+                  <div className="user-dropdown-email" role="menuitem">
+                    {user.email}
+                  </div>
+                )}
+                <button
+                  className="user-dropdown-logout"
+                  role="menuitem"
+                  onClick={handleLogout}
+                >
+                  <LogOut size={16} />
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="content-wrapper">
@@ -268,9 +328,102 @@ export default function DashboardLayout({
         }
         .content-wrapper {
           padding: 2rem;
-          max-width: 1600px;
+          max-width: 1920px;
           width: 100%;
           margin: 0 auto;
+        }
+        .user-menu {
+          position: relative;
+        }
+        .user-menu-trigger {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: none;
+          border: 1px solid transparent;
+          cursor: pointer;
+          padding: 0.25rem 0.5rem;
+          border-radius: 9999px;
+          color: var(--text-primary);
+          transition: all 0.2s;
+        }
+        .user-menu-trigger:hover {
+          background: var(--glass-bg);
+          border-color: var(--border-tech);
+        }
+        .user-avatar {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          background: var(--grad-amber);
+          color: #0f172a;
+          font-weight: 800;
+          font-size: 0.875rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .user-name {
+          font-size: 0.875rem;
+          font-weight: 600;
+          max-width: 140px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .user-menu-chevron {
+          transition: transform 0.2s;
+        }
+        .user-menu-chevron.open {
+          transform: rotate(180deg);
+        }
+        .user-dropdown {
+          position: absolute;
+          right: 0;
+          top: calc(100% + 0.5rem);
+          background: #ffffff;
+          border: 1px solid var(--border-tech);
+          border-radius: 0.5rem;
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+          z-index: 50;
+          min-width: 180px;
+          overflow: hidden;
+        }
+        .user-dropdown-email {
+          padding: 0.75rem 1rem;
+          font-size: 0.8125rem;
+          color: #475569;
+          border-bottom: 1px solid var(--border-tech);
+          word-break: break-all;
+        }
+        .user-dropdown-logout {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          width: 100%;
+          padding: 0.75rem 1rem;
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #0f172a;
+          transition: background 0.2s;
+        }
+        .user-dropdown-logout:hover {
+          background: #f1f5f9;
+        }
+        @media (max-width: 640px) {
+          .content-wrapper {
+            padding: 1rem;
+          }
+          .topbar {
+            padding: 0 1rem;
+          }
+          .topbar-title {
+            font-size: 1rem;
+          }
         }
         .sidebar-overlay {
           display: none;
