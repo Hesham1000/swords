@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Package, Plus, X, Loader2 } from "lucide-react";
+import { Package, Plus, X } from "lucide-react";
 import ProductForm from "../../components/productform";
+import { useDashboard } from "../layout";
 import ProductsList from "../../components/products-list";
 import { getProducts, deleteProduct, Product } from "../../lib/api/product";
-import { useDashboard } from "../layout";
 
 interface PaginationState {
   page: number;
@@ -26,7 +26,7 @@ const DEFAULT_PAGINATION: PaginationState = {
 };
 
 export default function ProductsPage() {
-  const { user, isAdmin } = useDashboard();
+  const { isAdmin } = useDashboard();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -70,8 +70,8 @@ export default function ProductsPage() {
         });
         setProducts(response?.data ?? []);
         setPagination(response?.pagination ?? DEFAULT_PAGINATION);
-      } catch (err: any) {
-        setError(err.message || "Failed to load products");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Failed to load products");
       } finally {
         setLoading(false);
       }
@@ -84,8 +84,8 @@ export default function ProductsPage() {
     try {
       await deleteProduct(id);
       setRefresh(!refresh);
-    } catch (err: any) {
-      alert(err.message || "Failed to delete product");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to delete product");
     }
   };
 

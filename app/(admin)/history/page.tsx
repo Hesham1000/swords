@@ -1,12 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { TrendingUp, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { getInventoryLogs, InventoryLog } from "../../lib/api/inventory";
-import { useDashboard } from "../layout";
 
 export default function HistoryPage() {
-  const { user, isAdmin } = useDashboard();
   const [logs, setLogs] = useState<InventoryLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -33,8 +31,8 @@ export default function HistoryPage() {
         if (response.pagination) {
           setPagination(response.pagination);
         }
-      } catch (err: any) {
-        setError(err.message || "Failed to load history");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Failed to load history");
       } finally {
         setLoading(false);
       }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, desc, eq, ilike, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, lt, or, sql, type AnyColumn } from "drizzle-orm";
 import { db, products } from "../../lib/db";
 import { transformProduct } from "../../lib/api/utils";
 
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     const query = conditions.length > 0 ? and(...conditions) : undefined;
 
-    const sortColumns: Record<string, any> = {
+    const sortColumns: Record<string, AnyColumn> = {
       name: products.name,
       price: products.price,
       quantity: products.quantity,

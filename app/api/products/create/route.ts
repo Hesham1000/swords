@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       name,
       description: description || "",
       price: price ? price : null,
-      category: category as any,
+      category: category as unknown as ProductData["category"],
       productType: productType,
       quantity: parseInt(quantity),
       images: imagePaths,

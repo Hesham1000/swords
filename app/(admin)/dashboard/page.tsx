@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -12,12 +12,11 @@ import {
   CheckCircle 
 } from "lucide-react";
 import { DashboardSummaryData } from "../../lib/api/dashboard";
-import { updateInvoiceStatus } from "../../lib/api/invoice";
 import { useRouter } from "next/navigation";
 import { useDashboard } from "../layout";
 
 export default function DashboardOverview() {
-  const { user, isAdmin, dashboardData, refreshDashboard } = useDashboard();
+  const { dashboardData, refreshDashboard } = useDashboard();
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);

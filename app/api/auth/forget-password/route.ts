@@ -7,7 +7,6 @@ import { db, users } from "../../../lib/db";
 import { eq } from "drizzle-orm";
 import { sendEmailSetPassword } from "../../../utils/email";
 import ApiError from "../../../utils/ApiError";
-import { buildErrorUrl } from "../../../lib/errors/error-builder";
 
 export async function POST(request: NextRequest) {
   try {

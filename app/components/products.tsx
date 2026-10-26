@@ -3,7 +3,7 @@
 import React from "react";
 import { Edit, X, Package, Crown, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { Product } from "../lib/api/product";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type PanInfo } from "framer-motion";
 import { useState } from "react";
 
 interface ProductRowProps {
@@ -27,23 +27,23 @@ const ProductRow: React.FC<ProductRowProps> = ({
     onDelete?.(product.id);
   };
 
-  const nextImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const nextImage = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
   };
 
-  const prevImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const prevImage = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  const handleDragEnd = (_: any, info: any) => {
+  const handleDragEnd = (_: unknown, info: PanInfo) => {
     if (!hasMultipleImages) return;
     const swipeThreshold = 50;
     if (info.offset.x < -swipeThreshold) {
-      nextImage({ stopPropagation: () => {} } as any);
+      nextImage();
     } else if (info.offset.x > swipeThreshold) {
-      prevImage({ stopPropagation: () => {} } as any);
+      prevImage();
     }
   };
 

@@ -1,20 +1,25 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { FileText, Plus, Search, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Plus, Search, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import InvoiceForm from "../../components/invoice-form";
-import { getInvoices, updateInvoiceStatus, Invoice } from "../../lib/api/invoice";
 import { useDashboard } from "../layout";
+import { getInvoices, updateInvoiceStatus, Invoice } from "../../lib/api/invoice";
 
 export default function InvoicesPage() {
-  const { user, isAdmin } = useDashboard();
+  const { isAdmin } = useDashboard();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState<any>(null);
+  const [pagination, setPagination] = useState<{
+    page: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [refresh, setRefresh] = useState(false);
   const [sortField, setSortField] = useState("date");
@@ -31,9 +36,9 @@ export default function InvoicesPage() {
         setLoading(true);
         const response = await getInvoices(page, 10, searchQuery, sortField, sortOrder);
         setInvoices(response.data);
-        setPagination(response.pagination);
-      } catch (err: any) {
-        setError(err.message || "Failed to load invoices");
+        setPagination(response.pagination ?? null);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Failed to load invoices");
       } finally {
         setLoading(false);
       }
@@ -56,8 +61,8 @@ export default function InvoicesPage() {
     try {
       await updateInvoiceStatus(id, "paid");
       setRefresh(!refresh);
-    } catch (err: any) {
-      alert(err.message || "Failed to update status");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Failed to update status");
     }
   };
 

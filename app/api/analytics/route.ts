@@ -1,8 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { db, invoices, products } from "../../lib/db";
 import { gte, sql } from "drizzle-orm";
 
-export async function GET(request: NextRequest) {
+interface InvoiceItem {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  category?: string;
+}
+
+export async function GET() {
   try {
     // 1. GET INVOICES FOR PROCESSING (last 90 days for detailed analytics)
     const threeMonthsAgo = new Date();
@@ -82,7 +90,7 @@ export async function GET(request: NextRequest) {
     const productSales: Record<string, {name: string, revenue: number, quantity: number}> = {};
 
     recentInvoices.forEach(inv => {
-      ((inv.items as any[]) || []).forEach((item: any) => {
+      ((inv.items as InvoiceItem[]) || []).forEach((item) => {
         const cat = productCategoryMap[item.productId] || item.category || "General";
         categorySales[cat] = (categorySales[cat] || 0) + (item.price * item.quantity);
 

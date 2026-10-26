@@ -3,6 +3,14 @@ import { db, invoices, products, shipments } from "../../../lib/db";
 import { transformProduct } from "../../../lib/api/utils";
 import { desc, gte, asc, sql, or, ilike, and } from "drizzle-orm";
 
+interface InvoiceItem {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  category?: string;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const search = request.nextUrl.searchParams.get("search")?.trim() || "";
@@ -127,7 +135,7 @@ export async function GET(request: NextRequest) {
     const productSalesMap: Record<string, {name: string, revenue: number, quantity: number}> = {};
 
     periodInvoices.forEach(inv => {
-      ((inv.items as any[]) || []).forEach((item: any) => {
+      ((inv.items as InvoiceItem[]) || []).forEach((item) => {
         const cat = productCategoryMap[item.productId] || item.category || "General";
         categorySales[cat] = (categorySales[cat] || 0) + (item.price * item.quantity);
 

@@ -4,7 +4,7 @@ import { shipments, wallet, walletTransactions } from "../../lib/db/schema";
 import { eq, sql, desc } from "drizzle-orm";
 
 // GET: Return all shipments
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const rows = await db.select().from(shipments).orderBy(desc(shipments.createdAt));
 

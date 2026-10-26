@@ -4,10 +4,9 @@ import { wallet, walletTransactions, invoices } from "../../lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 
 const CURRENCIES = ["EGP", "USD", "EUR"] as const;
-type Currency = typeof CURRENCIES[number];
 
 // GET: Return wallet balances for all currencies
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     let walletRow = (await db.select().from(wallet).limit(1))[0];
 

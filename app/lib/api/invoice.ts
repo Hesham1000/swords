@@ -50,6 +50,8 @@ export interface InvoiceResponse {
  */
 export async function getInvoices(page: number = 1, limit: number = 10, search?: string, sort?: string, order?: string): Promise<InvoicesResponse> {
   try {
+    void sort;
+    void order;
     const url = new URL(`${apiUrl}/api/invoices`, window.location.origin);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
@@ -100,7 +102,7 @@ export async function createInvoice(invoiceData: Partial<Invoice>): Promise<Invo
 /**
  * Update invoice status or add deposit
  */
-export async function updateInvoiceStatus(id: string, status?: string, deposit?: number): Promise<any> {
+export async function updateInvoiceStatus(id: string, status?: string, deposit?: number): Promise<unknown> {
   try {
     const response = await fetch(`${apiUrl}/api/invoices`, {
       method: "PATCH",

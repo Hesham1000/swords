@@ -11,16 +11,22 @@ import {
   Moon,
   Wallet,
   TrendingUp,
-  PieChart,
 } from "lucide-react";
 import { motion } from "framer-motion";
+
+interface SidebarUser {
+  id?: string;
+  username?: string;
+  email?: string;
+  roles?: string[];
+}
 
 interface SidebarProps {
   currentPage: string;
   onNavigation: (page: string) => void;
   sidebarOpen: boolean;
   onLogoutSuccess?: () => void; // Optional callback after successful logout
-  user?: any; // Added user prop
+  user?: SidebarUser | null; // Added user prop
 }
 
 const Sidebar = ({

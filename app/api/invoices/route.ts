@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, invoices, products, wallet, walletTransactions, inventoryLogs } from "../../lib/db";
-import { eq, ilike, or, desc, asc, sql } from "drizzle-orm";
-import ApiError from "../../utils/ApiError";
-import { v4 as uuidv4 } from "uuid";
+import { eq, ilike, or, desc, asc, sql, type AnyColumn } from "drizzle-orm";
+
+interface InvoiceItem {
+  productId: string;
+  quantity: number;
+  price: number | null;
+  [key: string]: unknown;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,7 +36,7 @@ export async function GET(request: NextRequest) {
       .from(invoices)
       .where(query)
       .orderBy((() => {
-          const sortColumns: Record<string, any> = {
+          const sortColumns: Record<string, AnyColumn> = {
             date: invoices.date,
             customer: invoices.customer,
             amount: invoices.amount,
@@ -177,14 +182,14 @@ export async function PATCH(request: NextRequest) {
 
     // 1. STOCK ADJUSTMENT AND HISTORY LOGGING (if items changed)
     if (items && Array.isArray(items)) {
-      const oldItems: any[] = (invoice.items as any[]) || [];
+      const oldItems: InvoiceItem[] = (invoice.items as InvoiceItem[]) || [];
 
       // Track which old items were processed
       const processedOldProductIds = new Set<string>();
 
       // Process new items (Updates and Additions)
       for (const newItem of items) {
-        const oldItem = oldItems.find((oi: any) => oi.productId === newItem.productId);
+        const oldItem = oldItems.find((oi) => oi.productId === newItem.productId);
         processedOldProductIds.add(newItem.productId);
 
         const oldQty = oldItem ? oldItem.quantity : 0;
@@ -207,7 +212,7 @@ export async function PATCH(request: NextRequest) {
         // ONLY LOG IF PRICE OR QUANTITY CHANGED
         if (netChange !== 0 || priceChanged) {
           try {
-            const [product] = await db
+            await db
               .select()
               .from(products)
               .where(eq(products.id, newItem.productId));

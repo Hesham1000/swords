@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { asc, desc, eq, sql, type AnyColumn } from "drizzle-orm";
 import { db, walletTransactions } from "../../../lib/db";
 
 // GET: Return wallet transaction history
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get("sort") || "date";
     const order = searchParams.get("order") || "desc";
 
-    const sortColumns: Record<string, any> = {
+    const sortColumns: Record<string, AnyColumn> = {
       date: walletTransactions.createdAt,
       type: walletTransactions.type,
       amount: walletTransactions.amount,
