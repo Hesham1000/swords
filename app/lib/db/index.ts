@@ -2,19 +2,23 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
-// The provisioned database requires TLS with a self-signed certificate.
-// Strip sslmode from the URL and configure TLS trust explicitly, otherwise
-// the postgres driver fails with "self-signed certificate in certificate chain".
-const rawUrl = process.env.DATABASE_URL!;
-const url = new URL(rawUrl);
-url.searchParams.delete("sslmode");
+const globalForDb = globalThis as unknown as { db: ReturnType<typeof drizzle> };
 
-const client = postgres(url.toString(), {
-  ssl: { rejectUnauthorized: false },
-  connect_timeout: 8,
-});
+if (!globalForDb.db) {
+  const rawUrl = process.env.DATABASE_URL!;
+  const url = new URL(rawUrl);
+  url.searchParams.delete("sslmode");
 
-export const db = drizzle(client, { schema });
+  const client = postgres(url.toString(), {
+    ssl: "require",
+    max: 10,
+    connect_timeout: 8,
+  });
+
+  globalForDb.db = drizzle(client, { schema });
+}
+
+export const db = globalForDb.db;
 
 export {
   users,
