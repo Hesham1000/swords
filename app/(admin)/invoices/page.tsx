@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Search, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Plus, Search, CheckCircle, AlertCircle } from "lucide-react";
 import InvoiceForm from "../../components/invoice-form";
 import { getInvoices, updateInvoiceStatus, Invoice } from "../../lib/api/invoice";
 import { useDashboard } from "../layout";
@@ -90,12 +90,24 @@ export default function InvoicesPage() {
       <div className="list-card full-width">
         <div className="invoice-list">
           {loading ? (
-            <div className="loading-state">
-              <Loader2 className="animate-spin" />
-              <p>Loading invoices...</p>
+            <div className="flex flex-col gap-2">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center gap-4 rounded-xl border border-[var(--border-tech)] bg-white/[0.02] p-4">
+                  <div className="skeleton h-10 w-10 shrink-0 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <div className="skeleton h-3.5 w-48" />
+                    <div className="skeleton h-3 w-32" />
+                  </div>
+                  <div className="skeleton h-4 w-24" />
+                </div>
+              ))}
             </div>
           ) : invoices.length === 0 ? (
-            <div className="empty-state">No invoices found.</div>
+            <div className="empty-state-container">
+              <Search className="empty-state-icon" />
+              <h2 className="empty-state-title">No invoices found</h2>
+              <p className="empty-state-description">No invoices match your current search or filters.</p>
+            </div>
           ) : (
             invoices.map((invoice) => (
               <div key={invoice._id || invoice.invoiceId} className={`invoice-item status-${invoice.status}`}>
@@ -174,17 +186,7 @@ export default function InvoicesPage() {
         />
       )}
       
-      <style jsx>{`
-        .loading-state, .empty-state {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 4rem;
-          color: var(--text-secondary);
-          gap: 1rem;
-        }
-      `}</style>
+      
     </div>
   );
 }
