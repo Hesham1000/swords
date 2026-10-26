@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProductsCollection } from "../../lib/mongoDB";
+import { and, asc, eq, ilike, lt, or, sql } from "drizzle-orm";
+import { db, products } from "../../lib/db";
 import { transformProduct } from "../../lib/api/utils";
 
 // GET endpoint to retrieve products with pagination and filtering
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const summary = searchParams.get("summary") === "true";
-    
+
     // Filter parameters
     const search = searchParams.get("search");
     const category = searchParams.get("category");
@@ -34,86 +35,101 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const productsCollection = await getProductsCollection();
     const dashboard = searchParams.get("dashboard") === "true";
 
-    // Build query object
-    const query: any = {};
-    
+    // Build where clause
+    const conditions = [];
+
     if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-        { model: { $regex: search, $options: "i" } }
-      ];
+      conditions.push(
+        or(
+          ilike(products.name, `%${search}%`),
+          ilike(products.description, `%${search}%`),
+          ilike(products.model, `%${search}%`)
+        )
+      );
     }
-    
+
     if (category) {
-      query.category = category;
+      conditions.push(eq(products.category, [category]));
     }
-    
+
     if (productType) {
-      query.productType = productType;
+      conditions.push(eq(products.productType, productType));
     }
-    
+
     if (brand) {
-      query.brand = brand;
+      conditions.push(eq(products.brand, brand));
     }
+
+    const query = conditions.length > 0 ? and(...conditions) : undefined;
 
     // DASHBOARD OPTIMIZED RESPONSE
     if (dashboard) {
       // 1. Calculate total quantity matching query
-      const qtyResult = await productsCollection.aggregate([
-        { $match: query },
-        { $group: { _id: null, total: { $sum: "$quantity" } } }
-      ]).toArray();
-      const totalQuantity = qtyResult.length > 0 ? qtyResult[0].total : 0;
+      const qtyResult = await db
+        .select({ total: sql<number>`coalesce(sum(${products.quantity}), 0)` })
+        .from(products)
+        .where(query);
+      const totalQuantity = Number(qtyResult[0]?.total ?? 0);
 
       // 2. Fetch ALL low stock items (quantity < 3) matching query
-      const lowStockQuery = { ...query, quantity: { $lt: 3 } };
-      const lowStockItems = await productsCollection
-        .find(lowStockQuery)
-        .sort({ quantity: 1 })
-        .toArray();
+      const lowStockConditions = [
+        ...(conditions ?? []),
+        lt(products.quantity, 3),
+      ];
+      const lowStockItems = await db
+        .select()
+        .from(products)
+        .where(and(...lowStockConditions))
+        .orderBy(asc(products.quantity));
 
-      return NextResponse.json({
-        success: true,
-        summary: {
-          totalQuantity,
-          lowStockItems: lowStockItems.map(transformProduct),
-          lowStockCount: lowStockItems.length
-        }
-      }, { status: 200 });
+      return NextResponse.json(
+        {
+          success: true,
+          summary: {
+            totalQuantity,
+            lowStockItems: lowStockItems.map(transformProduct),
+            lowStockCount: lowStockItems.length,
+          },
+        },
+        { status: 200 }
+      );
     }
 
     // STANDARD PAGINATED RESPONSE
     // Get total count of products for pagination metadata
-    const totalCount = await productsCollection.countDocuments(query);
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(products)
+      .where(query);
+    const totalCount = Number(countResult[0]?.count ?? 0);
 
     // If summary is requested, calculate total quantity across all products matching the query
     let totalQuantity = 0;
     if (summary) {
-      const result = await productsCollection.aggregate([
-        { $match: query },
-        { $group: { _id: null, total: { $sum: "$quantity" } } }
-      ]).toArray();
-      totalQuantity = result.length > 0 ? result[0].total : 0;
+      const result = await db
+        .select({ total: sql<number>`coalesce(sum(${products.quantity}), 0)` })
+        .from(products)
+        .where(query);
+      totalQuantity = Number(result[0]?.total ?? 0);
     }
 
     // Fetch paginated products
-    const products = await productsCollection
-      .find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
+    const rows = await db
+      .select()
+      .from(products)
+      .where(query)
+      .orderBy(sql`${products.createdAt} desc`)
       .limit(limit)
-      .toArray();
+      .offset(skip);
 
     // Calculate pagination metadata
     const totalPages = Math.ceil(totalCount / limit);
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
 
-    const transformedProducts = products.map(transformProduct);
+    const transformedProducts = rows.map(transformProduct);
 
     return NextResponse.json(
       {
@@ -128,7 +144,7 @@ export async function GET(request: NextRequest) {
           nextPage: hasNextPage ? page + 1 : null,
           prevPage: hasPrevPage ? page - 1 : null,
         },
-        ...(summary && { summary: { totalQuantity } })
+        ...(summary && { summary: { totalQuantity } }),
       },
       { status: 200 }
     );
@@ -139,4 +155,44 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}
+
+// POST endpoint to create a new product
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+
+    const [newProduct] = await db
+      .insert(products)
+      .values({
+        name: body.name,
+        description: body.description ?? "",
+        price: body.price != null ? String(body.price) : null,
+        category: body.category ?? [],
+        productType: body.productType,
+        brand: body.brand ?? "",
+        model: body.model ?? "",
+        subCategory: body.subCategory,
+        hand: body.hand,
+        isKings: body.isKings ?? false,
+        isMini: body.isMini ?? false,
+        lameColor: body.lameColor,
+        material: body.material,
+        gloveSize: body.gloveSize,
+        quantity: body.quantity ?? 0,
+        images: body.images ?? [],
+      })
+      .returning();
+
+    return NextResponse.json(
+      { success: true, data: transformProduct(newProduct) },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Error creating product:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}

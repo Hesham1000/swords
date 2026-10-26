@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProductsCollection } from "../../../lib/mongoDB";
+import { db, products } from "../../../lib/db";
 import { transformProduct } from "../../../lib/api/utils";
 import { uploadImage, getRelativePathFromUrl } from "../../../lib/cloudinary";
 
@@ -7,7 +7,7 @@ import { uploadImage, getRelativePathFromUrl } from "../../../lib/cloudinary";
 interface ProductData {
   name: string;
   description: string;
-  price: number | null;
+  price: string | null;
   category: ("Foil" | "Sabre" | "Epée")[];
   productType: string;
   brand?: string;
@@ -28,7 +28,6 @@ interface ProductData {
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const productsCollection = await getProductsCollection();
 
     // Extract basic fields
     const name = (formData.get("name") as string)?.trim();
@@ -70,7 +69,7 @@ export async function POST(request: NextRequest) {
     const productData: ProductData = {
       name,
       description: description || "",
-      price: price ? parseFloat(price) : null,
+      price: price ? price : null,
       category: category as any,
       productType: productType,
       quantity: parseInt(quantity),
@@ -127,14 +126,34 @@ export async function POST(request: NextRequest) {
       if (model) productData.model = model;
     }
 
-    const result = await productsCollection.insertOne(productData);
-    const insertedProduct = transformProduct({ ...productData, _id: result.insertedId });
+    const [insertedRow] = await db
+      .insert(products)
+      .values({
+        name: productData.name,
+        description: productData.description,
+        price: productData.price,
+        category: productData.category,
+        productType: productData.productType,
+        brand: productData.brand,
+        model: productData.model,
+        subCategory: productData.subCategory,
+        hand: productData.hand,
+        isKings: productData.isKings,
+        isMini: productData.isMini,
+        lameColor: productData.lameColor,
+        material: productData.material,
+        gloveSize: productData.gloveSize,
+        quantity: productData.quantity,
+        images: productData.images,
+      })
+      .returning();
+    const insertedProduct = transformProduct(insertedRow);
 
     // Log the initial stock arrival
     try {
       const { logInventoryChange } = await import("../../../lib/inventory-server");
       await logInventoryChange({
-        productId: result.insertedId.toString(),
+        productId: insertedRow.id,
         productName: productData.name,
         changeAmount: productData.quantity,
         newQuantity: productData.quantity,

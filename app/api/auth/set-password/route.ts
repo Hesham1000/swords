@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
 import {
   decodePasswordSetupToken,
   generateToken,
 } from "../../../lib/auth/token";
-import { getUserCollection } from "../../../lib/mongoDB";
+import { db, users } from "../../../lib/db";
+import { eq, sql } from "drizzle-orm";
 import { hashPassword } from "../../../lib/auth/password";
 import { v4 as uuidv4 } from "uuid";
 import { validatePassword } from "../../../utils/validation";
@@ -28,19 +28,21 @@ export async function POST(req: NextRequest) {
       throw ApiError.unauthorized("Invalid or expired token");
     }
 
-    const userCollection = await getUserCollection();
-
-    const user = await userCollection.findOne({ email });
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
     if (!user) {
       throw ApiError.notFound("User is not found");
     }
 
-    const userId = user._id.toString();
+    const userId = user.id;
 
     // ✅ Validate password
     const validationError = validatePassword(
       password,
-      user.firstName,
+      user.username,
       user.email,
       ""
     );
@@ -54,17 +56,10 @@ export async function POST(req: NextRequest) {
 
     const hashedPassword = await hashPassword(password.trim());
 
-    await userCollection.updateOne(
-      { _id: ObjectId.createFromHexString(userId) },
-      {
-        $set: {
-          password: hashedPassword,
-          isActive: true,
-          dateUpdated: new Date(),
-          lastLogin: new Date(),
-        },
-      }
-    );
+    await db
+      .update(users)
+      .set({ password: hashedPassword, isActive: true })
+      .where(eq(users.id, userId));
 
     // Generate new auth tokens
     const { accessToken, refreshToken } = await generateToken(userId);
@@ -79,10 +74,12 @@ export async function POST(req: NextRequest) {
     };
 
     // Add session to user
-    await userCollection.updateOne(
-      { _id: ObjectId.createFromHexString(userId) },
-      { $push: { sessions: newSession as any } }
-    );
+    await db
+      .update(users)
+      .set({
+        sessions: sql`${users.sessions} || ${JSON.stringify([newSession])}::jsonb`,
+      })
+      .where(eq(users.id, userId));
 
     const res = NextResponse.json(
       {
@@ -107,14 +104,13 @@ export async function POST(req: NextRequest) {
       path: "/",
     });
 
-    res.cookies.set("ROLES", user.roles, {
+    res.cookies.set("ROLES", JSON.stringify(user.roles ?? ["user"]), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
       maxAge: 60 * 60 * 6, // 6 hours
     });
-
 
     return res;
   } catch (error) {

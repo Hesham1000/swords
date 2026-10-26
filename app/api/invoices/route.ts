@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getInvoicesCollection, getProductsCollection, getWalletCollection, getWalletTransactionsCollection } from "../../lib/mongoDB";
+import { db, invoices, products, wallet, walletTransactions, inventoryLogs } from "../../lib/db";
+import { eq, ilike, or, desc, sql } from "drizzle-orm";
 import ApiError from "../../utils/ApiError";
 import { v4 as uuidv4 } from "uuid";
-import { ObjectId } from "mongodb";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,33 +11,32 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
-    
-    const invoicesCollection = await getInvoicesCollection();
-    
-    let query = {};
-    if (searchVal) {
-      query = {
-        $or: [
-          { customer: { $regex: searchVal, $options: "i" } },
-          { invoiceId: { $regex: searchVal, $options: "i" } },
-          { "items.name": { $regex: searchVal, $options: "i" } }
-        ]
-      };
-    }
-    
-    const totalCount = await invoicesCollection.countDocuments(query);
+
+    const query = searchVal
+      ? or(
+          ilike(invoices.customer, `%${searchVal}%`),
+          ilike(invoices.invoiceId, `%${searchVal}%`)
+        )
+      : undefined;
+
+    const [{ count: totalCount }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(invoices)
+      .where(query);
+
     const totalPages = Math.ceil(totalCount / limit);
-    
-    const invoices = await invoicesCollection
-      .find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
+
+    const data = await db
+      .select()
+      .from(invoices)
+      .where(query)
+      .orderBy(desc(invoices.createdAt))
       .limit(limit)
-      .toArray();
-    
+      .offset(skip);
+
     return NextResponse.json({
       message: "Invoices retrieved successfully",
-      data: invoices,
+      data,
       pagination: {
         page,
         limit,
@@ -62,35 +61,33 @@ export async function POST(request: NextRequest) {
     const invoiceData = {
       invoiceId: `INV-${Math.floor(1000 + Math.random() * 9000)}`,
       customer: customer || "General Customer",
-      amount: parseFloat(amount) || 0,
-      discount: parseFloat(discount) || 0,
+      amount: String(parseFloat(amount) || 0),
+      discount: String(parseFloat(discount) || 0),
       status: status || "pending",
       paymentMethod: paymentMethod || "cash",
       date: date || new Date().toISOString().split('T')[0],
       items: items || [],
-      deposit: parseFloat(body.deposit) || 0,
+      deposit: String(parseFloat(body.deposit) || 0),
       depositCurrency: body.depositCurrency || "EGP",
-      createdAt: new Date()
     };
 
-    const invoicesCollection = await getInvoicesCollection();
-    const result = await invoicesCollection.insertOne(invoiceData);
+    const [inserted] = await db.insert(invoices).values(invoiceData).returning();
 
     // Decrease product quantities in inventory
     if (items && items.length > 0) {
-      const productsCollection = await getProductsCollection();
-      const { logInventoryChange } = await import("../../lib/inventory-server");
-
       for (const item of items) {
         try {
-          // Get current quantity first for logging
-          const product = await productsCollection.findOne({ _id: new ObjectId(item.productId) });
-          const newQty = (product?.quantity || 0) - item.quantity;
+          await db
+            .update(products)
+            .set({ quantity: sql`${products.quantity} - ${item.quantity}` })
+            .where(eq(products.id, item.productId));
 
-          await productsCollection.updateOne(
-            { _id: new ObjectId(item.productId) },
-            { $inc: { quantity: -item.quantity } }
-          );
+          await db.insert(inventoryLogs).values({
+            productId: item.productId,
+            changeType: "Sale",
+            quantityChange: -item.quantity,
+            reason: `Sale via invoice ${invoiceData.invoiceId}`,
+          });
 
           console.log(`✅ Stocks updated for product: ${item.name} (-${item.quantity})`);
         } catch (updateError) {
@@ -102,32 +99,33 @@ export async function POST(request: NextRequest) {
 
     // If payment method is CASH and there's a deposit (or full payment), add to wallet
     const isPaid = invoiceData.status === "paid";
-    const depositAmount = invoiceData.deposit || 0;
-    const finalAmount = isPaid ? invoiceData.amount : depositAmount;
+    const depositAmount = parseFloat(invoiceData.deposit) || 0;
+    const finalAmount = isPaid ? parseFloat(invoiceData.amount) : depositAmount;
 
     if (invoiceData.paymentMethod === "cash" && finalAmount > 0) {
       try {
-        const walletCollection = await getWalletCollection();
-        const transactionsCollection = await getWalletTransactionsCollection();
-
         // Add to wallet balance (EGP) - assuming EGP for now as per user request
-        await walletCollection.updateOne(
-          { _id: "main" as any },
-          { $inc: { balanceEGP: finalAmount } },
-          { upsert: true }
-        );
+        const [existingWallet] = await db.select().from(wallet).limit(1);
+        if (existingWallet) {
+          await db
+            .update(wallet)
+            .set({
+              balance: sql`${wallet.balance} + ${finalAmount}`,
+              updatedAt: new Date(),
+            })
+            .where(eq(wallet.id, existingWallet.id));
+        } else {
+          await db.insert(wallet).values({ balance: String(finalAmount), currency: "EGP" });
+        }
 
         // Log wallet transaction
-        await transactionsCollection.insertOne({
+        await db.insert(walletTransactions).values({
+          walletId: existingWallet?.id ?? null,
           type: "invoice",
-          amount: finalAmount,
-          currency: "EGP",
-          note: isPaid 
+          amount: String(finalAmount),
+          description: isPaid
             ? `Cash invoice ${invoiceData.invoiceId} (Full Payment) — ${invoiceData.customer}`
             : `Cash invoice ${invoiceData.invoiceId} (Deposit) — ${invoiceData.customer}`,
-          date: new Date(),
-          createdAt: new Date(),
-          referenceId: result.insertedId,
         });
 
         console.log(`💰 Wallet updated: +${finalAmount} EGP from invoice ${invoiceData.invoiceId}`);
@@ -138,7 +136,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       message: "Invoice created successfully",
-      data: { ...invoiceData, _id: result.insertedId }
+      data: { ...invoiceData, _id: inserted.id, id: inserted.id }
     }, { status: 201 });
   } catch (error) {
     console.error("Error creating invoice:", error);
@@ -155,23 +153,20 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
-    const invoicesCollection = await getInvoicesCollection();
-    const invoice = await invoicesCollection.findOne({ _id: new ObjectId(id) });
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.id, id));
 
     if (!invoice) {
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
     const oldStatus = invoice.status;
-    const oldDeposit = invoice.deposit || 0;
+    const oldDeposit = parseFloat(invoice.deposit || "0") || 0;
     const additionalDeposit = parseFloat(body.deposit) || 0;
-    const productsCollection = await getProductsCollection();
-    
+
     // 1. STOCK ADJUSTMENT AND HISTORY LOGGING (if items changed)
     if (items && Array.isArray(items)) {
-      const { logInventoryChange } = await import("../../lib/inventory-server");
-      const oldItems = invoice.items || [];
-      
+      const oldItems: any[] = (invoice.items as any[]) || [];
+
       // Track which old items were processed
       const processedOldProductIds = new Set<string>();
 
@@ -188,10 +183,10 @@ export async function PATCH(request: NextRequest) {
         if (netChange !== 0) {
           // Adjust stock
           try {
-            await productsCollection.updateOne(
-              { _id: new ObjectId(newItem.productId) },
-              { $inc: { quantity: -netChange } }
-            );
+            await db
+              .update(products)
+              .set({ quantity: sql`${products.quantity} - ${netChange}` })
+              .where(eq(products.id, newItem.productId));
           } catch (e) {
             console.error(`Stock update fail for ${newItem.name}:`, e);
           }
@@ -200,17 +195,16 @@ export async function PATCH(request: NextRequest) {
         // ONLY LOG IF PRICE OR QUANTITY CHANGED
         if (netChange !== 0 || priceChanged) {
           try {
-            const product = await productsCollection.findOne({ _id: new ObjectId(newItem.productId) });
-            await logInventoryChange({
+            const [product] = await db
+              .select()
+              .from(products)
+              .where(eq(products.id, newItem.productId));
+
+            await db.insert(inventoryLogs).values({
               productId: newItem.productId,
-              productName: newItem.name,
-              changeAmount: -netChange,
-              newQuantity: product?.quantity || 0,
-              reason: priceChanged && netChange === 0 ? "Price Update" : "Sale",
-              oldPrice: oldPrice,
-              newPrice: newItem.price,
-              referenceId: id,
-              note: `Updated via invoice ${invoice.invoiceId}${priceChanged ? ' (Price change)' : ''}`
+              changeType: priceChanged && netChange === 0 ? "Price Update" : "Sale",
+              quantityChange: -netChange,
+              reason: `Updated via invoice ${invoice.invoiceId}${priceChanged ? ' (Price change)' : ''}`,
             });
             console.log(`📝 Logged update for ${newItem.name}: Qty Δ ${-netChange}, Price Δ ${priceChanged}`);
           } catch (e) {
@@ -224,21 +218,17 @@ export async function PATCH(request: NextRequest) {
         if (!processedOldProductIds.has(oldItem.productId)) {
           try {
             // Revert stock
-            await productsCollection.updateOne(
-              { _id: new ObjectId(oldItem.productId) },
-              { $inc: { quantity: oldItem.quantity } }
-            );
+            await db
+              .update(products)
+              .set({ quantity: sql`${products.quantity} + ${oldItem.quantity}` })
+              .where(eq(products.id, oldItem.productId));
 
             // Log removal
-            const product = await productsCollection.findOne({ _id: new ObjectId(oldItem.productId) });
-            await logInventoryChange({
+            await db.insert(inventoryLogs).values({
               productId: oldItem.productId,
-              productName: oldItem.name,
-              changeAmount: oldItem.quantity,
-              newQuantity: product?.quantity || 0,
-              reason: "Order Cancelled",
-              referenceId: id,
-              note: `Item removed from invoice ${invoice.invoiceId}`
+              changeType: "Order Cancelled",
+              quantityChange: oldItem.quantity,
+              reason: `Item removed from invoice ${invoice.invoiceId}`,
             });
             console.log(`📝 Logged removal for ${oldItem.name}`);
           } catch (e) {
@@ -249,53 +239,60 @@ export async function PATCH(request: NextRequest) {
     }
 
     // 2. PREPARE UPDATE DATA
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (status) updateData.status = status;
     if (customer) updateData.customer = customer;
-    if (amount !== undefined) updateData.amount = parseFloat(amount);
-    if (discount !== undefined) updateData.discount = parseFloat(discount);
+    if (amount !== undefined) updateData.amount = String(parseFloat(amount));
+    if (discount !== undefined) updateData.discount = String(parseFloat(discount));
     if (date) updateData.date = date;
     if (items) updateData.items = items;
     if (paymentMethod) updateData.paymentMethod = paymentMethod;
 
     if (additionalDeposit > 0) {
-      updateData.deposit = oldDeposit + additionalDeposit;
+      updateData.deposit = String(oldDeposit + additionalDeposit);
     }
     if (status === "paid" || (!status && oldStatus === "paid")) {
       updateData.deposit = updateData.amount || invoice.amount;
     }
 
-    const result = await invoicesCollection.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: updateData }
-    );
+    await db.update(invoices).set(updateData).where(eq(invoices.id, id));
 
     // 3. WALLET UPDATE LOGIC (Cash only)
-    const walletCollection = await getWalletCollection();
-    const transactionsCollection = await getWalletTransactionsCollection();
     const currentPaymentMethod = paymentMethod || invoice.paymentMethod;
 
     if (currentPaymentMethod === "cash") {
+      const [existingWallet] = await db.select().from(wallet).limit(1);
+
+      const addWalletAmount = async (amt: number, note: string) => {
+        if (existingWallet) {
+          await db
+            .update(wallet)
+            .set({
+              balance: sql`${wallet.balance} + ${amt}`,
+              updatedAt: new Date(),
+            })
+            .where(eq(wallet.id, existingWallet.id));
+        } else {
+          await db.insert(wallet).values({ balance: String(amt), currency: "EGP" });
+        }
+        await db.insert(walletTransactions).values({
+          walletId: existingWallet?.id ?? null,
+          type: "invoice",
+          amount: String(amt),
+          description: note,
+        });
+      };
+
       // Case: Just marked as paid (add remaining balance)
       if (status === "paid" && oldStatus !== "paid") {
-        const remainingBalance = (updateData.amount || invoice.amount) - (oldDeposit + additionalDeposit);
+        const remainingBalance =
+          parseFloat(String(updateData.amount || invoice.amount)) - (oldDeposit + additionalDeposit);
         if (remainingBalance > 0) {
           try {
-            await walletCollection.updateOne(
-              { _id: "main" as any },
-              { $inc: { balanceEGP: remainingBalance } },
-              { upsert: true }
+            await addWalletAmount(
+              remainingBalance,
+              `Cash invoice ${invoice.invoiceId} (Final Balance) — ${updateData.customer || invoice.customer}`
             );
-
-            await transactionsCollection.insertOne({
-              type: "invoice",
-              amount: remainingBalance,
-              currency: "EGP",
-              note: `Cash invoice ${invoice.invoiceId} (Final Balance) — ${updateData.customer || invoice.customer}`,
-              date: new Date(),
-              createdAt: new Date(),
-              referenceId: new ObjectId(id),
-            });
           } catch (walletError) {
             console.error("❌ Failed to update wallet for final balance:", walletError);
           }
@@ -304,25 +301,14 @@ export async function PATCH(request: NextRequest) {
 
       // Case: Additional deposit added
       if (additionalDeposit > 0) {
-         try {
-            await walletCollection.updateOne(
-              { _id: "main" as any },
-              { $inc: { balanceEGP: additionalDeposit } },
-              { upsert: true }
-            );
-
-            await transactionsCollection.insertOne({
-              type: "invoice",
-              amount: additionalDeposit,
-              currency: "EGP",
-              note: `Cash invoice ${invoice.invoiceId} (Additional Deposit) — ${updateData.customer || invoice.customer}`,
-              date: new Date(),
-              createdAt: new Date(),
-              referenceId: new ObjectId(id),
-            });
-          } catch (walletError) {
-            console.error("❌ Failed to update wallet for additional deposit:", walletError);
-          }
+        try {
+          await addWalletAmount(
+            additionalDeposit,
+            `Cash invoice ${invoice.invoiceId} (Additional Deposit) — ${updateData.customer || invoice.customer}`
+          );
+        } catch (walletError) {
+          console.error("❌ Failed to update wallet for additional deposit:", walletError);
+        }
       }
     }
 

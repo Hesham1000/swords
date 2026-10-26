@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getWalletTransactionsCollection } from "../../../lib/mongoDB";
+import { desc, eq, sql } from "drizzle-orm";
+import { db, walletTransactions } from "../../../lib/db";
 
 // GET: Return wallet transaction history
 export async function GET(request: NextRequest) {
@@ -7,20 +8,39 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
-    const skip = (page - 1) * limit;
+    const walletId = searchParams.get("walletId") || undefined;
+    const offset = (page - 1) * limit;
 
-    const transactionsCollection = await getWalletTransactionsCollection();
-    
-    const [transactions, totalItems] = await Promise.all([
-      transactionsCollection
-        .find({})
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .toArray(),
-      transactionsCollection.countDocuments({})
+    const baseQuery = db
+      .select()
+      .from(walletTransactions)
+      .orderBy(desc(walletTransactions.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    const countQuery = db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(walletTransactions);
+
+    const [transactions, totalResult] = await Promise.all([
+      walletId
+        ? db
+            .select()
+            .from(walletTransactions)
+            .where(eq(walletTransactions.walletId, walletId))
+            .orderBy(desc(walletTransactions.createdAt))
+            .limit(limit)
+            .offset(offset)
+        : baseQuery,
+      walletId
+        ? db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(walletTransactions)
+            .where(eq(walletTransactions.walletId, walletId))
+        : countQuery,
     ]);
 
+    const totalItems = totalResult[0]?.count ?? 0;
     const totalPages = Math.ceil(totalItems / limit);
 
     return NextResponse.json({

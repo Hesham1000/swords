@@ -14,7 +14,7 @@ export function transformProduct(product: any) {
 
     const transformed = {
         ...product,
-        id: product._id.toString(),
+        id: (product._id ?? product.id).toString(),
         images: (product.images || []).map((img: string) => {
             if (img.startsWith("http")) {
                 return img;
@@ -34,6 +34,5 @@ export function transformProduct(product: any) {
 
     // Remove the raw MongoDB _id to avoid confusion on the frontend
     delete transformed._id;
-
     return transformed;
 }
