@@ -119,7 +119,7 @@ export async function getWalletTransactions(
     if (type && type !== "all") searchParams.append("type", type);
     searchParams.append("sort", sort);
 
-    const response = await fetch(`${window.location.origin}/api/wallet/transactions?${searchParams.toString()}`, {
+    const response = await fetch(`/api/wallet/transactions?${searchParams.toString()}`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
       cache: "no-store",

@@ -51,7 +51,7 @@ export interface InvoiceResponse {
  */
 export async function getInvoices(page: number = 1, limit: number = 10, search?: string, status?: string, sort?: string): Promise<InvoicesResponse> {
   try {
-    const url = new URL(`${apiUrl}/api/invoices`, window.location.origin);
+    const url = new URL(`${apiUrl}/api/invoices`);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
     if (search) url.searchParams.append("search", search);

@@ -33,7 +33,7 @@ export interface InventoryLogsResponse {
  */
 export async function getInventoryLogs(page: number = 1, limit: number = 10, productId?: string, _search?: string, _type?: string, _sort?: "asc" | "desc"): Promise<InventoryLogsResponse> {
   try {
-    const url = new URL(`${apiUrl}/api/inventory/logs`, window.location.origin);
+    const url = new URL(`${apiUrl}/api/inventory/logs`);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
     if (productId) {

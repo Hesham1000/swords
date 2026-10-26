@@ -74,7 +74,7 @@ export async function getProducts(
   } = {}
 ): Promise<ProductsResponse> {
   try {
-    const url = new URL(`${apiUrl}/api/products`, window.location.origin);
+    const url = new URL(`${apiUrl}/api/products`);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
     
