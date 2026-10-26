@@ -10,7 +10,6 @@ interface ForgotPasswordData {
 }
 
 const ForgotPassword = () => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
   const [isLoading, setLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -45,7 +44,7 @@ const ForgotPassword = () => {
 
     try {
       // Here you would typically call your API endpoint
-      const response = await fetch(`${apiUrl}/api/auth/forget-password`, {
+      const response = await fetch('/api/auth/forget-password', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.email }),

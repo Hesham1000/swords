@@ -24,7 +24,6 @@ interface PasswordRequirements {
 }
 
 const SetPasswordContent = () => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -129,7 +128,7 @@ const SetPasswordContent = () => {
 
 
     try {
-      const response = await fetch(`${apiUrl}/api/auth/set-password`, {
+      const response = await fetch('/api/auth/set-password', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

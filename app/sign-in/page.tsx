@@ -20,7 +20,6 @@ interface ApiError {
 }
 
 const FencingLogin = () => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
   const [isLoading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -146,7 +145,7 @@ const FencingLogin = () => {
     };
 
     try {
-      const response = await fetch(`${apiUrl}/api/auth/signup`, {
+      const response = await fetch('/api/auth/signup', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
@@ -190,7 +189,7 @@ const FencingLogin = () => {
     };
 
     try {
-      const response = await fetch(`${apiUrl}/api/auth/signin`, {
+      const response = await fetch('/api/auth/signin', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(loginData),
