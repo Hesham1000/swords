@@ -32,23 +32,23 @@ export interface InventoryLogsResponse {
  */
 export async function getInventoryLogs(page: number = 1, limit: number = 10, productId?: string, search?: string, type?: string, dateRange?: string): Promise<InventoryLogsResponse> {
   try {
-    const url = new URL("/api/inventory/logs", window.location.origin);
-    url.searchParams.append("page", page.toString());
-    url.searchParams.append("limit", limit.toString());
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
     if (productId) {
-      url.searchParams.append("productId", productId);
+      params.append("productId", productId);
     }
     if (search && search !== "all") {
-      url.searchParams.append("search", search);
+      params.append("search", search);
     }
     if (type && type !== "all") {
-      url.searchParams.append("type", type);
+      params.append("type", type);
     }
     if (dateRange && dateRange !== "all") {
-      url.searchParams.append("dateRange", dateRange);
+      params.append("dateRange", dateRange);
     }
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(`/api/inventory/logs?${params.toString()}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

@@ -117,14 +117,14 @@ export async function getWalletTransactions(
   type?: string
 ): Promise<WalletTransactionsResponse> {
   try {
-    const url = new URL("/api/wallet/transactions", window.location.origin);
-    url.searchParams.append("page", page.toString());
-    url.searchParams.append("limit", limit.toString());
-    if (search) url.searchParams.append("search", search);
-    if (currency) url.searchParams.append("currency", currency);
-    if (type) url.searchParams.append("type", type);
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+    if (search) params.append("search", search);
+    if (currency) params.append("currency", currency);
+    if (type) params.append("type", type);
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(`/api/wallet/transactions?${params.toString()}`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
       cache: "no-store",

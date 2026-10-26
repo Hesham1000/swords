@@ -73,31 +73,31 @@ export async function getProducts(
   } = {}
 ): Promise<ProductsResponse> {
   try {
-    const url = new URL("/api/products", window.location.origin);
-    url.searchParams.append("page", page.toString());
-    url.searchParams.append("limit", limit.toString());
-    
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+
     if (summary) {
-      url.searchParams.append("summary", "true");
+      params.append("summary", "true");
     }
 
     if (filters.search) {
-      url.searchParams.append("search", filters.search);
+      params.append("search", filters.search);
     }
     if (filters.category) {
-      url.searchParams.append("category", filters.category);
+      params.append("category", filters.category);
     }
     if (filters.productType) {
-      url.searchParams.append("productType", filters.productType);
+      params.append("productType", filters.productType);
     }
     if (filters.brand) {
-      url.searchParams.append("brand", filters.brand);
+      params.append("brand", filters.brand);
     }
     if (filters.dashboard) {
-      url.searchParams.append("dashboard", "true");
+      params.append("dashboard", "true");
     }
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(`/api/products?${params.toString()}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

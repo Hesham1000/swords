@@ -50,15 +50,15 @@ export interface InvoiceResponse {
  */
 export async function getInvoices(page: number = 1, limit: number = 10, search?: string, filters?: { status?: string; dateRange?: string; sort?: string }): Promise<InvoicesResponse> {
   try {
-    const url = new URL("/api/invoices", window.location.origin);
-    url.searchParams.append("page", page.toString());
-    url.searchParams.append("limit", limit.toString());
-    if (search) url.searchParams.append("search", search);
-    if (filters?.status && filters.status !== "all") url.searchParams.append("status", filters.status);
-    if (filters?.dateRange && filters.dateRange !== "all") url.searchParams.append("dateRange", filters.dateRange);
-    if (filters?.sort && filters.sort !== "newest") url.searchParams.append("sort", filters.sort);
+    const params = new URLSearchParams();
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+    if (search) params.append("search", search);
+    if (filters?.status && filters.status !== "all") params.append("status", filters.status);
+    if (filters?.dateRange && filters.dateRange !== "all") params.append("dateRange", filters.dateRange);
+    if (filters?.sort && filters.sort !== "newest") params.append("sort", filters.sort);
 
-    const response = await fetch(url.toString());
+    const response = await fetch(`/api/invoices?${params.toString()}`);
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.error || "Failed to fetch invoices");
