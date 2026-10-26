@@ -15,6 +15,7 @@ interface DashboardContextType {
   setSidebarOpen: (open: boolean) => void;
   sidebarOpen: boolean;
   dashboardData: DashboardSummaryData | null;
+  dashboardError: string | null;
   refreshDashboard: () => void;
 }
 
@@ -37,6 +38,7 @@ export default function DashboardLayout({
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardSummaryData | null>(null);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [, setIsMobile] = useState(false);
   const fetchedRef = useRef(false);
@@ -69,8 +71,9 @@ export default function DashboardLayout({
     sidebarOpen,
     setSidebarOpen,
     dashboardData,
+    dashboardError,
     refreshDashboard
-  }), [user, sidebarOpen, dashboardData]);
+  }), [user, sidebarOpen, dashboardData, dashboardError]);
 
   // Fetch current user
   useEffect(() => {
@@ -87,9 +90,15 @@ export default function DashboardLayout({
         ]);
         
         if (userData) setUser(userData.user);
-        if (summaryRes.success) setDashboardData(summaryRes.data);
+        if (summaryRes.success) {
+          setDashboardData(summaryRes.data);
+          setDashboardError(null);
+        } else {
+          setDashboardError("Failed to load dashboard data. Please try again.");
+        }
       } catch (error) {
         console.error("Dashboard Initialization Error:", error);
+        setDashboardError("Failed to load dashboard data. Please try again.");
       } finally {
         setLoading(false);
       }
