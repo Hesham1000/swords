@@ -24,9 +24,11 @@ export default function DashboardOverview() {
 
   if (!dashboardData && !error) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 gap-4">
-        <Loader2 className="animate-spin text-blue-500" size={40} />
-        <p className="text-slate-400 font-medium">Gathering command data...</p>
+      <div className="glass-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3rem' }}>
+        <div className="flex flex-col items-center justify-center gap-4">
+          <Loader2 className="animate-spin text-blue-500" size={40} />
+          <p className="text-slate-400 font-medium">Gathering command data...</p>
+        </div>
       </div>
     );
   }
@@ -67,7 +69,7 @@ export default function DashboardOverview() {
 
   return (
     <>
-      <div className="stats-grid">
+      <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
         <StatCard
           title="Revenue"
           value={summary.totalRevenue}
@@ -184,11 +186,12 @@ export default function DashboardOverview() {
 
         {/* Low Stock Alerts */}
         <div className="list-card">
-          <div className="card-header">
+          <div className="card-header" style={{ borderBottom: 'var(--glass-border)' }}>
             <h2 className="card-title">Low Stock Alerts</h2>
             <div className={`alert-badge-count ${lowStockItems.length > 0 ? 'active' : ''}`}>{lowStockItems.length} Items</div>
           </div>
-          <div className="alerts-list">
+          <div className="glass-card" style={{ padding: '1.5rem' }}>
+            <div className="alerts-list">
             {lowStockItems.length === 0 ? (
               <div className="empty-alerts"><CheckCircle size={32} /><p>All healthy</p></div>
             ) : (
@@ -200,18 +203,21 @@ export default function DashboardOverview() {
               ))
             )}
           </div>
+          </div>
         </div>
 
         {/* Recent Invoices */}
         <div className="list-card">
-          <div className="card-header"><h2 className="card-title">Recent Invoices</h2></div>
+          <div className="card-header" style={{ borderBottom: 'var(--glass-border)' }}><h2 className="card-title">Recent Invoices</h2></div>
+          <div className="glass-card" style={{ padding: '1.5rem', overflowX: 'auto' }}>
           <div className="invoice-list">
             {recentInvoices.map((invoice) => (
-              <div key={invoice._id || invoice.invoiceId} className={`invoice-item status-${invoice.status}`}>
+              <div key={invoice._id || invoice.invoiceId} className={`invoice-item status-${invoice.status}`} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
                 <div className="invoice-id-col"><div className="invoice-id">{invoice.invoiceId}</div><div className="invoice-customer">{invoice.customer}</div></div>
                 <div className="invoice-amount-col"><div className="invoice-amount">{invoice.amount.toLocaleString()} EGP</div><div className="invoice-date">{invoice.date}</div></div>
               </div>
             ))}
+          </div>
           </div>
           <button className="view-all-btn" onClick={() => router.push("/invoices")}>View All Invoices</button>
         </div>

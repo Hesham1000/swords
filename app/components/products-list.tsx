@@ -67,19 +67,21 @@ const ProductsList: React.FC<ProductsListProps> = ({
       {/* Products Grid */}
       <div className="products-grid">
         {products.map((product) => (
-          <ProductRow
-            key={product.id}
-            product={product}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            isAdmin={isAdmin}
-          />
+          <div key={product.id} className="glass-card" style={{ padding: '1rem', marginBottom: '1rem' }}>
+            <ProductRow
+              product={product}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              isAdmin={isAdmin}
+            />
+          </div>
         ))}
       </div>
 
       {/* Pagination Controls */}
       {pagination && pagination.totalPages > 1 && (
         <div className="pagination-wrapper">
+          <div className="glass-card" style={{ padding: '1rem', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
           <div className="pagination-controls">
             <button
               className="pagination-arr-btn"
@@ -133,6 +135,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
             >
               &gt;
             </button>
+          </div>
           </div>
           <div className="pagination-summary">
             Showing <strong>{products.length}</strong> of <strong>{pagination.totalCount}</strong> items

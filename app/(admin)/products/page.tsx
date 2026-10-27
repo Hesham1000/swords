@@ -94,7 +94,8 @@ export default function ProductsPage() {
               setSearchQuery(e.target.value);
               setPage(1);
             }}
-            className="search-input"
+            className="glass-input"
+          style={{ width: '100%', maxWidth: '400px' }}
           />
         </div>
         
@@ -105,7 +106,7 @@ export default function ProductsPage() {
               setFilterCategory(e.target.value);
               setPage(1);
             }}
-            className="filter-select"
+            className="filter-select glass-input"
           >
             <option value="">All Categories</option>
             <option value="Epée">Epée</option>
@@ -119,7 +120,7 @@ export default function ProductsPage() {
               setFilterType(e.target.value);
               setPage(1);
             }}
-            className="filter-select"
+            className="filter-select glass-input"
           >
             <option value="">All Types</option>
             <option value="lame">Lamé</option>
@@ -145,7 +146,7 @@ export default function ProductsPage() {
               setFilterBrand(e.target.value);
               setPage(1);
             }}
-            className="filter-select"
+            className="filter-select glass-input"
           >
             <option value="">All Brands</option>
             <option value="pbt">PBT</option>
@@ -189,15 +190,19 @@ export default function ProductsPage() {
       />
 
       {showForm && (
-        <ProductForm
-          onClose={() => setShowForm(false)}
-          onSuccess={() => {
-            setShowForm(false);
-            setRefresh(!refresh);
-          }}
-          initialData={editingProduct || undefined}
-          isEdit={!!editingProduct}
-        />
+        <div className="glass-modal-overlay">
+          <div className="glass-modal" style={{ padding: '2rem' }}>
+            <ProductForm
+              onClose={() => setShowForm(false)}
+              onSuccess={() => {
+                setShowForm(false);
+                setRefresh(!refresh);
+              }}
+              initialData={editingProduct || undefined}
+              isEdit={!!editingProduct}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

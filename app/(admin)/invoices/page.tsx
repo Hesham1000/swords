@@ -78,7 +78,8 @@ export default function InvoicesPage() {
               setSearchQuery(e.target.value);
               setPage(1);
             }}
-            className="search-input"
+            className="glass-input"
+            style={{ width: '100%', maxWidth: '400px' }}
           />
         </div>
       </div>
@@ -96,7 +97,8 @@ export default function InvoicesPage() {
             <div className="empty-state">No invoices found.</div>
           ) : (
             invoices.map((invoice) => (
-              <div key={invoice._id || invoice.invoiceId} className={`invoice-item status-${invoice.status}`}>
+              <div key={invoice._id || invoice.invoiceId} className="glass-card" style={{ padding: '1rem', marginBottom: '1rem' }}>
+              <div className={`invoice-item status-${invoice.status}`}>
                 <div className="invoice-id-col">
                   <div className="invoice-id">{invoice.invoiceId}</div>
                   <div className="invoice-customer">{invoice.customer}</div>
@@ -132,12 +134,14 @@ export default function InvoicesPage() {
                   )}
                 </div>
               </div>
+              </div>
             ))
           )}
         </div>
         
         {pagination && pagination.totalPages > 1 && (
           <div className="pagination-container">
+            <div className="glass-card" style={{ padding: '1rem', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
             <div className="pagination-controls">
               <button 
                 disabled={!pagination.hasPrevPage} 
@@ -157,19 +161,24 @@ export default function InvoicesPage() {
                 Next
               </button>
             </div>
-          </div>
+            </div>
+            </div>
         )}
       </div>
 
       {showForm && (
-        <InvoiceForm
-          onClose={() => setShowForm(false)}
-          onSuccess={() => {
-            setShowForm(false);
-            setRefresh(!refresh);
-          }}
-          initialData={editingInvoice || undefined}
-        />
+        <div className="glass-modal-overlay">
+          <div className="glass-modal" style={{ padding: '2rem' }}>
+            <InvoiceForm
+              onClose={() => setShowForm(false)}
+              onSuccess={() => {
+                setShowForm(false);
+                setRefresh(!refresh);
+              }}
+              initialData={editingInvoice || undefined}
+            />
+          </div>
+        </div>
       )}
       
       <style jsx>{`
