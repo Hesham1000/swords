@@ -204,7 +204,10 @@ const SetPasswordContent = () => {
         </div>
 
         <div className="password-form-side">
-          <div className="password-form-content">
+            <div
+              className="password-form-content md-card"
+              style={{ boxShadow: "var(--shadow-dp4)" }}
+            >
             <div className="password-header">
               <h1>{formTitle}</h1>
               <p>{formSubtitle}</p>
@@ -219,21 +222,21 @@ const SetPasswordContent = () => {
                 <div className="form__group field">
                   <input
                     type="password"
-                    className="password-input"
+                    className="md-input"
                     value={formData.password}
                     onChange={handleInputChange("password")}
                     onFocus={() => clearValidationError("password")}
                     ref={passwordInputRef}
                     placeholder=" "
                   />
-                  <label className="form__label">New Password</label>
+                  <label className="md-label">New Password</label>
                   <p className="validation" ref={validationRefs.password}></p>
                 </div>
 
                 <div className="form__group field">
                   <input
                     type="password"
-                    className="password-input"
+                    className="md-input"
                     value={formData.confirmPassword}
                     onChange={handleInputChange("confirmPassword")}
                     onFocus={() => clearValidationError("confirmPassword")}
@@ -280,7 +283,10 @@ const SetPasswordContent = () => {
                       </span>
                       One special character (@$!%*?&)
                     </li>
-                    <li className={requirements.passwordsMatch ? "valid" : ""}>
+                    <li
+                      className={requirements.passwordsMatch ? "md-badge-green" : ""}
+                      style={requirements.passwordsMatch ? undefined : { color: "var(--text-secondary)" }}
+                    >
                       <span className="requirement-icon">
                         {requirements.passwordsMatch ? "✓" : "○"}
                       </span>

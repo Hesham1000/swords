@@ -129,7 +129,7 @@ const ForgotPassword = () => {
                   <div className="form__group field">
                     <input
                       type="email"
-                      className="fencing-input"
+                      className="md-input"
                       value={formData.email}
                       onChange={handleInputChange}
                       placeholder=" "
@@ -170,6 +170,7 @@ const ForgotPassword = () => {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="success-message"
+                  style={{ color: "var(--status-green)", background: "rgba(34,197,94,0.08)", borderRadius: "8px", padding: "12px" }}
                 >
                   <div className="success-icon">
                     <span>✓</span>

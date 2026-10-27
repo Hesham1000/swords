@@ -60,17 +60,17 @@ export default function WalletPage() {
   return (
     <div className="page-content">
       <div className="page-header">
-        <h1 className="page-title">Wallet & Transactions</h1>
+        <h1 className="page-title" style={{ fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--text-primary)", fontSize: "24px" }}>Wallet & Transactions</h1>
         <div className="header-actions">
-          <button className="deposit-btn" onClick={() => { setWalletFormMode("deposit"); setShowDepositForm(true); }}>
+          <button className="md-btn-primary" onClick={() => { setWalletFormMode("deposit"); setShowDepositForm(true); }}>
             <Plus size={18} />
             <span>Deposit Fund</span>
           </button>
-          <button className="withdraw-btn" onClick={() => { setWalletFormMode("withdraw"); setShowDepositForm(true); }}>
+          <button className="md-btn-outlined" onClick={() => { setWalletFormMode("withdraw"); setShowDepositForm(true); }}>
             <ArrowDownCircle size={18} />
             <span>Withdraw Fund</span>
           </button>
-          <button className="shipment-btn" onClick={() => setShowShipmentForm(true)}>
+          <button className="md-btn-outlined" onClick={() => setShowShipmentForm(true)}>
             <Truck size={18} />
             <span>Record Shipment</span>
           </button>
@@ -78,20 +78,20 @@ export default function WalletPage() {
       </div>
 
       <div className="stats-grid">
-        <div className="stat-card">
+        <div className="md-card" style={{ boxShadow: "var(--shadow-dp2)" }}>
           <div className="stat-icon"><Wallet size={20} /></div>
-          <h3 className="stat-title">EGP Balance</h3>
-          <p className="stat-value">EGP {balance.EGP.toLocaleString()}</p>
+          <h3 className="stat-title" style={{ fontFamily: "var(--font-display)" }}>EGP Balance</h3>
+          <p className="stat-value" style={{ color: "var(--text-primary)" }}>EGP {balance.EGP.toLocaleString()}</p>
         </div>
-        <div className="stat-card">
+        <div className="md-card" style={{ boxShadow: "var(--shadow-dp2)" }}>
           <div className="stat-icon"><Wallet size={20} /></div>
-          <h3 className="stat-title">USD Balance</h3>
-          <p className="stat-value">$ {balance.USD.toLocaleString()}</p>
+          <h3 className="stat-title" style={{ fontFamily: "var(--font-display)" }}>USD Balance</h3>
+          <p className="stat-value" style={{ color: "var(--text-primary)" }}>$ {balance.USD.toLocaleString()}</p>
         </div>
-        <div className="stat-card">
+        <div className="md-card" style={{ boxShadow: "var(--shadow-dp2)" }}>
           <div className="stat-icon"><Wallet size={20} /></div>
-          <h3 className="stat-title">EUR Balance</h3>
-          <p className="stat-value">€ {balance.EUR.toLocaleString()}</p>
+          <h3 className="stat-title" style={{ fontFamily: "var(--font-display)" }}>EUR Balance</h3>
+          <p className="stat-value" style={{ color: "var(--text-primary)" }}>€ {balance.EUR.toLocaleString()}</p>
         </div>
       </div>
 
@@ -99,14 +99,14 @@ export default function WalletPage() {
         <div className="card-header">
           <h2 className="card-title">Transaction History</h2>
         </div>
-        <div className="transaction-list">
+        <div className="md-table transaction-list">
           {loading ? (
-            <div className="loading-state"><Loader2 className="animate-spin" /></div>
+            <div className="loading-state" style={{ color: "var(--primary)" }}><Loader2 className="animate-spin" /></div>
           ) : transactions.length === 0 ? (
-            <div className="empty-state">No transactions recorded.</div>
+            <div className="empty-state" style={{ color: "var(--text-secondary)" }}>No transactions recorded.</div>
           ) : (
             transactions.map((tx, idx) => (
-              <div key={idx} className="transaction-item">
+              <div key={idx} className="transaction-item" style={{ background: idx % 2 === 0 ? "rgba(139, 26, 26, 0.03)" : "transparent" }}>
                 <div className="tx-icon">
                   {(tx.type === "invoice" || tx.type === "deposit") ? (
                     <ArrowUpCircle className="text-emerald-500" />
