@@ -184,6 +184,60 @@ body {
   box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
 }
 
+.glass-nav-item {
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  color: var(--text-secondary);
+  transition: var(--transition-smooth);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.glass-nav-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.glass-nav-item.active {
+  background: var(--grad-btn);
+  color: white;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.dark-mode .glass-nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-layout-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.admin-main-content {
+  flex: 1;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: var(--glass-border);
+  border-radius: var(--glass-radius-lg);
+  box-shadow: var(--glass-shadow);
+  padding: 2rem;
+  margin: 1rem;
+  min-height: calc(100vh - 2rem);
+}
+
+.dark-mode .admin-main-content {
+  background: var(--glass-bg);
+}
+
 
 /* Fix for native date/time picker icons in dark mode */
 .dark-mode input::-webkit-calendar-picker-indicator {
@@ -5512,3 +5566,7 @@ body {
   }
 }
 
+
+/* Glass sidebar nav items */
+.glass-nav-item:hover { background: rgba(255, 255, 255, 0.1); color: var(--text-primary); }
+.glass-nav-item.active { background: var(--grad-btn); color: white; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); }

@@ -102,9 +102,21 @@ const Sidebar = ({
   };
 
   return (
+    <div
+      className="glass-card"
+      style={{
+        background: 'var(--glass-bg)',
+        backdropFilter: 'blur(var(--glass-blur))',
+        WebkitBackdropFilter: 'blur(var(--glass-blur))',
+        border: 'var(--glass-border)',
+        borderRadius: 'var(--glass-radius)',
+        boxShadow: 'var(--glass-shadow)',
+      }}
+    >
     <aside className={`sidebar ${sidebarOpen ? 'mobile-open' : 'closed'}`}>
       <motion.div
         className="sidebar-header"
+        style={{ padding: '1.5rem', borderBottom: 'var(--glass-border)' }}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ scale: 1.02 }}
@@ -121,8 +133,24 @@ const Sidebar = ({
 
       <nav className="sidebar-nav">
         {navItems.map((item, index) => (
-          <motion.div
+          <div
             key={item.id}
+            className={`glass-nav-item ${currentPage === item.id ? 'active' : ''}`}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '0.75rem 1rem',
+              color: 'var(--text-secondary)',
+              transition: 'var(--transition-smooth)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              width: '100%',
+              cursor: 'pointer',
+            }}
+          >
+          <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
@@ -146,6 +174,7 @@ const Sidebar = ({
             </motion.div>
             <span>{item.label}</span>
           </motion.div>
+          </div>
         ))}
       </nav>
 
@@ -162,7 +191,8 @@ const Sidebar = ({
 
         <div className="theme-toggle-container">
           <button
-            className="theme-btn"
+            className="glass-btn"
+            style={{ width: '100%', justifyContent: 'center', background: 'transparent', border: 'var(--glass-border)', color: 'var(--text-primary)' }}
             onClick={toggleTheme}
             title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
@@ -172,7 +202,8 @@ const Sidebar = ({
         </div>
 
         <button
-          className="logout-btn"
+          className="glass-btn"
+          style={{ width: '100%', justifyContent: 'center' }}
           onClick={handleLogout}
           disabled={isLoggingOut}
         >
@@ -184,7 +215,8 @@ const Sidebar = ({
           <span>{isLoggingOut ? "Logging out..." : "Logout"}</span>
         </button>
       </div>
-    </aside>
+      </aside>
+    </div>
   );
 };
 

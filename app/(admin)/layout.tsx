@@ -169,13 +169,32 @@ export default function DashboardLayout({
       />
 
       <main className={`main-content ${sidebarOpen ? "" : "expanded"}`}>
+        <div
+          className="glass-card-lg"
+          style={{
+            background: 'var(--glass-bg)',
+            backdropFilter: 'blur(var(--glass-blur))',
+            WebkitBackdropFilter: 'blur(var(--glass-blur))',
+            border: 'var(--glass-border)',
+            borderRadius: 'var(--glass-radius-lg)',
+            boxShadow: 'var(--glass-shadow)',
+            padding: '2rem',
+            margin: '1rem',
+            minHeight: 'calc(100vh - 2rem)',
+          }}
+        >
         <div className="topbar">
-          <button
-            className="menu-toggle"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+          <div
+            className="glass-btn"
+            style={{ padding: '0.5rem', borderRadius: '12px' }}
           >
-            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+            <button
+              className="menu-toggle"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
           <h2 className="topbar-title">
             {pathname === "/dashboard" && "Dashboard Overview"}
             {pathname.includes("/products") && "Products Management"}
@@ -189,8 +208,13 @@ export default function DashboardLayout({
         <div className="content-wrapper">
           <Suspense fallback={
             <div className="dashboard-loading">
-              <Loader2 className="animate-spin" size={32} />
-              <p>Loading module...</p>
+              <div
+                className="glass-card"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3rem' }}
+              >
+                <Loader2 className="animate-spin" size={32} />
+                <p>Loading module...</p>
+              </div>
             </div>
           }>
             <DashboardContext.Provider value={contextValue}>
@@ -205,6 +229,7 @@ export default function DashboardLayout({
               </motion.div>
             </DashboardContext.Provider>
           </Suspense>
+        </div>
         </div>
       </main>
 
