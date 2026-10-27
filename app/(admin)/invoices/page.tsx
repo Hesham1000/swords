@@ -49,13 +49,40 @@ export default function InvoicesPage() {
     }
   };
 
+  const statusBadgeClass = (status: string) => {
+    switch (status) {
+      case "paid":
+        return "md-badge-green";
+      case "pending":
+        return "md-badge-amber";
+      case "cancelled":
+      case "overdue":
+        return "md-badge-red";
+      case "processing":
+      case "shipped":
+        return "md-badge-blue";
+      default:
+        return "md-badge-amber";
+    }
+  };
+
   return (
     <div className="page-content">
       <div className="page-header">
-        <h1 className="page-title">Invoices Management</h1>
+        <h1
+            className="page-title"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 700,
+              color: "var(--text-primary)",
+              fontSize: "24px",
+            }}
+          >
+            Invoices Management
+          </h1>
         {isAdmin && (
           <button
-            className="primary-btn"
+            className="md-btn-primary"
             onClick={() => {
               setEditingInvoice(null);
               setShowForm(true);
@@ -78,7 +105,7 @@ export default function InvoicesPage() {
               setSearchQuery(e.target.value);
               setPage(1);
             }}
-            className="search-input"
+            className="md-input"
           />
         </div>
       </div>
@@ -86,9 +113,9 @@ export default function InvoicesPage() {
       {error && <div className="error-banner">{error}</div>}
 
       <div className="list-card full-width">
-        <div className="invoice-list">
+        <div className="invoice-list md-table">
           {loading ? (
-            <div className="loading-state">
+            <div className="loading-state" style={{ color: "var(--primary)" }}>
               <Loader2 className="animate-spin" />
               <p>Loading invoices...</p>
             </div>
@@ -106,13 +133,14 @@ export default function InvoicesPage() {
                   <div className="invoice-date">{invoice.date}</div>
                 </div>
                 <div className="invoice-actions-col">
-                  <span className={`status-badge status-${invoice.status}`}>
+                  <span className={`status-badge status-${invoice.status} ${statusBadgeClass(invoice.status)}`}>
                     {invoice.status === "overdue" && <AlertCircle size={14} />}
                     {invoice.status}
                   </span>
                   {isAdmin && invoice.status !== "paid" && (
                     <button 
-                      className="mark-paid-btn"
+                      className="md-btn-outlined"
+                        style={{ color: "var(--status-green)" }}
                       onClick={() => handleMarkAsPaid(invoice._id!)}
                     >
                       <CheckCircle size={14} />

@@ -68,10 +68,10 @@ export default function ProductsPage() {
   return (
     <div className="page-content">
       <div className="page-header">
-        <h1 className="page-title">Products Inventory</h1>
+        <h1 className="page-title" style={{ fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--text-primary)", fontSize: "24px" }}>Products Inventory</h1>
         {isAdmin && (
           <button
-            className="primary-btn"
+            className="md-btn-primary"
             onClick={() => {
               setEditingProduct(null);
               setShowForm(true);
@@ -94,7 +94,7 @@ export default function ProductsPage() {
               setSearchQuery(e.target.value);
               setPage(1);
             }}
-            className="search-input"
+            className="search-input md-input"
           />
         </div>
         
@@ -105,7 +105,7 @@ export default function ProductsPage() {
               setFilterCategory(e.target.value);
               setPage(1);
             }}
-            className="filter-select"
+            className="filter-select md-input"
           >
             <option value="">All Categories</option>
             <option value="Epée">Epée</option>
@@ -119,7 +119,7 @@ export default function ProductsPage() {
               setFilterType(e.target.value);
               setPage(1);
             }}
-            className="filter-select"
+            className="filter-select md-input"
           >
             <option value="">All Types</option>
             <option value="lame">Lamé</option>
@@ -145,7 +145,7 @@ export default function ProductsPage() {
               setFilterBrand(e.target.value);
               setPage(1);
             }}
-            className="filter-select"
+            className="filter-select md-input"
           >
             <option value="">All Brands</option>
             <option value="pbt">PBT</option>

@@ -49,7 +49,8 @@ const ProductRow: React.FC<ProductRowProps> = ({
 
   return (
     <motion.div
-      className="product-card"
+      className="product-card md-card"
+        style={{ boxShadow: "var(--shadow-dp2)" }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
@@ -113,7 +114,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
         <div className="floating-actions">
           {isAdmin && onEdit && (
             <motion.button
-              className="floating-btn edit"
+              className="floating-btn edit md-btn-text"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => onEdit(product)}
@@ -124,7 +125,8 @@ const ProductRow: React.FC<ProductRowProps> = ({
           )}
           {isAdmin && onDelete && (
             <motion.button
-              className="floating-btn delete"
+              className="floating-btn delete md-btn-outlined"
+                style={{ color: "var(--status-red)" }}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={handleDelete}
