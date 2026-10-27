@@ -102,7 +102,7 @@ const Sidebar = ({
   };
 
   return (
-    <aside className={`sidebar ${sidebarOpen ? 'mobile-open' : 'closed'}`}>
+    <aside className={`sidebar glass-card ${sidebarOpen ? 'mobile-open' : 'closed'}`}>
       <motion.div
         className="sidebar-header"
         initial={{ opacity: 0, y: -20 }}
@@ -110,8 +110,8 @@ const Sidebar = ({
         whileHover={{ scale: 1.02 }}
       >
         <motion.div
-          className="sidebar-brand"
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", marginBottom: "-20px" }}
+          className="sidebar-brand glass-card-sm"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", marginBottom: "-20px", padding: "0.5rem 0" }}
           animate={{ textShadow: ["0 0 0px var(--accent-gold)", "0 0 8px var(--accent-gold)", "0 0 0px var(--accent-gold)"] }}
           transition={{ duration: 3, repeat: Infinity }}
         >
@@ -126,9 +126,9 @@ const Sidebar = ({
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
-            whileHover={{ x: 5, backgroundColor: "var(--glass-bg)" }}
+            whileHover={{ x: 5 }}
             whileTap={{ scale: 0.95 }}
-            className={`nav-item ${currentPage === item.id ? "active" : ""}`}
+            className={`nav-item glass-btn ${currentPage === item.id ? "glass-btn-primary active" : ""}`}
             onClick={() => {
               const target = item.id === "dashboard" ? "/dashboard" : `/${item.id}`;
               router.push(target);
@@ -162,7 +162,7 @@ const Sidebar = ({
 
         <div className="theme-toggle-container">
           <button
-            className="theme-btn"
+            className="theme-btn glass-btn"
             onClick={toggleTheme}
             title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
@@ -172,7 +172,7 @@ const Sidebar = ({
         </div>
 
         <button
-          className="logout-btn"
+          className="logout-btn glass-btn"
           onClick={handleLogout}
           disabled={isLoggingOut}
         >

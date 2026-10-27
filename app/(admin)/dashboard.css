@@ -617,3 +617,16 @@
   color: white;
   transform: rotate(90deg);
 }
+
+/* ===== Glassmorphism Admin Shell ===== */
+.admin-layout { min-height: 100vh; display: flex; }
+.main-content { flex: 1; margin: 1rem; padding: 1.5rem; min-height: calc(100vh - 2rem); }
+.main-content.expanded { margin-left: 0; }
+.topbar { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1.25rem; margin-bottom: 1rem; }
+.topbar-title { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; color: var(--text-on-glass); margin: 0; }
+.menu-toggle { background: transparent; border: none; cursor: pointer; color: var(--text-on-glass); padding: 0.5rem; border-radius: var(--glass-radius-sm); transition: var(--transition-smooth); }
+.menu-toggle:hover { background: rgba(255,255,255,0.2); }
+.sidebar-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+.sidebar-overlay.visible { opacity: 1; pointer-events: auto; }
+.content-wrapper { flex: 1; }
+@media (max-width: 1024px) { .main-content { margin: 0.5rem; padding: 1rem; } }

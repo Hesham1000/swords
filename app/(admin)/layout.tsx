@@ -129,7 +129,7 @@ export default function DashboardLayout({
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: #0f172a;
+            background: var(--bg-gradient);
             color: white;
             gap: 1.5rem;
           }
@@ -137,7 +137,7 @@ export default function DashboardLayout({
             width: 40px;
             height: 40px;
             border: 4px solid #e5e7eb;
-            border-top-color: #7c2d3a;
+            border-top-color: var(--accent-blue);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
           }
@@ -154,6 +154,7 @@ export default function DashboardLayout({
       {/* Sidebar Overlay for Mobile */}
       <div
         className={`sidebar-overlay ${sidebarOpen ? "visible" : ""}`}
+          style={{ background: "rgba(15,23,42,0.4)", backdropFilter: "blur(4px)" }}
         onClick={() => setSidebarOpen(false)}
       />
 
@@ -168,10 +169,10 @@ export default function DashboardLayout({
         user={user}
       />
 
-      <main className={`main-content ${sidebarOpen ? "" : "expanded"}`}>
-        <div className="topbar">
+      <main className={`main-content glass-card ${sidebarOpen ? "" : "expanded"}`}>
+        <div className="topbar glass-card-sm">
           <button
-            className="menu-toggle"
+            className="menu-toggle glass-btn"
             onClick={() => setSidebarOpen(!sidebarOpen)}
           >
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
