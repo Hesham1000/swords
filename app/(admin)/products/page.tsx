@@ -7,6 +7,7 @@ import ProductForm from "../../components/productform";
 import ProductsList from "../../components/products-list";
 import { getProducts, deleteProduct, Product } from "../../lib/api/product";
 import { useDashboard } from "../layout";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ProductsPage() {
   const { user, isAdmin } = useDashboard();

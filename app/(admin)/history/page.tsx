@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { TrendingUp, Loader2 } from "lucide-react";
 import { getInventoryLogs, InventoryLog } from "../../lib/api/inventory";
+import { motion } from "framer-motion";
 import { useDashboard } from "../layout";
 
 export default function HistoryPage() {
@@ -45,7 +46,12 @@ export default function HistoryPage() {
 
   return (
     <div className="page-content">
-      <div className="page-header">
+      <motion.div
+        className="page-header"
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
         <h1
           className="page-title"
           style={{
@@ -57,7 +63,7 @@ export default function HistoryPage() {
         >
           Inventory Audit Trail
         </h1>
-      </div>
+      </motion.div>
 
       {error && <div className="error-banner">{error}</div>}
 
@@ -81,12 +87,24 @@ export default function HistoryPage() {
           ) : logs.length === 0 ? (
             <tr>
               <td colSpan={4}>
-                <div className="empty-state">No transaction history found.</div>
+                <motion.div
+                  className="empty-state"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  No transaction history found.
+                </motion.div>
               </td>
             </tr>
           ) : (
-            logs.map((log) => (
-              <tr key={log._id}>
+            logs.map((log, index) => (
+              <motion.tr
+                key={log._id}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.04 }}
+              >
                 <td>
                   <span className="log-product-name">{log.productName}</span>
                   <span className="log-product-id">ID: {log.productId}</span>
@@ -107,7 +125,7 @@ export default function HistoryPage() {
                   <span>{new Date(log.timestamp).toLocaleDateString()}</span>
                   <span>{new Date(log.timestamp).toLocaleTimeString()}</span>
                 </td>
-              </tr>
+              </motion.tr>
             ))
           )}
           </tbody>

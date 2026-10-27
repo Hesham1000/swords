@@ -6,6 +6,7 @@ import { FileText, Plus, Search, CheckCircle, AlertCircle, Loader2 } from "lucid
 import InvoiceForm from "../../components/invoice-form";
 import { getInvoices, updateInvoiceStatus, Invoice } from "../../lib/api/invoice";
 import { useDashboard } from "../layout";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function InvoicesPage() {
   const { user, isAdmin } = useDashboard();
@@ -95,6 +96,11 @@ export default function InvoicesPage() {
         )}
       </div>
 
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
       <div className="filter-bar">
         <div className="search-wrapper">
           <Search size={18} className="search-icon" />
@@ -110,6 +116,7 @@ export default function InvoicesPage() {
           />
         </div>
       </div>
+      </motion.div>
 
       {error && <div className="error-banner">{error}</div>}
 
@@ -123,8 +130,14 @@ export default function InvoicesPage() {
           ) : invoices.length === 0 ? (
             <div className="empty-state">No invoices found.</div>
           ) : (
-            invoices.map((invoice) => (
-              <div key={invoice._id || invoice.invoiceId} className={`invoice-item status-${invoice.status}`}>
+            invoices.map((invoice, index) => (
+              <motion.div
+                key={invoice._id || invoice.invoiceId}
+                className={`invoice-item status-${invoice.status}`}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.04 }}
+              >
                 <div className="invoice-id-col">
                   <div className="invoice-id">{invoice.invoiceId}</div>
                   <div className="invoice-customer">{invoice.customer}</div>
@@ -134,10 +147,15 @@ export default function InvoicesPage() {
                   <div className="invoice-date">{invoice.date}</div>
                 </div>
                 <div className="invoice-actions-col">
-                  <span className={`status-badge status-${invoice.status} ${statusBadgeClass(invoice.status)}`}>
+                  <motion.span
+                    className={`status-badge status-${invoice.status} ${statusBadgeClass(invoice.status)}`}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
                     {invoice.status === "overdue" && <AlertCircle size={14} />}
                     {invoice.status}
-                  </span>
+                  </motion.span>
                   {isAdmin && invoice.status !== "paid" && (
                     <button 
                       className="md-btn-outlined"
@@ -160,7 +178,7 @@ export default function InvoicesPage() {
                     </button>
                   )}
                 </div>
-              </div>
+              </motion.div>
             ))
           )}
         </div>

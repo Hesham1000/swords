@@ -7,6 +7,7 @@ import WalletDepositForm from "../../components/wallet-deposit-form";
 import ShipmentForm from "../../components/shipment-form";
 import { getWalletBalance, getWalletTransactions, WalletTransaction } from "../../lib/api/wallet";
 import { useDashboard } from "../layout";
+import { motion } from "framer-motion";
 
 export default function WalletPage() {
   const { user, isAdmin } = useDashboard();
@@ -63,37 +64,70 @@ export default function WalletPage() {
       <div className="page-header">
         <h1 className="page-title" style={{ fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--text-primary)", fontSize: "24px" }}>Wallet & Transactions</h1>
         <div className="header-actions">
-          <button className="md-btn-primary" onClick={() => { setWalletFormMode("deposit"); setShowDepositForm(true); }}>
+          <motion.button
+          className="md-btn-primary"
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => { setWalletFormMode("deposit"); setShowDepositForm(true); }}>
             <Plus size={18} />
             <span>Deposit Fund</span>
-          </button>
-          <button className="md-btn-outlined" onClick={() => { setWalletFormMode("withdraw"); setShowDepositForm(true); }}>
+          </motion.button>
+          <motion.button
+          className="md-btn-outlined"
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => { setWalletFormMode("withdraw"); setShowDepositForm(true); }}>
             <ArrowDownCircle size={18} />
             <span>Withdraw Fund</span>
-          </button>
-          <button className="md-btn-outlined" onClick={() => setShowShipmentForm(true)}>
+          </motion.button>
+          <motion.button
+          className="md-btn-outlined"
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setShowShipmentForm(true)}>
             <Truck size={18} />
             <span>Record Shipment</span>
-          </button>
+          </motion.button>
         </div>
       </div>
 
       <div className="stats-grid">
-        <div className="md-card" style={{ boxShadow: "var(--shadow-dp2)" }}>
+        <motion.div
+          className="md-card"
+          style={{ boxShadow: "var(--shadow-dp2)" }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0 * 0.08, ease: [0.22, 1, 0.36, 1] }}
+          whileHover={{ y: -3 }}
+        >
           <div className="stat-icon"><Wallet size={20} /></div>
           <h3 className="stat-title" style={{ fontFamily: "var(--font-display)" }}>EGP Balance</h3>
           <p className="stat-value" style={{ color: "var(--text-primary)" }}>EGP {balance.EGP.toLocaleString()}</p>
-        </div>
-        <div className="md-card" style={{ boxShadow: "var(--shadow-dp2)" }}>
+        </motion.div>
+        <motion.div
+          className="md-card"
+          style={{ boxShadow: "var(--shadow-dp2)" }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 1 * 0.08, ease: [0.22, 1, 0.36, 1] }}
+          whileHover={{ y: -3 }}
+        >
           <div className="stat-icon"><Wallet size={20} /></div>
           <h3 className="stat-title" style={{ fontFamily: "var(--font-display)" }}>USD Balance</h3>
           <p className="stat-value" style={{ color: "var(--text-primary)" }}>$ {balance.USD.toLocaleString()}</p>
-        </div>
-        <div className="md-card" style={{ boxShadow: "var(--shadow-dp2)" }}>
+        </motion.div>
+        <motion.div
+          className="md-card"
+          style={{ boxShadow: "var(--shadow-dp2)" }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 2 * 0.08, ease: [0.22, 1, 0.36, 1] }}
+          whileHover={{ y: -3 }}
+        >
           <div className="stat-icon"><Wallet size={20} /></div>
           <h3 className="stat-title" style={{ fontFamily: "var(--font-display)" }}>EUR Balance</h3>
           <p className="stat-value" style={{ color: "var(--text-primary)" }}>€ {balance.EUR.toLocaleString()}</p>
-        </div>
+        </motion.div>
       </div>
 
       <div className="list-card full-width">
@@ -107,7 +141,14 @@ export default function WalletPage() {
             <div className="empty-state" style={{ color: "var(--text-secondary)" }}>No transactions recorded.</div>
           ) : (
             transactions.map((tx, idx) => (
-              <div key={idx} className="transaction-item" style={{ background: idx % 2 === 0 ? "rgba(139, 26, 26, 0.03)" : "transparent" }}>
+              <motion.div
+                key={idx}
+                className="transaction-item"
+                style={{ background: idx % 2 === 0 ? "rgba(139, 26, 26, 0.03)" : "transparent" }}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: idx * 0.04 }}
+              >
                 <div className="tx-icon">
                   {(tx.type === "invoice" || tx.type === "deposit") ? (
                     <ArrowUpCircle className="text-emerald-500" />
@@ -122,7 +163,7 @@ export default function WalletPage() {
                 <div className={`tx-amount ${(tx.type === "invoice" || tx.type === "deposit") ? "positive" : "negative"}`}>
                   {(tx.type === "invoice" || tx.type === "deposit") ? "+" : "-"}{tx.amount.toLocaleString()} {tx.currency}
                 </div>
-              </div>
+              </motion.div>
             ))
           )}
         </div>

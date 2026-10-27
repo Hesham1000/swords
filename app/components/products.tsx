@@ -9,6 +9,7 @@ import { useState } from "react";
 
 interface ProductRowProps {
   product: Product;
+  delay?: number;
   onEdit?: (product: Product) => void;
   onDelete?: (productId: string) => void;
   isAdmin?: boolean;
@@ -16,6 +17,7 @@ interface ProductRowProps {
 
 const ProductRow: React.FC<ProductRowProps> = ({
   product,
+  delay = 0,
   onEdit,
   onDelete,
   isAdmin,
