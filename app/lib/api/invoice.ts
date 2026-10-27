@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/api/invoice.ts
 import { Currency } from "./wallet";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;

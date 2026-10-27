@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { getProductsCollection } from "../../lib/mongoDB";
 import { transformProduct } from "../../lib/api/utils";
@@ -139,4 +140,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}

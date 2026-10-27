@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -11,8 +12,8 @@ export default function WalletPage() {
   const { user, isAdmin } = useDashboard();
   const [balance, setBalance] = useState({ EGP: 0, USD: 0, EUR: 0 });
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
   const [showDepositForm, setShowDepositForm] = useState(false);
   const [walletFormMode, setWalletFormMode] = useState<"deposit" | "withdraw">("deposit");
   const [showShipmentForm, setShowShipmentForm] = useState(false);

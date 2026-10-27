@@ -57,7 +57,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
       <div className="no-products" style={{ color: "var(--text-secondary)" }}>
         <Package size={64} />
         <h3>No products found</h3>
-        <p>Try adjusting your search or filters to find what you're looking for.</p>
+        <p>Try adjusting your search or filters to find what you&apos;re looking for.</p>
       </div>
     );
   }

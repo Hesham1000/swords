@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // app/lib/api/utils.ts
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
