@@ -223,6 +223,10 @@ const FencingLogin = () => {
       exit={{ opacity: 0, x: -20 }}
       className="step-content"
     >
+      <div
+        className="glass-card"
+        style={{ padding: "2rem", maxWidth: "450px", width: "100%", margin: "2rem auto" }}
+      >
       <h2>Create Account</h2>
 
       {/* Display general error message for registration */}
@@ -233,8 +237,9 @@ const FencingLogin = () => {
       <div className="form__group field">
         <input
           type="text"
-          className={`fencing-input ${formError?.field === "username" ? "error" : ""
+          className={`glass-input fencing-input ${formError?.field === "username" ? "error" : ""
             }`}
+          style={{ width: "100%", marginBottom: "1rem" }}
           value={formData.username}
           onChange={handleInputChange("username")}
           onFocus={() => clearValidationError("username")}
@@ -252,8 +257,9 @@ const FencingLogin = () => {
       <div className="form__group field">
         <input
           type="email"
-          className={`fencing-input ${formError?.field === "email" ? "error" : ""
+          className={`glass-input fencing-input ${formError?.field === "email" ? "error" : ""
             }`}
+          style={{ width: "100%", marginBottom: "1rem" }}
           value={formData.email}
           onChange={handleInputChange("email")}
           onFocus={() => clearValidationError("email")}
@@ -270,12 +276,14 @@ const FencingLogin = () => {
 
       <button
         type="button"
-        className="fencing-btn"
+        className="glass-btn fencing-btn"
+        style={{ width: "100%", justifyContent: "center", marginTop: "1rem" }}
         onClick={register}
         disabled={isLoading}
       >
         {isLoading ? "Creating Account..." : "Sign Up"}
       </button>
+      </div>
     </motion.div>
   );
 
@@ -288,13 +296,18 @@ const FencingLogin = () => {
       exit={{ opacity: 0, x: -20 }}
       className="step-content"
     >
+      <div
+        className="glass-card"
+        style={{ padding: "2rem", maxWidth: "450px", width: "100%", margin: "2rem auto" }}
+      >
       <div className="form__group field">
         <input
           type="text"
-          className={`fencing-input ${formError?.field === "email" || formError?.field === "username"
+          className={`glass-input fencing-input ${formError?.field === "email" || formError?.field === "username"
               ? "error"
               : ""
             }`}
+          style={{ width: "100%", marginBottom: "1rem" }}
           value={formData.email}
           onChange={handleInputChange("email")}
           onFocus={() => {
@@ -319,8 +332,9 @@ const FencingLogin = () => {
       <div className="form__group field">
         <input
           type={showPassword ? "text" : "password"}
-          className={`fencing-input ${formError?.field === "password" ? "error" : ""
+          className={`glass-input fencing-input ${formError?.field === "password" ? "error" : ""
             }`}
+          style={{ width: "100%", marginBottom: "1rem" }}
           value={formData.password}
           onChange={handleInputChange("password")}
           onFocus={() => {
@@ -365,12 +379,14 @@ const FencingLogin = () => {
 
       <button
         type="submit"
-        className="fencing-btn"
+        className="glass-btn fencing-btn"
+        style={{ width: "100%", justifyContent: "center", marginTop: "1rem" }}
         onClick={login}
         disabled={isLoading}
       >
         {isLoading ? "Signing In..." : "Sign In"}
       </button>
+      </div>
     </motion.div>
   );
 

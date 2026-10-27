@@ -211,6 +211,10 @@ const SetPasswordContent = () => {
             </div>
 
             <form onSubmit={handleSetPassword}>
+              <div
+                className="glass-card"
+                style={{ padding: "2rem", maxWidth: "450px", width: "100%", margin: "2rem auto" }}
+              >
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -219,7 +223,8 @@ const SetPasswordContent = () => {
                 <div className="form__group field">
                   <input
                     type="password"
-                    className="password-input"
+                    className="glass-input password-input"
+                    style={{ width: "100%", marginBottom: "1rem" }}
                     value={formData.password}
                     onChange={handleInputChange("password")}
                     onFocus={() => clearValidationError("password")}
@@ -233,7 +238,8 @@ const SetPasswordContent = () => {
                 <div className="form__group field">
                   <input
                     type="password"
-                    className="password-input"
+                    className="glass-input password-input"
+                    style={{ width: "100%", marginBottom: "1rem" }}
                     value={formData.confirmPassword}
                     onChange={handleInputChange("confirmPassword")}
                     onFocus={() => clearValidationError("confirmPassword")}
@@ -247,6 +253,10 @@ const SetPasswordContent = () => {
                   ></p>
                 </div>
 
+                <div
+                  className="glass-card"
+                  style={{ padding: "1rem", marginBottom: "1rem" }}
+                >
                 <div className="password-requirements">
                   <h4>Password Requirements:</h4>
                   <ul>
@@ -288,10 +298,12 @@ const SetPasswordContent = () => {
                     </li>
                   </ul>
                 </div>
+                </div>
 
                 <button
                   type="submit"
-                  className="password-btn"
+                  className="glass-btn password-btn"
+                  style={{ width: "100%", justifyContent: "center", marginTop: "1rem" }}
                   disabled={isLoading}
                 >
                   {isLoading
@@ -305,6 +317,7 @@ const SetPasswordContent = () => {
                   <a href="/login">Back to Login</a>
                 </div> */}
               </motion.div>
+              </div>
             </form>
           </div>
         </div>

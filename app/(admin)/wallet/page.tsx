@@ -62,22 +62,28 @@ export default function WalletPage() {
       <div className="page-header">
         <h1 className="page-title">Wallet & Transactions</h1>
         <div className="header-actions">
-          <button className="deposit-btn" onClick={() => { setWalletFormMode("deposit"); setShowDepositForm(true); }}>
-            <Plus size={18} />
-            <span>Deposit Fund</span>
-          </button>
-          <button className="withdraw-btn" onClick={() => { setWalletFormMode("withdraw"); setShowDepositForm(true); }}>
-            <ArrowDownCircle size={18} />
-            <span>Withdraw Fund</span>
-          </button>
-          <button className="shipment-btn" onClick={() => setShowShipmentForm(true)}>
-            <Truck size={18} />
-            <span>Record Shipment</span>
-          </button>
+          <div className="glass-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button className="deposit-btn" onClick={() => { setWalletFormMode("deposit"); setShowDepositForm(true); }}>
+              <Plus size={18} />
+              <span>Deposit Fund</span>
+            </button>
+          </div>
+          <div className="glass-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button className="withdraw-btn" onClick={() => { setWalletFormMode("withdraw"); setShowDepositForm(true); }}>
+              <ArrowDownCircle size={18} />
+              <span>Withdraw Fund</span>
+            </button>
+          </div>
+          <div className="glass-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button className="shipment-btn" onClick={() => setShowShipmentForm(true)}>
+              <Truck size={18} />
+              <span>Record Shipment</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="stats-grid">
+      <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
         <div className="stat-card">
           <div className="stat-icon"><Wallet size={20} /></div>
           <h3 className="stat-title">EGP Balance</h3>
@@ -106,7 +112,8 @@ export default function WalletPage() {
             <div className="empty-state">No transactions recorded.</div>
           ) : (
             transactions.map((tx, idx) => (
-              <div key={idx} className="transaction-item">
+              <div key={idx} className="glass-card" style={{ padding: '1rem', marginBottom: '1rem' }}>
+                <div className="transaction-item">
                 <div className="tx-icon">
                   {(tx.type === "invoice" || tx.type === "deposit") ? (
                     <ArrowUpCircle className="text-emerald-500" />
@@ -122,11 +129,13 @@ export default function WalletPage() {
                   {(tx.type === "invoice" || tx.type === "deposit") ? "+" : "-"}{tx.amount.toLocaleString()} {tx.currency}
                 </div>
               </div>
+              </div>
             ))
           )}
         </div>
 
         {pagination && pagination.totalItems > 0 && (
+          <div className="glass-card" style={{ padding: '1rem', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
           <div className="pagination-footer">
             <div className="pagination-info">
               Showing page <span>{pagination.currentPage}</span> of <span>{pagination.totalPages}</span>
@@ -149,28 +158,37 @@ export default function WalletPage() {
               </button>
             </div>
           </div>
+          </div>
         )}
       </div>
 
       {showDepositForm && (
-        <WalletDepositForm
-          mode={walletFormMode}
-          onClose={() => setShowDepositForm(false)}
-          onSuccess={() => {
-            setShowDepositForm(false);
-            setRefresh(!refresh);
-          }}
-        />
+        <div className="glass-modal-overlay">
+          <div className="glass-modal" style={{ padding: '2rem' }}>
+            <WalletDepositForm
+              mode={walletFormMode}
+              onClose={() => setShowDepositForm(false)}
+              onSuccess={() => {
+                setShowDepositForm(false);
+                setRefresh(!refresh);
+              }}
+            />
+          </div>
+        </div>
       )}
 
       {showShipmentForm && (
-        <ShipmentForm
-          onClose={() => setShowShipmentForm(false)}
-          onSuccess={() => {
-            setShowShipmentForm(false);
-            setRefresh(!refresh);
-          }}
-        />
+        <div className="glass-modal-overlay">
+          <div className="glass-modal" style={{ padding: '2rem' }}>
+            <ShipmentForm
+              onClose={() => setShowShipmentForm(false)}
+              onSuccess={() => {
+                setShowShipmentForm(false);
+                setRefresh(!refresh);
+              }}
+            />
+          </div>
+        </div>
       )}
 
       <style jsx>{`

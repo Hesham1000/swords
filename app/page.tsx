@@ -80,6 +80,7 @@ export default function LandingPage() {
         </div>
 
         <div className="landing-container">
+          <div className="glass-card-lg" style={{ padding: '3rem', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -94,11 +95,11 @@ export default function LandingPage() {
             >
               EQUIPPING THE ELITE
             </motion.span>
-            <h1 className="hero-main-title">
+            <h1 className="hero-main-title" style={{ fontFamily: 'var(--font-display)', fontSize: '3rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '1rem' }}>
               THE ULTIMATE <br />
               <span className="glow-text">ARSENAL</span>
             </h1>
-            <p className="hero-description" style={{ color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+            <p className="hero-description" style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', marginBottom: '2rem', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
               Direct access to **PBT**, **Allstar**, and **Uhlmann**. The premier marketplace and command center for the global fencing community. 
               Manage your gear, track your performance, and dominate the strip.
             </p>
@@ -108,12 +109,13 @@ export default function LandingPage() {
               whileTap={{ scale: 0.95 }}
             >
               <Link href={isAuthenticated ? "/dashboard" : "/sign-in"} style={{ textDecoration: 'none' }}>
-                <button className="primary-btn" style={{ margin: "0 auto", padding: "1.5rem 3rem", fontSize: "1.1rem", textDecoration: 'none' }}>
+                <button className="primary-btn glass-btn" style={{ margin: '0 auto', padding: '1rem 2rem', fontSize: '1.1rem', textDecoration: 'none' }}>
                   {isAuthenticated ? "PROCEED TO DASHBOARD" : "JOIN To Kings"}
                 </button>
               </Link>
             </motion.div>
           </motion.div>
+          </div>
         </div>
       </section>
 
@@ -133,14 +135,16 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 className="arsenal-card"
               >
-                <div style={{ position: 'relative', height: '200px', borderRadius: '16px', overflow: 'hidden', marginBottom: '1.5rem' }}>
-                  <img src={cat.image} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}></div>
-                  <div style={{ position: 'absolute', bottom: '1rem', left: '1rem' }}>
+                <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                  <div style={{ position: 'relative', height: '200px', borderRadius: '16px', overflow: 'hidden', marginBottom: '1.5rem' }}>
+                    <img src={cat.image} alt={cat.name} style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '12px', marginBottom: '1rem' }} />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.8))' }}></div>
+                    <div style={{ position: 'absolute', bottom: '1rem', left: '1rem' }}>
+                    </div>
                   </div>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>{cat.name}</h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{cat.description}</p>
                 </div>
-                <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '0.5rem' }}>{cat.name}</h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{cat.description}</p>
               </motion.div>
             ))}
           </div>

@@ -118,6 +118,10 @@ const ForgotPassword = () => {
               </div>
 
               {!isSubmitted ? (
+                <div
+                  className="glass-card"
+                  style={{ padding: "2rem", maxWidth: "450px", width: "100%", margin: "2rem auto" }}
+                >
                 <form onSubmit={handleSubmit} className="forgot-password-form">
                   <div className="instruction-text">
                     <p>
@@ -129,7 +133,8 @@ const ForgotPassword = () => {
                   <div className="form__group field">
                     <input
                       type="email"
-                      className="fencing-input"
+                      className="glass-input fencing-input"
+                      style={{ width: "100%", marginBottom: "1rem" }}
                       value={formData.email}
                       onChange={handleInputChange}
                       placeholder=" "
@@ -148,7 +153,8 @@ const ForgotPassword = () => {
 
                   <button
                     type="submit"
-                    className="fencing-btn"
+                    className="glass-btn fencing-btn"
+                    style={{ width: "100%", justifyContent: "center", marginTop: "1rem" }}
                     disabled={isLoading}
                   >
                     {isLoading ? "Sending..." : "Send Reset Instructions"}
@@ -165,6 +171,7 @@ const ForgotPassword = () => {
                     </button>
                   </div>
                 </form>
+                </div>
               ) : (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
