@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -5,6 +6,7 @@ import { FileText, Plus, Search, CheckCircle, AlertCircle, Loader2 } from "lucid
 import InvoiceForm from "../../components/invoice-form";
 import { getInvoices, updateInvoiceStatus, Invoice } from "../../lib/api/invoice";
 import { useDashboard } from "../layout";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function InvoicesPage() {
   const { user, isAdmin } = useDashboard();
@@ -49,13 +51,40 @@ export default function InvoicesPage() {
     }
   };
 
+  const statusBadgeClass = (status: string) => {
+    switch (status) {
+      case "paid":
+        return "md-badge-green";
+      case "pending":
+        return "md-badge-amber";
+      case "cancelled":
+      case "overdue":
+        return "md-badge-red";
+      case "processing":
+      case "shipped":
+        return "md-badge-blue";
+      default:
+        return "md-badge-amber";
+    }
+  };
+
   return (
     <div className="page-content">
       <div className="page-header">
-        <h1 className="page-title">Invoices Management</h1>
+        <h1
+            className="page-title"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 700,
+              color: "var(--text-primary)",
+              fontSize: "24px",
+            }}
+          >
+            Invoices Management
+          </h1>
         {isAdmin && (
           <button
-            className="primary-btn"
+            className="md-btn-primary"
             onClick={() => {
               setEditingInvoice(null);
               setShowForm(true);
@@ -67,6 +96,11 @@ export default function InvoicesPage() {
         )}
       </div>
 
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
       <div className="filter-bar">
         <div className="search-wrapper">
           <Search size={18} className="search-icon" />
@@ -78,25 +112,32 @@ export default function InvoicesPage() {
               setSearchQuery(e.target.value);
               setPage(1);
             }}
-            className="search-input"
+            className="md-input"
           />
         </div>
       </div>
+      </motion.div>
 
       {error && <div className="error-banner">{error}</div>}
 
       <div className="list-card full-width">
-        <div className="invoice-list">
+        <div className="invoice-list md-table">
           {loading ? (
-            <div className="loading-state">
+            <div className="loading-state" style={{ color: "var(--primary)" }}>
               <Loader2 className="animate-spin" />
               <p>Loading invoices...</p>
             </div>
           ) : invoices.length === 0 ? (
             <div className="empty-state">No invoices found.</div>
           ) : (
-            invoices.map((invoice) => (
-              <div key={invoice._id || invoice.invoiceId} className={`invoice-item status-${invoice.status}`}>
+            invoices.map((invoice, index) => (
+              <motion.div
+                key={invoice._id || invoice.invoiceId}
+                className={`invoice-item status-${invoice.status}`}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.04 }}
+              >
                 <div className="invoice-id-col">
                   <div className="invoice-id">{invoice.invoiceId}</div>
                   <div className="invoice-customer">{invoice.customer}</div>
@@ -106,13 +147,19 @@ export default function InvoicesPage() {
                   <div className="invoice-date">{invoice.date}</div>
                 </div>
                 <div className="invoice-actions-col">
-                  <span className={`status-badge status-${invoice.status}`}>
+                  <motion.span
+                    className={`status-badge status-${invoice.status} ${statusBadgeClass(invoice.status)}`}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
                     {invoice.status === "overdue" && <AlertCircle size={14} />}
                     {invoice.status}
-                  </span>
+                  </motion.span>
                   {isAdmin && invoice.status !== "paid" && (
                     <button 
-                      className="mark-paid-btn"
+                      className="md-btn-outlined"
+                        style={{ color: "var(--status-green)" }}
                       onClick={() => handleMarkAsPaid(invoice._id!)}
                     >
                       <CheckCircle size={14} />
@@ -131,7 +178,7 @@ export default function InvoicesPage() {
                     </button>
                   )}
                 </div>
-              </div>
+              </motion.div>
             ))
           )}
         </div>

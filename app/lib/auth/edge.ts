@@ -27,7 +27,7 @@ export async function verifyAccessTokenEdge(
     }
 
     return null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

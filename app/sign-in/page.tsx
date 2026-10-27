@@ -84,14 +84,6 @@ const FencingLogin = () => {
       }
     };
 
-  const showValidationError = (field: string, message: string) => {
-    const ref = validationRefs[field as keyof typeof validationRefs];
-    if (ref?.current) {
-      ref.current.textContent = message;
-      ref.current.classList.add("show");
-    }
-  };
-
   const clearValidationError = (field: string) => {
     const ref = validationRefs[field as keyof typeof validationRefs];
     if (ref?.current) {
@@ -227,7 +219,12 @@ const FencingLogin = () => {
 
       {/* Display general error message for registration */}
       {error && !formError && (
-        <div className="general-error-message registration-error">{error}</div>
+        <div
+          className="general-error-message registration-error"
+          style={{ color: "var(--status-red)", background: "rgba(239,68,68,0.08)", borderRadius: "8px", padding: "12px" }}
+        >
+          {error}
+        </div>
       )}
 
       <div className="form__group field">
@@ -307,7 +304,7 @@ const FencingLogin = () => {
           ref={loginUsernameRef}
           placeholder=" "
         />
-        <label className="form__label">Email or Username</label>
+        <label className="md-label">Email or Username</label>
         <p className="validation" ref={validationRefs.loginUsername}></p>
         {/* Display field-specific error above the input */}
         {formError &&
@@ -350,7 +347,12 @@ const FencingLogin = () => {
 
       {/* Display general error message between inputs and forgot password */}
       {error && (
-        <div className="general-error-message login-error">{error}</div>
+        <div
+          className="general-error-message login-error"
+          style={{ color: "var(--status-red)", background: "rgba(239,68,68,0.08)", borderRadius: "8px", padding: "12px" }}
+        >
+          {error}
+        </div>
       )}
 
       <div className="forgot-password-container">
@@ -402,7 +404,10 @@ const FencingLogin = () => {
               priority
             />
           </div>
-          <div className="formBx">
+          <div
+            className="formBx md-card"
+            style={{ boxShadow: "var(--shadow-dp4)" }}
+          >
             <form onSubmit={(e) => e.preventDefault()}>
               <div className="sidebar-header" style={{ padding: "0 0 0.5rem 0", background: "none" }}>
                 <motion.div
@@ -416,7 +421,7 @@ const FencingLogin = () => {
               </div>
               <AnimatePresence mode="wait">{renderLoginForm()}</AnimatePresence>
               <p className="signup">
-                Don't have an account?
+                Don&apos;t have an account?
                 <span
                   className="signup-toggle"
                   onClick={toggleForm}
@@ -430,7 +435,10 @@ const FencingLogin = () => {
 
         {/* Registration Form */}
         <div className="user singupBx">
-          <div className="formBx">
+          <div
+            className="formBx md-card"
+            style={{ boxShadow: "var(--shadow-dp4)" }}
+          >
             <form onSubmit={(e) => e.preventDefault()}>
               <div className="sidebar-header" style={{ padding: "0 0 0.5rem 0", background: "none" }}>
                 <motion.div

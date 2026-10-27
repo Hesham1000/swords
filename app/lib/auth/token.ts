@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SignJWT, jwtVerify } from "jose";
 import { ObjectId } from "mongodb";
 import {

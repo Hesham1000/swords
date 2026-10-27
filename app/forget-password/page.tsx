@@ -98,7 +98,7 @@ const ForgotPassword = () => {
             <div className="image-content">
               <h2>Reset Your Password</h2>
               <p>
-                Enter your email address and we'll send you instructions to
+                Enter your email address and we&apos;ll send you instructions to
                 reset your password.
               </p>
             </div>
@@ -122,14 +122,14 @@ const ForgotPassword = () => {
                   <div className="instruction-text">
                     <p>
                       Enter the email address associated with your account, and
-                      we'll send you a link to reset your password.
+                      we&apos;ll send you a link to reset your password.
                     </p>
                   </div>
 
                   <div className="form__group field">
                     <input
                       type="email"
-                      className="fencing-input"
+                      className="md-input"
                       value={formData.email}
                       onChange={handleInputChange}
                       placeholder=" "
@@ -170,6 +170,7 @@ const ForgotPassword = () => {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="success-message"
+                  style={{ color: "var(--status-green)", background: "rgba(34,197,94,0.08)", borderRadius: "8px", padding: "12px" }}
                 >
                   <div className="success-icon">
                     <span>✓</span>
@@ -204,7 +205,7 @@ const ForgotPassword = () => {
                     </button>
                   </div>
                   <p className="help-text">
-                    Didn't receive the email? Check your spam folder or make
+                    Didn&apos;t receive the email? Check your spam folder or make
                     sure you entered the correct email address.
                   </p>
                 </motion.div>

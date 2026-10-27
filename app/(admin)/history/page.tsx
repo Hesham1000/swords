@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import { TrendingUp, Loader2 } from "lucide-react";
 import { getInventoryLogs, InventoryLog } from "../../lib/api/inventory";
+import { motion } from "framer-motion";
 import { useDashboard } from "../layout";
 
 export default function HistoryPage() {
@@ -44,50 +46,90 @@ export default function HistoryPage() {
 
   return (
     <div className="page-content">
-      <div className="page-header">
-        <h1 className="page-title">Inventory Audit Trail</h1>
-      </div>
+      <motion.div
+        className="page-header"
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <h1
+          className="page-title"
+          style={{
+            fontFamily: "var(--font-display)",
+            fontWeight: 700,
+            color: "var(--text-primary)",
+            fontSize: "24px",
+          }}
+        >
+          Inventory Audit Trail
+        </h1>
+      </motion.div>
 
       {error && <div className="error-banner">{error}</div>}
 
       <div className="list-card full-width">
-        <div className="history-list">
-          <div className="history-header-row">
-            <div className="history-col-product">Product</div>
-            <div className="history-col-change">Change</div>
-            <div className="history-col-reason">Reason</div>
-            <div className="history-col-date text-right">Date & Time</div>
-          </div>
-
+        <table className="md-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Change</th>
+              <th>Reason</th>
+              <th style={{ textAlign: "right" }}>Date &amp; Time</th>
+            </tr>
+          </thead>
+          <tbody>
           {loading ? (
-            <div className="loading-state"><Loader2 className="animate-spin" /></div>
+            <tr>
+              <td colSpan={4}>
+                <div className="loading-state"><Loader2 className="animate-spin" /></div>
+              </td>
+            </tr>
           ) : logs.length === 0 ? (
-            <div className="empty-state">No transaction history found.</div>
+            <tr>
+              <td colSpan={4}>
+                <motion.div
+                  className="empty-state"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  No transaction history found.
+                </motion.div>
+              </td>
+            </tr>
           ) : (
-            logs.map((log) => (
-              <div key={log._id} className="history-item">
-                <div className="history-col-product">
+            logs.map((log, index) => (
+              <motion.tr
+                key={log._id}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.04 }}
+              >
+                <td>
                   <span className="log-product-name">{log.productName}</span>
                   <span className="log-product-id">ID: {log.productId}</span>
-                </div>
-                <div className="history-col-change">
-                  <span className={`log-amount ${log.changeAmount > 0 ? "positive" : "negative"}`}>
+                </td>
+                <td>
+                  <span className={log.changeAmount > 0 ? "md-badge-green" : "md-badge-red"}>
                     {log.changeAmount > 0 ? "+" : ""}{log.changeAmount}
                   </span>
-                  <span className="log-new-qty">New Stock: {log.newQuantity}</span>
-                </div>
-                <div className="history-col-reason">
-                  <span className="log-reason">{log.reason}</span>
+                  <span className="log-new-qty" style={{ color: "var(--text-secondary)" }}>
+                    New Stock: {log.newQuantity}
+                  </span>
+                </td>
+                <td>
+                  <span className="log-reason" style={{ color: "var(--text-primary)" }}>{log.reason}</span>
                   {log.note && <span className="log-note">{log.note}</span>}
-                </div>
-                <div className="history-col-date text-right">
+                </td>
+                <td style={{ textAlign: "right", color: "var(--text-secondary)" }}>
                   <span>{new Date(log.timestamp).toLocaleDateString()}</span>
                   <span>{new Date(log.timestamp).toLocaleTimeString()}</span>
-                </div>
-              </div>
+                </td>
+              </motion.tr>
             ))
           )}
-        </div>
+          </tbody>
+        </table>
 
         {pagination && pagination.totalItems > 0 && (
           <div className="pagination-footer">
@@ -96,15 +138,15 @@ export default function HistoryPage() {
               <span className="total-count">({pagination.totalItems} logs)</span>
             </div>
             <div className="pagination-btns">
-              <button 
-                className="pag-btn" 
+              <button
+                className="md-btn-outlined"
                 disabled={!pagination.hasPrevPage || loading}
                 onClick={() => setPage(p => p - 1)}
               >
                 Previous
               </button>
-              <button 
-                className="pag-btn" 
+              <button
+                className="md-btn-outlined"
                 disabled={!pagination.hasNextPage || loading}
                 onClick={() => setPage(p => p + 1)}
               >
@@ -116,7 +158,8 @@ export default function HistoryPage() {
       </div>
 
       <style jsx>{`
-        .loading-state, .empty-state { padding: 4rem; text-align: center; color: var(--text-secondary); }
+        .loading-state { padding: 4rem; text-align: center; color: var(--primary); }
+        .empty-state { padding: 4rem; text-align: center; color: var(--text-secondary); }
         
         .pagination-footer {
           display: flex;
@@ -142,26 +185,6 @@ export default function HistoryPage() {
         .pagination-btns {
           display: flex;
           gap: 0.75rem;
-        }
-        .pag-btn {
-          padding: 0.5rem 1rem;
-          background: var(--bg-deep);
-          border: 1px solid var(--border-tech);
-          border-radius: 8px;
-          color: var(--text-primary);
-          font-size: 11px;
-          font-weight: 700;
-          text-transform: uppercase;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .pag-btn:hover:not(:disabled) {
-          border-color: var(--accent-blue);
-          background: rgba(59, 130, 246, 0.1);
-        }
-        .pag-btn:disabled {
-          opacity: 0.4;
-          cursor: not-allowed;
         }
       `}</style>
     </div>

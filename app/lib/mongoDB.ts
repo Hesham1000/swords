@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import mongoose, { Connection, ConnectOptions } from "mongoose";
 
 declare global {

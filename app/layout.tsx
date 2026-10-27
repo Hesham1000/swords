@@ -19,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={inter.className} style={{ background: 'var(--surface-alt)', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}>
         {/* Remove any navigation that conflicts with landing page */}
         {children}
       </body>

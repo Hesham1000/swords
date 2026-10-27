@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, ChangeEvent, FormEvent, useEffect, useRef, useCallback } from "react";

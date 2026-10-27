@@ -6,7 +6,7 @@
   gap: 0.75rem;
   background: rgba(220, 38, 38, 0.1);
   border: 1px solid rgba(220, 38, 38, 0.3);
-  color: #991b1b;
+  color: var(--status-red);
   padding: 1rem 1.5rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
@@ -16,7 +16,7 @@
   width: 40px;
   height: 40px;
   border: 4px solid #e5e7eb;
-  border-top-color: #7c2d3a;
+  border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -35,7 +35,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, var(--status-green) 0%, #059669 100%);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 0.5rem 1rem;
@@ -97,7 +97,7 @@
   align-items: center;
   gap: 0.5rem;
   background: var(--grad-btn);
-  color: var(--bg-deep);
+  color: var(--surface-alt);
   border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 0.5rem 1rem;
   border-radius: 8px;
@@ -108,7 +108,7 @@
   letter-spacing: 0.5px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 15px rgba(var(--accent-blue-rgb), 0.3);
+  box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);
   position: relative;
   overflow: hidden;
 }
@@ -116,7 +116,7 @@
 .add-deposit-btn:hover {
   background: var(--grad-btn);
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 6px 20px rgba(var(--accent-blue-rgb), 0.45);
+  box-shadow: 0 6px 20px rgba(var(--primary-rgb), 0.45);
   border-color: rgba(255, 255, 255, 0.4);
   opacity: 0.95;
 }
@@ -133,9 +133,9 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(var(--accent-gold-rgb, 251, 191, 36), 0.1);
-  color: var(--accent-gold);
-  border: 1px solid var(--accent-gold);
+  background: rgba(var(--primary-rgb, 139, 26, 26), 0.1);
+  color: var(--primary-light);
+  border: 1px solid var(--primary-light);
   padding: 0.5rem 1rem;
   border-radius: 8px;
   font-family: var(--font-display);
@@ -148,8 +148,8 @@
 }
 
 .edit-invoice-btn:hover {
-  background: var(--accent-gold);
-  color: var(--bg-deep);
+  background: var(--primary-light);
+  color: var(--surface-alt);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
@@ -160,7 +160,7 @@
   gap: 0.5rem;
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary);
-  border: 1px solid var(--border-tech);
+  border: 1px solid var(--border);
   padding: 0.5rem 1rem;
   border-radius: 8px;
   font-family: var(--font-display);
@@ -173,9 +173,9 @@
 }
 
 .view-items-btn:hover {
-  background: rgba(var(--accent-blue-rgb, 59, 130, 246), 0.1);
-  border-color: var(--accent-blue);
-  color: var(--accent-blue);
+  background: rgba(var(--primary-rgb, 139, 26, 26), 0.1);
+  border-color: var(--primary);
+  color: var(--primary);
   transform: translateY(-1px);
 }
 
@@ -221,7 +221,7 @@
 
 .item-detail-row:hover {
   background: rgba(255, 255, 255, 0.04);
-  border-left-color: var(--accent-blue);
+  border-left-color: var(--primary);
 }
 
 .item-name-col {
@@ -238,7 +238,7 @@
 
 .discount-tag {
   font-size: 10px;
-  color: #10b981;
+  color: var(--status-green);
   font-weight: 700;
   background: rgba(16, 185, 129, 0.1);
   padding: 1px 6px;
@@ -258,7 +258,7 @@
 
 .item-total-col {
   font-weight: 700;
-  color: var(--accent-blue);
+  color: var(--primary);
 }
 
 .invoice-summary-details {
@@ -280,7 +280,7 @@
 }
 
 .summary-row.discount {
-  color: #10b981;
+  color: var(--status-green);
 }
 
 .summary-row.grand-total {
@@ -295,7 +295,7 @@
 
 .summary-row.deposit {
   font-size: 14px;
-  color: var(--accent-blue);
+  color: var(--primary);
   font-weight: 700;
 }
 
@@ -307,8 +307,8 @@
 }
 
 .alert-badge-count {
-  background: rgba(var(--accent-red-rgb, 220, 38, 38), 0.1);
-  color: var(--accent-red);
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--status-red);
   padding: 0.25rem 0.6rem;
   border-radius: 99px;
   font-size: 11px;
@@ -318,7 +318,7 @@
 
 .alert-badge-count.active {
   opacity: 1;
-  background: var(--accent-red);
+  background: var(--status-red);
   color: white;
   box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
 }
@@ -340,25 +340,25 @@
   padding: 0.85rem;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border-tech);
+  border: 1px solid var(--border);
   transition: all 0.3s ease;
 }
 
 .alert-item.warning {
-  border-left: 3px solid #fbbf24;
+  border-left: 3px solid var(--status-amber);
 }
 
 .alert-item.critical {
-  border-left: 3px solid #ef4444;
+  border-left: 3px solid var(--status-red);
   background: rgba(239, 68, 68, 0.05);
 }
 
 .alert-icon {
-  color: #fbbf24;
+  color: var(--status-amber);
 }
 
 .alert-item.critical .alert-icon {
-  color: #ef4444;
+  color: var(--status-red);
 }
 
 .alert-info {
@@ -385,7 +385,7 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 2rem;
-  color: #10b981;
+  color: var(--status-green);
   opacity: 0.6;
 }
 
@@ -412,13 +412,13 @@
   align-items: center;
   padding: 1.25rem 1.5rem;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border-tech);
+  border: 1px solid var(--border);
   border-radius: 12px;
   transition: all 0.2s ease;
 }
 
 .history-item:hover {
-  border-color: var(--accent-blue);
+  border-color: var(--primary);
   background: rgba(255, 255, 255, 0.05);
   transform: translateX(4px);
 }
@@ -432,8 +432,8 @@
 .log-product-id { font-size: 10px; color: var(--text-secondary); opacity: 0.5; }
 
 .log-amount { font-weight: 800; font-size: 15px; }
-.log-amount.positive { color: #10b981; }
-.log-amount.negative { color: #f43f5e; }
+.log-amount.positive { color: var(--status-green); }
+.log-amount.negative { color: var(--status-red); }
 .log-new-qty { font-size: 10px; color: var(--text-secondary); }
 
 .log-reason { font-weight: 600; font-size: 12px; color: var(--text-primary); }
@@ -502,7 +502,7 @@
   align-items: center;
   gap: 1rem;
   padding: 1.5rem 2rem;
-  border-top: 1px solid var(--border-tech);
+  border-top: 1px solid var(--border);
   margin-top: auto;
 }
 
@@ -514,7 +514,7 @@
 
 .pagination-btn {
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border-tech);
+  border: 1px solid var(--border);
   color: var(--text-primary);
   padding: 0.5rem 1.25rem;
   border-radius: 8px;
@@ -528,9 +528,9 @@
 }
 
 .pagination-btn:hover:not(:disabled) {
-  background: rgba(var(--accent-blue-rgb), 0.1);
-  border-color: var(--accent-blue);
-  color: var(--accent-blue);
+  background: rgba(var(--primary-rgb), 0.1);
+  border-color: var(--primary);
+  color: var(--primary);
   transform: translateY(-1px);
 }
 
@@ -575,8 +575,8 @@
 }
 
 .modal-content-wrapper {
-  background: var(--bg-card);
-  border: 1px solid var(--border-tech);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 24px;
   width: 100%;
   max-width: 900px;
@@ -604,7 +604,7 @@
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-tech);
+  border: 1px solid var(--border);
   border-radius: 50%;
   color: var(--text-secondary);
   cursor: pointer;

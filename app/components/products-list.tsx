@@ -35,7 +35,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
 }) => {
   if (loading) {
     return (
-      <div className="products-loading">
+      <div className="products-loading" style={{ color: "var(--primary)" }}>
         <div className="spinner"></div>
         <p>Loading products...</p>
       </div>
@@ -54,10 +54,10 @@ const ProductsList: React.FC<ProductsListProps> = ({
 
   if (products.length === 0) {
     return (
-      <div className="no-products">
+      <div className="no-products" style={{ color: "var(--text-secondary)" }}>
         <Package size={64} />
         <h3>No products found</h3>
-        <p>Try adjusting your search or filters to find what you're looking for.</p>
+        <p>Try adjusting your search or filters to find what you&apos;re looking for.</p>
       </div>
     );
   }
@@ -65,7 +65,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
   return (
     <div className="products-list-container">
       {/* Products Grid */}
-      <div className="products-grid">
+      <div className="products-grid md-table">
         {products.map((product) => (
           <ProductRow
             key={product.id}

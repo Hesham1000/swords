@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
@@ -102,7 +103,12 @@ const Sidebar = ({
   };
 
   return (
-    <aside className={`sidebar ${sidebarOpen ? 'mobile-open' : 'closed'}`}>
+    <motion.aside
+      className={`sidebar ${sidebarOpen ? 'mobile-open' : 'closed'}`}
+      initial={false}
+      animate={{ x: sidebarOpen ? 0 : "-100%" }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+    >
       <motion.div
         className="sidebar-header"
         initial={{ opacity: 0, y: -20 }}
@@ -126,7 +132,7 @@ const Sidebar = ({
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
-            whileHover={{ x: 5, backgroundColor: "var(--glass-bg)" }}
+            whileHover={{ x: 2, backgroundColor: "var(--glass-bg)" }}
             whileTap={{ scale: 0.95 }}
             className={`nav-item ${currentPage === item.id ? "active" : ""}`}
             onClick={() => {
@@ -184,7 +190,7 @@ const Sidebar = ({
           <span>{isLoggingOut ? "Logging out..." : "Logout"}</span>
         </button>
       </div>
-    </aside>
+    </motion.aside>
   );
 };
 

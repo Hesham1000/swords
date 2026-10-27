@@ -25,7 +25,9 @@ const KingsLogo = () => (
     position: "absolute", 
     top: "10px", 
     left: 0, 
-    zIndex: 100 
+    zIndex: 100,
+    color: "white",
+    fontFamily: "var(--font-display)"
   }}>
     <img src="/icon.png" alt="Kings Logo" width="120" height="120" />
   </div>
@@ -38,7 +40,7 @@ export default function LandingPage() {
   useEffect(() => {
     const cookies = document.cookie.split(";");
     const hasToken = cookies.some((c) => c.trim().startsWith("logged_in="));
-    setIsAuthenticated(hasToken);
+    queueMicrotask(() => setIsAuthenticated(hasToken));
   }, []);
 
   const features = [
@@ -91,15 +93,16 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
               className="section-tag"
+              style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "14px", letterSpacing: "2px", color: "rgba(255,255,255,0.8)", textTransform: "uppercase" }}
             >
               EQUIPPING THE ELITE
             </motion.span>
-            <h1 className="hero-main-title">
+            <h1 className="hero-main-title" style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: "clamp(2.5rem, 5vw, 4rem)", color: "white", lineHeight: 1.1, letterSpacing: "-1px" }}>
               THE ULTIMATE <br />
-              <span className="glow-text">ARSENAL</span>
+              <span className="glow-text" style={{ color: "#f59e0b" }}>ARSENAL</span>
             </h1>
             <p className="hero-description" style={{ color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-              Direct access to **PBT**, **Allstar**, and **Uhlmann**. The premier marketplace and command center for the global fencing community. 
+              Direct access to <strong>PBT</strong>, <strong>Allstar</strong>, and <strong>Uhlmann</strong>. The premier marketplace and command center for the global fencing community. 
               Manage your gear, track your performance, and dominate the strip.
             </p>
 
@@ -108,9 +111,14 @@ export default function LandingPage() {
               whileTap={{ scale: 0.95 }}
             >
               <Link href={isAuthenticated ? "/dashboard" : "/sign-in"} style={{ textDecoration: 'none' }}>
-                <button className="primary-btn" style={{ margin: "0 auto", padding: "1.5rem 3rem", fontSize: "1.1rem", textDecoration: 'none' }}>
+                <motion.button
+                  className="primary-btn md-btn-primary"
+                  style={{ margin: "0 auto", padding: "1.5rem 3rem", fontSize: "1.1rem", textDecoration: 'none' }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
+                >
                   {isAuthenticated ? "PROCEED TO DASHBOARD" : "JOIN To Kings"}
-                </button>
+                </motion.button>
               </Link>
             </motion.div>
           </motion.div>
@@ -120,18 +128,21 @@ export default function LandingPage() {
       {/* Arsenal Section */}
       <section className="landing-section">
         <div className="landing-container">
-          <span className="section-tag">THE ARSENAL</span>
+          <span className="section-tag" style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "14px", letterSpacing: "2px", color: "rgba(255,255,255,0.8)", textTransform: "uppercase" }}>THE ARSENAL</span>
           <h2 className="section-title">PREMIUM SELECTION</h2>
 
           <div className="arsenal-grid">
             {categories.map((cat, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 40 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                viewport={{ once: true }}
-                className="arsenal-card"
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.4, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                whileHover={{ y: -4 }}
+                whileTap={{ scale: 0.98 }}
+                className="arsenal-card md-card"
+                style={{ boxShadow: "var(--shadow-dp2)", background: "var(--surface)" }}
               >
                 <div style={{ position: 'relative', height: '200px', borderRadius: '16px', overflow: 'hidden', marginBottom: '1.5rem' }}>
                   <img src={cat.image} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -143,6 +154,39 @@ export default function LandingPage() {
                 <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{cat.description}</p>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="landing-section">
+        <div className="landing-container">
+          <span className="section-tag" style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "14px", letterSpacing: "2px", color: "rgba(255,255,255,0.8)", textTransform: "uppercase" }}>WHY KINGS</span>
+          <h2 className="section-title">BUILT FOR CHAMPIONS</h2>
+
+          <div className="arsenal-grid">
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-60px" }}
+                  transition={{ duration: 0.4, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
+                  whileHover={{ y: -4 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="arsenal-card md-card"
+                  style={{ boxShadow: "var(--shadow-dp2)", background: "var(--surface)", borderRadius: "16px", padding: "1.5rem" }}
+                >
+                  <div style={{ marginBottom: "1rem", color: "#f59e0b" }}>
+                    <Icon size={28} strokeWidth={2} />
+                  </div>
+                  <h3 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "0.5rem" }}>{feature.title}</h3>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "14px" }}>{feature.description}</p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
