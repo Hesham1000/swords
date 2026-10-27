@@ -111,9 +111,14 @@ export default function LandingPage() {
               whileTap={{ scale: 0.95 }}
             >
               <Link href={isAuthenticated ? "/dashboard" : "/sign-in"} style={{ textDecoration: 'none' }}>
-                <button className="primary-btn md-btn-primary" style={{ margin: "0 auto", padding: "1.5rem 3rem", fontSize: "1.1rem", textDecoration: 'none' }}>
+                <motion.button
+                  className="primary-btn md-btn-primary"
+                  style={{ margin: "0 auto", padding: "1.5rem 3rem", fontSize: "1.1rem", textDecoration: 'none' }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
+                >
                   {isAuthenticated ? "PROCEED TO DASHBOARD" : "JOIN To Kings"}
-                </button>
+                </motion.button>
               </Link>
             </motion.div>
           </motion.div>
@@ -130,10 +135,12 @@ export default function LandingPage() {
             {categories.map((cat, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 40 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                viewport={{ once: true }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.4, delay: i * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                whileHover={{ y: -4 }}
+                whileTap={{ scale: 0.98 }}
                 className="arsenal-card md-card"
                 style={{ boxShadow: "var(--shadow-dp2)", background: "var(--surface)" }}
               >
@@ -147,6 +154,39 @@ export default function LandingPage() {
                 <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{cat.description}</p>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="landing-section">
+        <div className="landing-container">
+          <span className="section-tag" style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "14px", letterSpacing: "2px", color: "rgba(255,255,255,0.8)", textTransform: "uppercase" }}>WHY KINGS</span>
+          <h2 className="section-title">BUILT FOR CHAMPIONS</h2>
+
+          <div className="arsenal-grid">
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-60px" }}
+                  transition={{ duration: 0.4, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
+                  whileHover={{ y: -4 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="arsenal-card md-card"
+                  style={{ boxShadow: "var(--shadow-dp2)", background: "var(--surface)", borderRadius: "16px", padding: "1.5rem" }}
+                >
+                  <div style={{ marginBottom: "1rem", color: "#f59e0b" }}>
+                    <Icon size={28} strokeWidth={2} />
+                  </div>
+                  <h3 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "0.5rem" }}>{feature.title}</h3>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "14px" }}>{feature.description}</p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
