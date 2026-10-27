@@ -204,7 +204,7 @@ const SetPasswordContent = () => {
         </div>
 
         <div className="password-form-side">
-          <div className="password-form-content">
+          <div className="password-form-content glass-card">
             <div className="password-header">
               <h1>{formTitle}</h1>
               <p>{formSubtitle}</p>
@@ -219,7 +219,7 @@ const SetPasswordContent = () => {
                 <div className="form__group field">
                   <input
                     type="password"
-                    className="password-input"
+                    className="password-input glass-input"
                     value={formData.password}
                     onChange={handleInputChange("password")}
                     onFocus={() => clearValidationError("password")}
@@ -233,7 +233,7 @@ const SetPasswordContent = () => {
                 <div className="form__group field">
                   <input
                     type="password"
-                    className="password-input"
+                    className="password-input glass-input"
                     value={formData.confirmPassword}
                     onChange={handleInputChange("confirmPassword")}
                     onFocus={() => clearValidationError("confirmPassword")}
@@ -291,7 +291,7 @@ const SetPasswordContent = () => {
 
                 <button
                   type="submit"
-                  className="password-btn"
+                  className="password-btn glass-btn-primary"
                   disabled={isLoading}
                 >
                   {isLoading

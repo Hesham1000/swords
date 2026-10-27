@@ -233,7 +233,7 @@ const FencingLogin = () => {
       <div className="form__group field">
         <input
           type="text"
-          className={`fencing-input ${formError?.field === "username" ? "error" : ""
+          className={`fencing-input glass-input ${formError?.field === "username" ? "error" : ""
             }`}
           value={formData.username}
           onChange={handleInputChange("username")}
@@ -252,7 +252,7 @@ const FencingLogin = () => {
       <div className="form__group field">
         <input
           type="email"
-          className={`fencing-input ${formError?.field === "email" ? "error" : ""
+          className={`fencing-input glass-input ${formError?.field === "email" ? "error" : ""
             }`}
           value={formData.email}
           onChange={handleInputChange("email")}
@@ -270,7 +270,7 @@ const FencingLogin = () => {
 
       <button
         type="button"
-        className="fencing-btn"
+        className="fencing-btn glass-btn-primary"
         onClick={register}
         disabled={isLoading}
       >
@@ -291,7 +291,7 @@ const FencingLogin = () => {
       <div className="form__group field">
         <input
           type="text"
-          className={`fencing-input ${formError?.field === "email" || formError?.field === "username"
+          className={`fencing-input glass-input ${formError?.field === "email" || formError?.field === "username"
               ? "error"
               : ""
             }`}
@@ -319,7 +319,7 @@ const FencingLogin = () => {
       <div className="form__group field">
         <input
           type={showPassword ? "text" : "password"}
-          className={`fencing-input ${formError?.field === "password" ? "error" : ""
+          className={`fencing-input glass-input ${formError?.field === "password" ? "error" : ""
             }`}
           value={formData.password}
           onChange={handleInputChange("password")}
@@ -336,7 +336,7 @@ const FencingLogin = () => {
         <label className="form__label">Password</label>
         <button
           type="button"
-          className="password-toggle-btn"
+          className="password-toggle-btn glass-btn"
           onClick={() => setShowPassword(!showPassword)}
         >
           {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -356,7 +356,7 @@ const FencingLogin = () => {
       <div className="forgot-password-container">
         <button
           type="button"
-          className="forgot-password-link"
+          className="forgot-password-link glass-btn"
           onClick={() => router.push("/forget-password")}
         >
           Forget Password?
@@ -365,7 +365,7 @@ const FencingLogin = () => {
 
       <button
         type="submit"
-        className="fencing-btn"
+        className="fencing-btn glass-btn-primary"
         onClick={login}
         disabled={isLoading}
       >
@@ -402,7 +402,7 @@ const FencingLogin = () => {
               priority
             />
           </div>
-          <div className="formBx">
+          <div className="formBx glass-card">
             <form onSubmit={(e) => e.preventDefault()}>
               <div className="sidebar-header" style={{ padding: "0 0 0.5rem 0", background: "none" }}>
                 <motion.div
@@ -418,7 +418,7 @@ const FencingLogin = () => {
               <p className="signup">
                 Don't have an account?
                 <span
-                  className="signup-toggle"
+                  className="signup-toggle glass-btn"
                   onClick={toggleForm}
                 >
                   Sign up
@@ -430,7 +430,7 @@ const FencingLogin = () => {
 
         {/* Registration Form */}
         <div className="user singupBx">
-          <div className="formBx">
+          <div className="formBx glass-card">
             <form onSubmit={(e) => e.preventDefault()}>
               <div className="sidebar-header" style={{ padding: "0 0 0.5rem 0", background: "none" }}>
                 <motion.div
@@ -448,7 +448,7 @@ const FencingLogin = () => {
               <p className="signup" style={{ marginTop: "20px" }}>
                 Already have an account?
                 <span
-                  className="signup-toggle"
+                  className="signup-toggle glass-btn"
                   onClick={toggleForm}
                 >
                   Sign in

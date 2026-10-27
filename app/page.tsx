@@ -76,7 +76,7 @@ export default function LandingPage() {
             alt="Fencing Duel"
             className="hero-bg-image"
           />
-          <div className="hero-overlay-gradient" style={{ background: 'radial-gradient(circle at center, rgba(0,0,0,0.3) 0%, var(--bg-deep) 100%)' }}></div>
+          <div className="hero-overlay-gradient" style={{ background: 'radial-gradient(circle at center, rgba(0,0,0,0.3) 0%, var(--bg-deep) 100%), linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)' }}></div>
         </div>
 
         <div className="landing-container">
@@ -108,7 +108,7 @@ export default function LandingPage() {
               whileTap={{ scale: 0.95 }}
             >
               <Link href={isAuthenticated ? "/dashboard" : "/sign-in"} style={{ textDecoration: 'none' }}>
-                <button className="primary-btn" style={{ margin: "0 auto", padding: "1.5rem 3rem", fontSize: "1.1rem", textDecoration: 'none' }}>
+                <button className="primary-btn glass-btn-primary" style={{ margin: "0 auto", padding: "1.5rem 3rem", fontSize: "1.1rem", textDecoration: 'none' }}>
                   {isAuthenticated ? "PROCEED TO DASHBOARD" : "JOIN To Kings"}
                 </button>
               </Link>
@@ -131,7 +131,7 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 viewport={{ once: true }}
-                className="arsenal-card"
+                className="arsenal-card glass-card"
               >
                 <div style={{ position: 'relative', height: '200px', borderRadius: '16px', overflow: 'hidden', marginBottom: '1.5rem' }}>
                   <img src={cat.image} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

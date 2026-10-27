@@ -110,7 +110,7 @@ const ForgotPassword = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="form-content"
+              className="form-content glass-card"
             >
               <div className="logo-header">
                 <h1>Kings Marketplace</h1>
@@ -129,7 +129,7 @@ const ForgotPassword = () => {
                   <div className="form__group field">
                     <input
                       type="email"
-                      className="fencing-input"
+                      className="fencing-input glass-input"
                       value={formData.email}
                       onChange={handleInputChange}
                       placeholder=" "
@@ -148,7 +148,7 @@ const ForgotPassword = () => {
 
                   <button
                     type="submit"
-                    className="fencing-btn"
+                    className="fencing-btn glass-btn-primary"
                     disabled={isLoading}
                   >
                     {isLoading ? "Sending..." : "Send Reset Instructions"}
@@ -157,7 +157,7 @@ const ForgotPassword = () => {
                   <div className="back-to-login">
                     <button
                       type="button"
-                      className="back-link"
+                      className="back-link glass-btn"
                       onClick={() => router.push("/sign-in")}
                       disabled={isLoading}
                     >
@@ -188,13 +188,13 @@ const ForgotPassword = () => {
                   </div>
                   <div className="action-buttons">
                     <button
-                      className="fencing-btn"
+                      className="fencing-btn glass-btn"
                       onClick={() => router.push("/sign-in")}
                     >
                       Return to Sign In
                     </button>
                     <button
-                      className="fencing-btn outline"
+                      className="fencing-btn outline glass-btn"
                       onClick={() => {
                         setIsSubmitted(false);
                         setFormData({ email: "" });

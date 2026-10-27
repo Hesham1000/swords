@@ -58,19 +58,19 @@ export default function WalletPage() {
   }, [refresh, page]);
 
   return (
-    <div className="page-content">
-      <div className="page-header">
+    <div className="page-content glass-card">
+      <div className="page-header glass-card-sm">
         <h1 className="page-title">Wallet & Transactions</h1>
         <div className="header-actions">
-          <button className="deposit-btn" onClick={() => { setWalletFormMode("deposit"); setShowDepositForm(true); }}>
+          <button className="deposit-btn glass-btn" onClick={() => { setWalletFormMode("deposit"); setShowDepositForm(true); }}>
             <Plus size={18} />
             <span>Deposit Fund</span>
           </button>
-          <button className="withdraw-btn" onClick={() => { setWalletFormMode("withdraw"); setShowDepositForm(true); }}>
+          <button className="withdraw-btn glass-btn" onClick={() => { setWalletFormMode("withdraw"); setShowDepositForm(true); }}>
             <ArrowDownCircle size={18} />
             <span>Withdraw Fund</span>
           </button>
-          <button className="shipment-btn" onClick={() => setShowShipmentForm(true)}>
+          <button className="shipment-btn glass-btn" onClick={() => setShowShipmentForm(true)}>
             <Truck size={18} />
             <span>Record Shipment</span>
           </button>
@@ -78,24 +78,24 @@ export default function WalletPage() {
       </div>
 
       <div className="stats-grid">
-        <div className="stat-card">
+        <div className="stat-card glass-card">
           <div className="stat-icon"><Wallet size={20} /></div>
           <h3 className="stat-title">EGP Balance</h3>
           <p className="stat-value">EGP {balance.EGP.toLocaleString()}</p>
         </div>
-        <div className="stat-card">
+        <div className="stat-card glass-card">
           <div className="stat-icon"><Wallet size={20} /></div>
           <h3 className="stat-title">USD Balance</h3>
           <p className="stat-value">$ {balance.USD.toLocaleString()}</p>
         </div>
-        <div className="stat-card">
+        <div className="stat-card glass-card">
           <div className="stat-icon"><Wallet size={20} /></div>
           <h3 className="stat-title">EUR Balance</h3>
           <p className="stat-value">€ {balance.EUR.toLocaleString()}</p>
         </div>
       </div>
 
-      <div className="list-card full-width">
+      <div className="list-card full-width glass-card">
         <div className="card-header">
           <h2 className="card-title">Transaction History</h2>
         </div>

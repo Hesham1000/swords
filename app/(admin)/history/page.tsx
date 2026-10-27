@@ -43,16 +43,16 @@ export default function HistoryPage() {
   }, [page]);
 
   return (
-    <div className="page-content">
-      <div className="page-header">
+    <div className="page-content glass-card">
+      <div className="page-header glass-card-sm">
         <h1 className="page-title">Inventory Audit Trail</h1>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
 
-      <div className="list-card full-width">
+      <div className="list-card full-width glass-card">
         <div className="history-list">
-          <div className="history-header-row">
+          <div className="history-header-row glass-card-sm">
             <div className="history-col-product">Product</div>
             <div className="history-col-change">Change</div>
             <div className="history-col-reason">Reason</div>
