@@ -128,9 +128,9 @@ export async function POST(request: NextRequest) {
     await userCollection.updateOne(
       { _id: user._id },
       {
-        $push: { sessions: newSession as any },
+        $push: { sessions: newSession },
         $set: { lastLogin: now }, // Update last login time
-      }
+      } as unknown as import("mongodb").UpdateFilter<import("mongodb").Document>,
     );
 
     // Prepare user data (exclude sensitive fields)

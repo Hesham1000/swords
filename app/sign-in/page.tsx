@@ -432,7 +432,7 @@ const FencingLogin = () => {
               </div>
               <AnimatePresence mode="wait">{renderLoginForm()}</AnimatePresence>
               <p className="signup">
-                Don't have an account?
+                Don&apos;t have an account?
                 <span
                   className="signup-toggle"
                   onClick={toggleForm}

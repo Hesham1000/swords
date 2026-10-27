@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { getInvoicesCollection, getProductsCollection } from "../../lib/mongoDB";
 import { ObjectId } from "mongodb";
 
+interface AnalyticsItemDoc {
+  productId: string;
+  name: string;
+  category?: string;
+  price: number;
+  quantity: number;
+}
+
+
 export async function GET(request: NextRequest) {
   try {
     const invoicesCollection = await getInvoicesCollection();
@@ -55,7 +64,7 @@ export async function GET(request: NextRequest) {
 
     const categorySales: Record<string, number> = {};
     invoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
+      (inv.items || []).forEach((item: AnalyticsItemDoc) => {
         const cat = productCategoryMap[item.productId] || item.category || "General";
         categorySales[cat] = (categorySales[cat] || 0) + (item.price * item.quantity);
       });
@@ -64,7 +73,7 @@ export async function GET(request: NextRequest) {
     // 5. TOP PRODUCTS
     const productSales: Record<string, {name: string, revenue: number, quantity: number}> = {};
     invoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
+      (inv.items || []).forEach((item: AnalyticsItemDoc) => {
         if (!productSales[item.productId]) {
           productSales[item.productId] = { name: item.name, revenue: 0, quantity: 0 };
         }

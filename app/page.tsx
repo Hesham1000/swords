@@ -1,7 +1,7 @@
 // app/page.tsx - Premium KINGS Landing Page
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
 import {
@@ -32,14 +32,12 @@ const KingsLogo = () => (
 );
 
 export default function LandingPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { scrollYProgress } = useScroll();
 
-  useEffect(() => {
-    const cookies = document.cookie.split(";");
-    const hasToken = cookies.some((c) => c.trim().startsWith("logged_in="));
-    setIsAuthenticated(hasToken);
-  }, []);
+  const subscribeAuth = () => () => {};
+  const getAuthSnapshot = () =>
+    document.cookie.split(";").some((c) => c.trim().startsWith("logged_in="));
+  const isAuthenticated = useSyncExternalStore(subscribeAuth, getAuthSnapshot, () => false);
 
   const features = [
     { title: "Smart Dashboard", description: "Real-time analytics and inventory tracking for elite fencers.", icon: LayoutDashboard },

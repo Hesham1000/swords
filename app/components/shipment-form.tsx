@@ -32,8 +32,8 @@ const ShipmentForm: React.FC<ShipmentFormProps> = ({ onClose, onSuccess }) => {
       await createShipment({ destination, cost: numCost, description, date });
       if (onSuccess) onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
