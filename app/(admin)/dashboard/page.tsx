@@ -24,7 +24,7 @@ export default function DashboardOverview() {
 
   if (!dashboardData && !error) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 gap-4">
+      <div className="flex flex-col items-center justify-center p-20 gap-4 glass-card">
         <Loader2 className="animate-spin text-blue-500" size={40} />
         <p className="text-slate-400 font-medium">Gathering command data...</p>
       </div>
@@ -50,7 +50,7 @@ export default function DashboardOverview() {
     icon: React.ElementType;
     prefix?: string;
   }) => (
-    <div className="stat-card">
+    <div className="stat-card glass-card">
       <div className="stat-icon">
         <Icon size={20} />
       </div>
@@ -183,7 +183,7 @@ export default function DashboardOverview() {
         </div>
 
         {/* Low Stock Alerts */}
-        <div className="list-card">
+        <div className="list-card glass-card">
           <div className="card-header">
             <h2 className="card-title">Low Stock Alerts</h2>
             <div className={`alert-badge-count ${lowStockItems.length > 0 ? 'active' : ''}`}>{lowStockItems.length} Items</div>
@@ -203,7 +203,7 @@ export default function DashboardOverview() {
         </div>
 
         {/* Recent Invoices */}
-        <div className="list-card">
+        <div className="list-card glass-card">
           <div className="card-header"><h2 className="card-title">Recent Invoices</h2></div>
           <div className="invoice-list">
             {recentInvoices.map((invoice) => (

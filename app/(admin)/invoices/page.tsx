@@ -50,12 +50,12 @@ export default function InvoicesPage() {
   };
 
   return (
-    <div className="page-content">
-      <div className="page-header">
+    <div className="page-content glass-card">
+      <div className="page-header glass-card-sm">
         <h1 className="page-title">Invoices Management</h1>
         {isAdmin && (
           <button
-            className="primary-btn"
+            className="primary-btn glass-btn-primary"
             onClick={() => {
               setEditingInvoice(null);
               setShowForm(true);
@@ -67,7 +67,7 @@ export default function InvoicesPage() {
         )}
       </div>
 
-      <div className="filter-bar">
+      <div className="filter-bar glass-card-sm">
         <div className="search-wrapper">
           <Search size={18} className="search-icon" />
           <input
@@ -78,14 +78,14 @@ export default function InvoicesPage() {
               setSearchQuery(e.target.value);
               setPage(1);
             }}
-            className="search-input"
+            className="search-input glass-input"
           />
         </div>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
 
-      <div className="list-card full-width">
+      <div className="list-card full-width glass-card">
         <div className="invoice-list">
           {loading ? (
             <div className="loading-state">
