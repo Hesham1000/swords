@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -22,16 +23,24 @@ function StatCard({
   value,
   change,
   icon: Icon,
-  prefix = ""
+  prefix = "",
+  delay = 0
 }: {
   title: string;
   value: number;
   change: number;
   icon: React.ElementType;
   prefix?: string;
+  delay: number;
 }) {
   return (
-    <div className="md-card">
+    <motion.div
+      className="md-card"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -2 }}
+    >
       <div className="stat-icon" style={{ background: "var(--primary)" }}>
         <Icon size={20} style={{ color: "#ffffff" }} />
       </div>
@@ -43,7 +52,7 @@ function StatCard({
       <p className="stat-value" style={{ color: "var(--text-primary)" }}>
         {prefix}{value.toLocaleString()}
       </p>
-    </div>
+    </motion.div>
   );
 }
 
@@ -70,31 +79,22 @@ export default function DashboardOverview() {
   return (
     <>
       <div className="stats-grid">
-        <StatCard
-          title="Revenue"
-          value={summary.totalRevenue}
-          change={12.5} // Mock trend for now
-          icon={DollarSign}
-          prefix="EGP "
-        />
-        <StatCard
-          title="Orders"
-          value={summary.totalOrders}
-          change={8.3}
-          icon={ShoppingCart}
-        />
-        <StatCard
-          title="Inventory"
-          value={summary.totalInventoryCount}
-          change={5.2}
-          icon={Package}
-        />
-        <StatCard
-          title="Audience"
-          value={summary.uniqueCustomers}
-          change={15.7}
-          icon={Users}
-        />
+        {[
+          { key: "revenue", title: "Revenue", value: summary.totalRevenue, change: 12.5, icon: DollarSign, prefix: "EGP " },
+          { key: "orders", title: "Orders", value: summary.totalOrders, change: 8.3, icon: ShoppingCart, prefix: "" },
+          { key: "inventory", title: "Inventory", value: summary.totalInventoryCount, change: 5.2, icon: Package, prefix: "" },
+          { key: "audience", title: "Audience", value: summary.uniqueCustomers, change: 15.7, icon: Users, prefix: "" }
+        ].map((card, index) => (
+          <StatCard
+            key={card.key}
+            title={card.title}
+            value={card.value}
+            change={card.change}
+            icon={card.icon}
+            prefix={card.prefix}
+            delay={index * 0.08}
+          />
+        ))}
       </div>
 
       <div className="dashboard-grid">
@@ -194,11 +194,17 @@ export default function DashboardOverview() {
             {lowStockItems.length === 0 ? (
               <div className="empty-alerts"><CheckCircle size={32} /><p>All healthy</p></div>
             ) : (
-              lowStockItems.slice(0, 5).map(product => (
-                <div key={product.id} className={`alert-item ${product.quantity === 0 ? 'critical' : 'warning'}`}>
+              lowStockItems.slice(0, 5).map((product, index) => (
+                <motion.div
+                  key={product.id}
+                  className={`alert-item ${product.quantity === 0 ? 'critical' : 'warning'}`}
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                >
                   <AlertCircle size={14} className="alert-icon" />
                   <div className="alert-info"><span className="alert-name">{product.name}</span><span className="alert-stock">{product.quantity} left</span><span className={product.quantity === 0 ? "md-badge-red" : "md-badge-amber"}>Low stock</span></div>
-                </div>
+                </motion.div>
               ))
             )}
           </div>
@@ -217,14 +223,19 @@ export default function DashboardOverview() {
               </tr>
             </thead>
             <tbody>
-              {recentInvoices.map((invoice) => (
-                <tr key={invoice._id || invoice.invoiceId}>
+              {recentInvoices.map((invoice, index) => (
+                <motion.tr
+                  key={invoice._id || invoice.invoiceId}
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                >
                   <td><div className="invoice-id">{invoice.invoiceId}</div></td>
                   <td><div className="invoice-customer">{invoice.customer}</div></td>
                   <td><div className="invoice-amount">{invoice.amount.toLocaleString()} EGP</div></td>
-                  <td><div className="invoice-date">{invoice.date}</div></td>
-                </tr>
-              ))}
+                    <td><div className="invoice-date">{invoice.date}</div></td>
+                  </motion.tr>
+                ))}
             </tbody>
           </table>
           <button className="view-all-btn" onClick={() => router.push("/invoices")}>View All Invoices</button>
