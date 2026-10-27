@@ -102,7 +102,7 @@ export default function LandingPage() {
               <span className="glow-text" style={{ color: "#f59e0b" }}>ARSENAL</span>
             </h1>
             <p className="hero-description" style={{ color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-              Direct access to **PBT**, **Allstar**, and **Uhlmann**. The premier marketplace and command center for the global fencing community. 
+              Direct access to <strong>PBT</strong>, <strong>Allstar</strong>, and <strong>Uhlmann</strong>. The premier marketplace and command center for the global fencing community. 
               Manage your gear, track your performance, and dominate the strip.
             </p>
 
