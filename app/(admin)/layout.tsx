@@ -137,7 +137,8 @@ export default function DashboardLayout({
             width: 40px;
             height: 40px;
             border: 4px solid #e5e7eb;
-            border-top-color: #7c2d3a;
+            border-top-color: var(--primary);
+              color: var(--primary);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
           }
