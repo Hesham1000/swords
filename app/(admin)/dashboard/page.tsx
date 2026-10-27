@@ -33,7 +33,7 @@ function StatCard({
   return (
     <div className="md-card">
       <div className="stat-icon" style={{ background: "var(--primary)" }}>
-        <Icon size={20} />
+        <Icon size={20} style={{ color: "#ffffff" }} />
       </div>
       <div className={change >= 0 ? "md-badge-green" : "md-badge-red"}>
         {change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}

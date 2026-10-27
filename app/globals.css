@@ -1992,8 +1992,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary);
+  color: white;
   margin-bottom: 1.25rem;
+  flex-shrink: 0;
 }
 
 .stat-title {
