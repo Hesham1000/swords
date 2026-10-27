@@ -33,8 +33,8 @@ export default function HistoryPage() {
         if (response.pagination) {
           setPagination(response.pagination);
         }
-      } catch (err: any) {
-        setError(err.message || "Failed to load history");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load history");
       } finally {
         setLoading(false);
       }
@@ -52,7 +52,7 @@ export default function HistoryPage() {
 
       <div className="list-card full-width">
         <div className="history-list">
-          <div className="history-header-row">
+          <div className="history-header-row" style={{ borderBottom: 'var(--glass-border)', paddingBottom: '1rem' }}>
             <div className="history-col-product">Product</div>
             <div className="history-col-change">Change</div>
             <div className="history-col-reason">Reason</div>
@@ -65,7 +65,7 @@ export default function HistoryPage() {
             <div className="empty-state">No transaction history found.</div>
           ) : (
             logs.map((log) => (
-              <div key={log._id} className="history-item">
+              <div key={log._id} className="history-item" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)', padding: '1rem 0' }}>
                 <div className="history-col-product">
                   <span className="log-product-name">{log.productName}</span>
                   <span className="log-product-id">ID: {log.productId}</span>
@@ -90,6 +90,7 @@ export default function HistoryPage() {
         </div>
 
         {pagination && pagination.totalItems > 0 && (
+          <div className="glass-card" style={{ padding: '1rem', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
           <div className="pagination-footer">
             <div className="pagination-info">
               Showing page <span>{pagination.currentPage}</span> of <span>{pagination.totalPages}</span>
@@ -111,6 +112,7 @@ export default function HistoryPage() {
                 Next
               </button>
             </div>
+          </div>
           </div>
         )}
       </div>

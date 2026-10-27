@@ -15,7 +15,14 @@ export default function ProductsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState<any>(null);
+  interface Pagination {
+    page: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+    totalCount: number;
+  }
+  const [pagination, setPagination] = useState<Pagination | null>(null);
   const [refresh, setRefresh] = useState(false);
   const lastParamsRef = useRef("");
 
@@ -40,9 +47,9 @@ export default function ProductsPage() {
           brand: filterBrand,
         });
         setProducts(response.data);
-        setPagination(response.pagination);
-      } catch (err: any) {
-        setError(err.message || "Failed to load products");
+        setPagination(response.pagination ?? null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load products");
       } finally {
         setLoading(false);
       }
@@ -55,8 +62,8 @@ export default function ProductsPage() {
     try {
       await deleteProduct(id);
       setRefresh(!refresh);
-    } catch (err: any) {
-      alert(err.message || "Failed to delete product");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete product");
     }
   };
 
@@ -94,7 +101,8 @@ export default function ProductsPage() {
               setSearchQuery(e.target.value);
               setPage(1);
             }}
-            className="search-input"
+            className="glass-input"
+          style={{ width: '100%', maxWidth: '400px' }}
           />
         </div>
         
@@ -105,7 +113,7 @@ export default function ProductsPage() {
               setFilterCategory(e.target.value);
               setPage(1);
             }}
-            className="filter-select"
+            className="filter-select glass-input"
           >
             <option value="">All Categories</option>
             <option value="Epée">Epée</option>
@@ -119,7 +127,7 @@ export default function ProductsPage() {
               setFilterType(e.target.value);
               setPage(1);
             }}
-            className="filter-select"
+            className="filter-select glass-input"
           >
             <option value="">All Types</option>
             <option value="lame">Lamé</option>
@@ -145,7 +153,7 @@ export default function ProductsPage() {
               setFilterBrand(e.target.value);
               setPage(1);
             }}
-            className="filter-select"
+            className="filter-select glass-input"
           >
             <option value="">All Brands</option>
             <option value="pbt">PBT</option>
@@ -185,19 +193,23 @@ export default function ProductsPage() {
         isAdmin={isAdmin}
         currentPage={page}
         onPageChange={setPage}
-        pagination={pagination}
+        pagination={pagination ?? undefined}
       />
 
       {showForm && (
-        <ProductForm
-          onClose={() => setShowForm(false)}
-          onSuccess={() => {
-            setShowForm(false);
-            setRefresh(!refresh);
-          }}
-          initialData={editingProduct || undefined}
-          isEdit={!!editingProduct}
-        />
+        <div className="glass-modal-overlay">
+          <div className="glass-modal" style={{ padding: '2rem' }}>
+            <ProductForm
+              onClose={() => setShowForm(false)}
+              onSuccess={() => {
+                setShowForm(false);
+                setRefresh(!refresh);
+              }}
+              initialData={editingProduct || undefined}
+              isEdit={!!editingProduct}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

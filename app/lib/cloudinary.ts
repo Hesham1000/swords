@@ -52,7 +52,7 @@ export function getRelativePathFromUrl(url: string): string {
 /**
  * Deletes an image from Cloudinary using its public_id
  */
-export async function deleteImage(publicId: string): Promise<any> {
+export async function deleteImage(publicId: string): Promise<{ result: string }> {
   return new Promise((resolve, reject) => {
     cloudinary.uploader.destroy(publicId, (error, result) => {
       if (error) {

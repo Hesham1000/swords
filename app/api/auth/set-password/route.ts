@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     // Add session to user
     await userCollection.updateOne(
       { _id: ObjectId.createFromHexString(userId) },
-      { $push: { sessions: newSession as any } }
+      { $push: { sessions: newSession } } as unknown as import("mongodb").UpdateFilter<import("mongodb").Document>
     );
 
     const res = NextResponse.json(
