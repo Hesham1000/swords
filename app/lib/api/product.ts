@@ -276,3 +276,40 @@ export async function searchProducts(query: string): Promise<ProductsResponse> {
     throw error;
   }
 }
+
+export interface ProductFiltersResponse {
+  success: boolean;
+  data: {
+    categories: string[];
+    brands: string[];
+    types: string[];
+  };
+}
+
+/**
+ * Fetch dynamic filter options (categories, brands, types) for the products page
+ */
+export async function getProductFilters(): Promise<ProductFiltersResponse> {
+  try {
+    const url = new URL(`${apiUrl}/api/products/filters`, window.location.origin);
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to fetch product filters");
+    }
+
+    const data: ProductFiltersResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching product filters:", error);
+    throw error;
+  }
+}
