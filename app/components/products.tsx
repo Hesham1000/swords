@@ -13,6 +13,8 @@ interface ProductRowProps {
   onDelete?: (productId: string) => void;
   isAdmin?: boolean;
   onStockChange?: (id: string, qty: number) => void;
+  isSelected?: boolean;
+  onSelect?: (id: string) => void;
 }
 
 const ProductRow: React.FC<ProductRowProps> = ({
@@ -21,6 +23,8 @@ const ProductRow: React.FC<ProductRowProps> = ({
   onDelete,
   isAdmin,
   onStockChange,
+  isSelected,
+  onSelect,
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const images = product.images || [];

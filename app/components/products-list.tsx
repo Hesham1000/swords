@@ -22,6 +22,9 @@ interface ProductsListProps {
   isAdmin?: boolean;
   currentPage?: number;
   onStockChange?: (id: string, qty: number) => void;
+  selectedIds?: string[];
+  onSelect?: (id: string) => void;
+  onSelectAll?: (ids: string[]) => void;
 }
 
 const ProductsList: React.FC<ProductsListProps> = ({
@@ -34,6 +37,9 @@ const ProductsList: React.FC<ProductsListProps> = ({
   onPageChange,
   isAdmin,
   onStockChange,
+  selectedIds,
+  onSelect,
+  onSelectAll,
 }) => {
   if (loading) {
     return (
@@ -66,6 +72,18 @@ const ProductsList: React.FC<ProductsListProps> = ({
 
   return (
     <div className="products-list-container">
+      {/* Select All */}
+      {onSelectAll && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, accentColor: "var(--accent-blue)" }}>
+          <input
+            type="checkbox"
+            checked={products.length > 0 && products.every((p) => selectedIds?.includes(p.id))}
+            onChange={() => onSelectAll(products.map((p) => p.id))}
+          />
+          <label>Select All</label>
+        </div>
+      )}
+
       {/* Products Grid */}
       <div className="products-grid">
         {products.map((product) => (
@@ -75,6 +93,8 @@ const ProductsList: React.FC<ProductsListProps> = ({
             onEdit={onEdit}
             onDelete={onDelete}
             isAdmin={isAdmin}
+            isSelected={selectedIds?.includes(product.id)}
+            onSelect={onSelect}
           />
         ))}
       </div>
