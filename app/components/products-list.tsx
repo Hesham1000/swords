@@ -95,6 +95,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
             isAdmin={isAdmin}
             isSelected={selectedIds?.includes(product.id)}
             onSelect={onSelect}
+            onStockChange={onStockChange}
           />
         ))}
       </div>

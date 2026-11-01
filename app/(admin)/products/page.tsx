@@ -305,6 +305,7 @@ export default function ProductsPage() {
         selectedIds={selectedIds}
         onSelect={handleSelect}
         onSelectAll={handleSelectAll}
+          onStockChange={handleStockChange}
       />
 
       {showForm && (

@@ -62,6 +62,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
       transition={{ duration: 0.4 }}
     >
       <div className="product-image-container">
+          {onSelect && <input type="checkbox" checked={isSelected ?? false} onChange={() => onSelect(product.id)} onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', top: '8px', left: '8px', zIndex: 10, width: '18px', height: '18px', accentColor: 'var(--accent-blue)', cursor: 'pointer' }} />}
         <AnimatePresence mode="wait">
           {images.length > 0 ? (
             <motion.img
