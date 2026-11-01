@@ -1,4 +1,13 @@
 import mongoose, { Connection, ConnectOptions } from "mongoose";
+import type { Collection, Document } from "mongodb";
+
+export interface WalletDocument extends Document {
+  _id: string;
+  balanceEGP: number;
+  balanceUSD: number;
+  balanceEUR: number;
+  initialized?: boolean;
+}
 
 declare global {
   var _mongooseConnection: Connection | null;
@@ -71,8 +80,8 @@ const dbConnection = async (): Promise<Connection> => {
     }
 
     return mongoose.connection;
-  } catch (err: any) {
-    console.error("❌ Database connection error:", err.message);
+  } catch (err) {
+    console.error("❌ Database connection error:", err instanceof Error ? err.message : err);
     console.error("📋 Full error details:", err);
 
     // Exit process on connection failure
@@ -105,6 +114,13 @@ export const getConnection = async (): Promise<Connection> => {
   console.log("🔄 No active connection, establishing new connection...");
   return await dbConnection();
 };
+
+export interface UserSession {
+  session_id: string;
+  token: string;
+  refresh: string;
+  last_action: Date;
+}
 
 export const getUserCollection = async () => {
   console.log("📁 Accessing users collection...");
@@ -167,7 +183,7 @@ export const getWalletCollection = async () => {
   console.log("📁 Accessing wallet collection...");
   try {
     const connection = await getConnection();
-    const collection = connection.collection("wallet");
+    const collection = connection.collection<WalletDocument>("wallet");
     console.log("✅ Wallet collection accessed successfully");
     return collection;
   } catch (error) {

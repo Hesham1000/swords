@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getInvoicesCollection, getProductsCollection, getWalletCollection, getWalletTransactionsCollection } from "../../lib/mongoDB";
+import type { InvoiceItem } from "../../lib/api/invoice";
 import ApiError from "../../utils/ApiError";
 import { v4 as uuidv4 } from "uuid";
 import { ObjectId } from "mongodb";
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
 
         // Add to wallet balance (EGP) - assuming EGP for now as per user request
         await walletCollection.updateOne(
-          { _id: "main" as any },
+          { _id: "main" },
           { $inc: { balanceEGP: finalAmount } },
           { upsert: true }
         );
@@ -177,7 +178,7 @@ export async function PATCH(request: NextRequest) {
 
       // Process new items (Updates and Additions)
       for (const newItem of items) {
-        const oldItem = oldItems.find((oi: any) => oi.productId === newItem.productId);
+        const oldItem = oldItems.find((oi: InvoiceItem) => oi.productId === newItem.productId);
         processedOldProductIds.add(newItem.productId);
 
         const oldQty = oldItem ? oldItem.quantity : 0;
@@ -249,7 +250,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // 2. PREPARE UPDATE DATA
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (status) updateData.status = status;
     if (customer) updateData.customer = customer;
     if (amount !== undefined) updateData.amount = parseFloat(amount);
@@ -282,7 +283,7 @@ export async function PATCH(request: NextRequest) {
         if (remainingBalance > 0) {
           try {
             await walletCollection.updateOne(
-              { _id: "main" as any },
+              { _id: "main" },
               { $inc: { balanceEGP: remainingBalance } },
               { upsert: true }
             );
@@ -306,7 +307,7 @@ export async function PATCH(request: NextRequest) {
       if (additionalDeposit > 0) {
          try {
             await walletCollection.updateOne(
-              { _id: "main" as any },
+              { _id: "main" },
               { $inc: { balanceEGP: additionalDeposit } },
               { upsert: true }
             );

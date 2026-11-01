@@ -8,6 +8,7 @@ export interface InvoiceItem {
   price: number | null;
   quantity: number;
   discount: number; // fixed amount discount per unit (e.g. 10 EGP off)
+  category?: string;
 }
 
 export interface Invoice {
@@ -100,7 +101,7 @@ export async function createInvoice(invoiceData: Partial<Invoice>): Promise<Invo
 /**
  * Update invoice status or add deposit
  */
-export async function updateInvoiceStatus(id: string, status?: string, deposit?: number): Promise<any> {
+export async function updateInvoiceStatus(id: string, status?: string, deposit?: number): Promise<unknown> {
   try {
     const response = await fetch(`${apiUrl}/api/invoices`, {
       method: "PATCH",

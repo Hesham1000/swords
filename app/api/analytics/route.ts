@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getInvoicesCollection, getProductsCollection } from "../../lib/mongoDB";
 import { ObjectId } from "mongodb";
+import type { InvoiceItem } from "../../lib/api/invoice";
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,20 +56,20 @@ export async function GET(request: NextRequest) {
 
     const categorySales: Record<string, number> = {};
     invoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
+      (inv.items || []).forEach((item: InvoiceItem) => {
         const cat = productCategoryMap[item.productId] || item.category || "General";
-        categorySales[cat] = (categorySales[cat] || 0) + (item.price * item.quantity);
+        categorySales[cat] = (categorySales[cat] || 0) + ((item.price ?? 0) * item.quantity);
       });
     });
 
     // 5. TOP PRODUCTS
     const productSales: Record<string, {name: string, revenue: number, quantity: number}> = {};
     invoices.forEach(inv => {
-      (inv.items || []).forEach((item: any) => {
+      (inv.items || []).forEach((item: InvoiceItem) => {
         if (!productSales[item.productId]) {
           productSales[item.productId] = { name: item.name, revenue: 0, quantity: 0 };
         }
-        productSales[item.productId].revenue += (item.price * item.quantity);
+        productSales[item.productId].revenue += ((item.price ?? 0) * item.quantity);
         productSales[item.productId].quantity += item.quantity;
       });
     });

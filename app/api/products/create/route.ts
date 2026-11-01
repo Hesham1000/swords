@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       name,
       description: description || "",
       price: price ? parseFloat(price) : null,
-      category: category as any,
+      category: category as ("Foil" | "Sabre" | "Epée")[],
       productType: productType,
       quantity: parseInt(quantity),
       images: imagePaths,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Document, UpdateFilter } from "mongodb";
 import { verifyPassword } from "../../../lib/auth/password";
 import { generateToken } from "../../../lib/auth/token";
 import { v4 as uuidv4 } from "uuid";
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
     await userCollection.updateOne(
       { _id: user._id },
       {
-        $push: { sessions: newSession as any },
+        $push: { sessions: newSession } as unknown as UpdateFilter<Document>,
         $set: { lastLogin: now }, // Update last login time
       }
     );
