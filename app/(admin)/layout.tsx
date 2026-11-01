@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
-import { Menu, X, Loader2 } from "lucide-react";
+import { Menu, X, Loader2, Bell } from "lucide-react";
 import Sidebar from "../components/sidebar";
 import { getCurrentUser, User } from "../lib/api/auth";
 import { getDashboardSummary, DashboardSummaryData } from "../lib/api/dashboard";
@@ -225,7 +225,17 @@ export default function DashboardLayout({
             {pathname.includes("/wallet") && "Wallet Management"}
             {pathname.includes("/history") && "Inventory History"}
           </h2>
-          <div></div>
+          <button
+            className="notification-bell"
+            onClick={() => router.push("/dashboard")}
+          >
+            <Bell size={20} />
+            {dashboardData?.lowStockItems && dashboardData.lowStockItems.length > 0 && (
+              <span className="notification-badge">
+                {dashboardData.lowStockItems.length}
+              </span>
+            )}
+          </button>
         </div>
 
         <div className="content-wrapper">

@@ -10,7 +10,8 @@ import {
   Users, 
   Loader2, 
   AlertCircle, 
-  CheckCircle 
+  CheckCircle, 
+  Download 
 } from "lucide-react";
 import { DashboardSummaryData } from "../../lib/api/dashboard";
 import { updateInvoiceStatus } from "../../lib/api/invoice";
@@ -20,11 +21,33 @@ import { useDashboard } from "../layout";
 export default function DashboardOverview() {
   const { user, isAdmin, dashboardData, refreshDashboard, selectedPeriod, refreshDashboardWithPeriod } = useDashboard();
   const [periodLoading, setPeriodLoading] = useState(false);
+  const recentInvoices = dashboardData?.recentInvoices ?? [];
 
   const handlePeriodChange = async (period: "today" | "week" | "month") => {
     setPeriodLoading(true);
     await refreshDashboardWithPeriod(period);
     setPeriodLoading(false);
+  };
+
+  const handleExportCSV = () => {
+    if (!recentInvoices?.length) return;
+    const escapeCSV = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
+    const csvString = [
+      "Invoice ID,Customer,Amount,Date,Status",
+      ...recentInvoices.map((invoice) =>
+        [invoice.invoiceId, invoice.customer, invoice.amount, invoice.date, invoice.status]
+          .map(escapeCSV)
+          .join(",")
+      ),
+    ].join("\n");
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'invoices.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
   };
   const router = useRouter();
   const [error, setError] = useState("");
@@ -42,7 +65,7 @@ export default function DashboardOverview() {
     return <div className="error-banner">{error}</div>;
   }
 
-  const { summary, recentInvoices, lowStockItems, analytics } = dashboardData!;
+  const { summary, lowStockItems, analytics } = dashboardData!;
 
   const calculateTrend = (values: number[]): number => {
     if (values.length < 2) return 0;
@@ -251,7 +274,15 @@ export default function DashboardOverview() {
 
         {/* Recent Invoices */}
         <div className="list-card">
-          <div className="card-header"><h2 className="card-title">Recent Invoices</h2></div>
+          <div className="card-header">
+              <h2 className="card-title">Recent Invoices</h2>
+              <div className="header-actions">
+                <button className="refresh-btn" onClick={handleExportCSV} title="Export CSV">
+                  <Download size={16} />
+                  <span>Export CSV</span>
+                </button>
+              </div>
+            </div>
           <div className="invoice-list">
             {recentInvoices.map((invoice) => (
               <div key={invoice._id || invoice.invoiceId} className={`invoice-item status-${invoice.status}`}>
