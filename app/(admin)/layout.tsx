@@ -86,7 +86,13 @@ export default function DashboardLayout({
           getDashboardSummary()
         ]);
         
-        if (userData) setUser(userData.user);
+          if (userData) {
+            setUser(userData.user);
+          } else {
+            // Session expired or missing — redirect to sign-in
+            router.replace("/sign-in");
+            return;
+          }
         if (summaryRes.success) setDashboardData(summaryRes.data);
       } catch (error) {
         console.error("Dashboard Initialization Error:", error);
@@ -114,6 +120,27 @@ export default function DashboardLayout({
       router.replace("/products");
     }
   }, [user, loading, pathname, router]);
+
+  // Re-validate session when the tab regains focus (handles stale backgrounded tabs)
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === "visible") {
+        try {
+          const userData = await getCurrentUser();
+          if (!userData) {
+            router.replace("/sign-in");
+          }
+        } catch (error) {
+          console.error("Session re-validation error:", error);
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [router]);
 
   const currentPage = pathname.split("/").pop() || "dashboard";
 
