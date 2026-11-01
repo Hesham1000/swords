@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Package, Plus, X, Loader2 } from "lucide-react";
 import ProductForm from "../../components/productform";
 import ProductsList from "../../components/products-list";
-import { getProducts, deleteProduct, Product, getProductFilters } from "../../lib/api/product";
+import { getProducts, deleteProduct, updateProduct, Product, getProductFilters } from "../../lib/api/product";
 import { useDashboard } from "../layout";
 
 export default function ProductsPage() {
@@ -70,6 +70,48 @@ export default function ProductsPage() {
       setRefresh(!refresh);
     } catch (err: any) {
       alert(err.message || "Failed to delete product");
+    }
+  };
+
+  const handleStockChange = async (id: string, newQty: number) => {
+    const product = products.find((p) => p.id === id);
+    if (!product) return;
+
+    // Optimistic local update
+    const prevProducts = products;
+    setProducts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, quantity: newQty } : p))
+    );
+
+    try {
+      // updateProduct expects a full FormData payload
+      const formData = new FormData();
+      formData.append("name", product.name);
+      formData.append("description", product.description);
+      if (product.price !== null && product.price !== undefined) {
+        formData.append("price", String(product.price));
+      }
+      (product.category || []).forEach((cat) => formData.append("category", cat));
+      formData.append("productType", product.productType);
+      if (product.brand) formData.append("brand", product.brand);
+      if (product.model) formData.append("model", product.model);
+      if (product.subCategory) formData.append("subCategory", product.subCategory);
+      if (product.hand) formData.append("hand", product.hand);
+      formData.append("isKings", String(!!product.isKings));
+      formData.append("isMini", String(!!product.isMini));
+      if (product.lameColor) formData.append("lameColor", product.lameColor);
+      if (product.material) formData.append("material", product.material);
+      if (product.gloveSize) formData.append("gloveSize", product.gloveSize);
+      formData.append("quantity", String(newQty));
+      if (product.images && product.images.length > 0) {
+        formData.append("existingImages", JSON.stringify(product.images));
+      }
+
+      await updateProduct(id, formData);
+    } catch (err: any) {
+      // Revert on failure
+      setProducts(prevProducts);
+      alert(err?.message || "Failed to update stock");
     }
   };
 

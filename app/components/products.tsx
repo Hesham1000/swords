@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Edit, X, Package, Crown, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
+import { Edit, X, Package, Crown, ChevronLeft, ChevronRight, AlertCircle, Minus, Plus } from "lucide-react";
 import { Product } from "../lib/api/product";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
@@ -12,6 +12,7 @@ interface ProductRowProps {
   onEdit?: (product: Product) => void;
   onDelete?: (productId: string) => void;
   isAdmin?: boolean;
+  onStockChange?: (id: string, qty: number) => void;
 }
 
 const ProductRow: React.FC<ProductRowProps> = ({
@@ -19,6 +20,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
   onEdit,
   onDelete,
   isAdmin,
+  onStockChange,
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const images = product.images || [];
@@ -199,6 +201,23 @@ const ProductRow: React.FC<ProductRowProps> = ({
           <div className={`stock-tag ${product.quantity < 3 ? (product.quantity === 0 ? 'critical' : 'warning') : ''}`}>
             {product.quantity < 3 ? <AlertCircle size={12} /> : <Package size={12} />}
             <span>{product.quantity} AVAILABLE</span>
+          </div>
+          <div className="stock-controls">
+            <button
+              onClick={() => onStockChange?.(product.id, product.quantity - 1)}
+              disabled={product.quantity === 0}
+              style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid var(--border-tech)", background: "var(--glass-bg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+              title="Decrease stock"
+            >
+              <Minus size={14} />
+            </button>
+            <button
+              onClick={() => onStockChange?.(product.id, product.quantity + 1)}
+              style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid var(--border-tech)", background: "var(--glass-bg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+              title="Increase stock"
+            >
+              <Plus size={14} />
+            </button>
           </div>
         </div>
       </div>

@@ -21,6 +21,7 @@ interface ProductsListProps {
   onPageChange?: (page: number) => void;
   isAdmin?: boolean;
   currentPage?: number;
+  onStockChange?: (id: string, qty: number) => void;
 }
 
 const ProductsList: React.FC<ProductsListProps> = ({
@@ -32,6 +33,7 @@ const ProductsList: React.FC<ProductsListProps> = ({
   pagination,
   onPageChange,
   isAdmin,
+  onStockChange,
 }) => {
   if (loading) {
     return (
