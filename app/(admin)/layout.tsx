@@ -15,7 +15,7 @@ interface DashboardContextType {
   setSidebarOpen: (open: boolean) => void;
   sidebarOpen: boolean;
   dashboardData: DashboardSummaryData | null;
-  refreshDashboard: () => void;
+  refreshDashboard: (period?: "today" | "week" | "month") => void;
 }
 
 const DashboardContext = React.createContext<DashboardContextType | null>(null);
@@ -39,6 +39,7 @@ export default function DashboardLayout({
   const [dashboardData, setDashboardData] = useState<DashboardSummaryData | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [period, setPeriod] = useState<"today" | "week" | "month">("month");
   const fetchedRef = useRef(false);
 
   // Check for mobile on mount and window resize
@@ -58,7 +59,8 @@ export default function DashboardLayout({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const refreshDashboard = () => {
+  const refreshDashboard = (p?: "today" | "week" | "month") => {
+    if (p) setPeriod(p);
     fetchedRef.current = false;
     setRefreshTrigger(prev => prev + 1);
   };
@@ -83,7 +85,7 @@ export default function DashboardLayout({
         // Fetch User and Dashboard Summary together
         const [userData, summaryRes] = await Promise.all([
           getCurrentUser(),
-          getDashboardSummary()
+          getDashboardSummary(period)
         ]);
         
           if (userData) {

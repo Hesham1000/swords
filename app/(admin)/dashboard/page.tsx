@@ -21,6 +21,18 @@ export default function DashboardOverview() {
   const { user, isAdmin, dashboardData, refreshDashboard } = useDashboard();
   const router = useRouter();
   const [error, setError] = useState("");
+  const [selectedPeriod, setSelectedPeriod] = useState<"today" | "week" | "month">("month");
+  const [isFiltering, setIsFiltering] = useState(false);
+
+  const handlePeriodChange = async (p: "today" | "week" | "month") => {
+    setSelectedPeriod(p);
+    setIsFiltering(true);
+    try {
+      refreshDashboard(p);
+    } finally {
+      setIsFiltering(false);
+    }
+  };
 
   if (!dashboardData && !error) {
     return (
@@ -36,6 +48,23 @@ export default function DashboardOverview() {
   }
 
   const { summary, recentInvoices, lowStockItems, analytics } = dashboardData!;
+
+  // Compute real trend percentages from the analytics trends array:
+  // compare the first half of the period against the second half.
+  const trends = analytics?.trends ?? [];
+  const half = Math.floor(trends.length / 2);
+  const firstHalf = trends.slice(0, half);
+  const secondHalf = trends.slice(half);
+  const sum = (arr: typeof trends, key: "revenue" | "orders") =>
+    arr.reduce((acc, t) => acc + (t[key] || 0), 0);
+
+  const pctChange = (first: number, second: number) => {
+    if (first === 0) return second === 0 ? 0 : 100;
+    return ((second - first) / first) * 100;
+  };
+
+  const revenueChange = pctChange(sum(firstHalf, "revenue"), sum(secondHalf, "revenue"));
+  const ordersChange = pctChange(sum(firstHalf, "orders"), sum(secondHalf, "orders"));
 
   const StatCard = ({
     title,
@@ -67,30 +96,42 @@ export default function DashboardOverview() {
 
   return (
     <>
+      <div className="period-filters">
+        {(["today", "week", "month"] as const).map((p) => (
+          <button
+            key={p}
+            className={`period-btn ${selectedPeriod === p ? "active" : ""}`}
+            onClick={() => handlePeriodChange(p)}
+            disabled={isFiltering}
+          >
+            {p.charAt(0).toUpperCase() + p.slice(1)}
+          </button>
+        ))}
+      </div>
       <div className="stats-grid">
         <StatCard
           title="Revenue"
           value={summary.totalRevenue}
-          change={12.5} // Mock trend for now
+          change={revenueChange}
           icon={DollarSign}
           prefix="EGP "
         />
         <StatCard
           title="Orders"
           value={summary.totalOrders}
-          change={8.3}
+          change={ordersChange}
           icon={ShoppingCart}
         />
         <StatCard
           title="Inventory"
           value={summary.totalInventoryCount}
-          change={5.2}
+          change={0}
           icon={Package}
         />
         <StatCard
           title="Audience"
           value={summary.uniqueCustomers}
-          change={15.7}
+          change={0}
           icon={Users}
         />
       </div>
@@ -101,7 +142,7 @@ export default function DashboardOverview() {
           <div className="card-header">
             <h2 className="card-title">Revenue Performance</h2>
             <div className="header-actions">
-               <button className="refresh-btn" onClick={refreshDashboard} title="Update Analytics">
+               <button className="refresh-btn" onClick={() => refreshDashboard()} title="Update Analytics">
                   <TrendingUp size={14} className="refresh-icon" />
                   <span>Refresh</span>
                </button>
