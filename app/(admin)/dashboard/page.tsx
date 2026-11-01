@@ -14,7 +14,7 @@ import {
   Download 
 } from "lucide-react";
 import { DashboardSummaryData, getDashboardSummary } from "../../lib/api/dashboard";
-import { updateInvoiceStatus } from "../../lib/api/invoice";
+import { updateInvoiceStatus, getInvoices } from "../../lib/api/invoice";
 import { useRouter } from "next/navigation";
 import { useDashboard } from "../layout";
 
@@ -29,14 +29,14 @@ export default function DashboardOverview() {
     setDashboardPeriod(period);
   };
 
-  const handleExportCSV = () => {
-    const { recentInvoices } = dashboardData!;
+  const handleExportCSV = async () => {
+    const response = await getInvoices(1, 1000);
     const escapeCsv = (v: string | number) => '"' + String(v).replace(/"/g, '""') + '"';
-    const rows = recentInvoices.map(
+    const rows = response.data.map(
       (invoice) =>
-        [escapeCsv(invoice.invoiceId), escapeCsv(invoice.customer), escapeCsv(invoice.amount), escapeCsv(invoice.date), escapeCsv(invoice.status)].join(",")
+        [escapeCsv(invoice.invoiceId), escapeCsv(invoice.customer), escapeCsv(invoice.amount), escapeCsv(new Date(invoice.date).toLocaleDateString("en-GB")), escapeCsv(invoice.status), escapeCsv(invoice.items.map(item => `${item.name} x ${item.quantity} @ ${item.price} EGP`).join(", "))].join(",")
     );
-    const csv = ["Invoice ID,Customer,Amount,Date,Status", ...rows].join("\n");
+    const csv = ["Invoice ID,Customer,Amount,Date,Status,Items", ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
