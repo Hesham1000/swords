@@ -1876,10 +1876,8 @@
 .topbar-title {
   font-family: var(--font-display);
   font-size: 18px;
-  letter-spacing: 2px;
   color: var(--text-primary);
   font-weight: 800;
-  word-spacing: 4px;
 }
 
 .content-wrapper {
@@ -1899,7 +1897,6 @@
   font-family: var(--font-display);
   font-size: 32px;
   font-weight: 900;
-  letter-spacing: 0.5px;
   color: var(--text-primary);
   position: relative;
 }
@@ -1935,7 +1932,7 @@
 }
 
 .primary-btn:hover {
-  transform: scale(1.05) skewX(var(--skew-angle));
+  transform: scale(1.05);
   box-shadow: 0 8px 25px rgba(var(--accent-blue-rgb), 0.4);
 }
 
@@ -2059,7 +2056,6 @@
   font-size: 18px;
   color: var(--text-primary);
   font-weight: 800;
-  letter-spacing: 1px;
 }
 
 /* Technical Chart Styling */
