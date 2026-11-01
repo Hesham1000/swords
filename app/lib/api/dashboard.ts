@@ -39,13 +39,16 @@ export interface DashboardSummaryResponse {
   data: DashboardSummaryData;
 }
 
-export async function getDashboardSummary(): Promise<DashboardSummaryResponse> {
+export async function getDashboardSummary(
+  period?: "today" | "week" | "month"
+): Promise<DashboardSummaryResponse> {
   try {
-    const response = await fetch(`${apiUrl}/api/dashboard/summary`, {
+    const url = period
+      ? `${apiUrl}/api/dashboard/summary?period=${period}`
+      : `${apiUrl}/api/dashboard/summary`;
+    const response = await fetch(url, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       cache: "no-store",
     });
 

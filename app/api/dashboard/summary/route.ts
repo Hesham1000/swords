@@ -4,6 +4,9 @@ import { transformProduct } from "../../../lib/api/utils";
 
 export async function GET(request: NextRequest) {
   try {
+    const searchParams = request.nextUrl.searchParams;
+    const period = searchParams.get("period") || "month";
+
     const invoicesCollection = await getInvoicesCollection();
     const productsCollection = await getProductsCollection();
 
@@ -15,11 +18,17 @@ export async function GET(request: NextRequest) {
       .toArray();
 
     // 2. ANALYTICS DATA (Revenue, Orders, Customers)
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    const periodStart = new Date();
+    if (period === "today") {
+      periodStart.setHours(0, 0, 0, 0);
+    } else if (period === "week") {
+      periodStart.setDate(periodStart.getDate() - 7);
+    } else {
+      periodStart.setDate(periodStart.getDate() - 30);
+    }
 
     const periodInvoices = await invoicesCollection.find({
-      date: { $gte: threeMonthsAgo.toISOString().split('T')[0] }
+      date: { $gte: periodStart.toISOString().split('T')[0] }
     }).toArray();
 
     const allInvoices = await invoicesCollection.find({}).toArray();
@@ -38,13 +47,14 @@ export async function GET(request: NextRequest) {
       .slice(0, 5);
 
     // 4. TRENDS (Last 30 Days)
-    const last30Days = Array.from({ length: 30 }).map((_, i) => {
+    const trendDays = period === "today" ? 1 : period === "week" ? 7 : 30;
+    const lastNDays = Array.from({ length: trendDays }).map((_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
       return d.toISOString().split('T')[0];
     }).reverse();
 
-    const revenueTrend = last30Days.map(day => {
+    const revenueTrend = lastNDays.map(day => {
       const dayInvoices = periodInvoices.filter(inv => inv.date === day);
       return {
         date: day,
