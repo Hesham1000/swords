@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
-import { Menu, X, Loader2 } from "lucide-react";
+import { Menu, X, Loader2, Bell } from "lucide-react";
 import Sidebar from "../components/sidebar";
 import { getCurrentUser, User } from "../lib/api/auth";
 import { getDashboardSummary, DashboardSummaryData } from "../lib/api/dashboard";
@@ -210,7 +210,36 @@ export default function DashboardLayout({
             {pathname.includes("/wallet") && "Wallet Management"}
             {pathname.includes("/history") && "Inventory History"}
           </h2>
-          <div></div>
+          <button 
+            className="menu-toggle" 
+            onClick={() => router.push("/dashboard")}
+            title="View Low Stock Alerts"
+            style={{ position: "relative" }}
+          >
+            <Bell size={20} />
+            {dashboardData && dashboardData.lowStockItems && dashboardData.lowStockItems.length > 0 && (
+              <span 
+                style={{
+                  position: "absolute",
+                  top: "-5px",
+                  right: "-5px",
+                  background: "#ef4444",
+                  color: "white",
+                  borderRadius: "50%",
+                  width: "18px",
+                  height: "18px",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "2px solid var(--bg-card)"
+                }}
+              >
+                {dashboardData.lowStockItems.length}
+              </span>
+            )}
+          </button>
         </div>
 
         <div className="content-wrapper">

@@ -10,7 +10,8 @@ import {
   Users, 
   Loader2, 
   AlertCircle, 
-  CheckCircle 
+  CheckCircle, 
+  Download 
 } from "lucide-react";
 import { DashboardSummaryData, getDashboardSummary } from "../../lib/api/dashboard";
 import { updateInvoiceStatus } from "../../lib/api/invoice";
@@ -236,7 +237,40 @@ export default function DashboardOverview() {
 
         {/* Recent Invoices */}
         <div className="list-card">
-          <div className="card-header"><h2 className="card-title">Recent Invoices</h2></div>
+          <div className="card-header">
+            <h2 className="card-title">Recent Invoices</h2>
+            <div className="header-actions">
+              <button 
+                className="refresh-btn" 
+                onClick={() => {
+                  const headers = ["Invoice ID", "Customer", "Amount", "Date", "Status"];
+                  const rows = recentInvoices.map(inv => [
+                    inv.invoiceId,
+                    inv.customer,
+                    inv.amount,
+                    inv.date,
+                    inv.status
+                  ]);
+                  const csvContent = [headers, ...rows]
+                    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+                    .join("\n");
+                  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.download = "invoices.csv";
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  URL.revokeObjectURL(url);
+                }}
+                title="Export Invoices to CSV"
+              >
+                <Download size={14} className="refresh-icon" />
+                <span>Export CSV</span>
+              </button>
+            </div>
+          </div>
           <div className="invoice-list">
             {recentInvoices.map((invoice) => (
               <div key={invoice._id || invoice.invoiceId} className={`invoice-item status-${invoice.status}`}>
