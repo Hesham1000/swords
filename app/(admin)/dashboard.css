@@ -420,7 +420,6 @@
 .history-item:hover {
   border-color: var(--accent-blue);
   background: rgba(255, 255, 255, 0.05);
-  transform: translateX(4px);
 }
 
 .history-col-product { flex: 2; display: flex; flex-direction: column; }
