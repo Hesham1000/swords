@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getProductById, type Product } from "../../../lib/api/product";
 
 export default function ProductDetailPage() {
@@ -11,6 +12,8 @@ export default function ProductDetailPage() {
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [idx, setIdx] = useState(0);
+  const imgs = product?.images ?? [];
 
   useEffect(() => {
     if (!id) return;
@@ -68,9 +71,9 @@ export default function ProductDetailPage() {
 
       <div className="product-detail-layout">
         <div className="product-detail-image-wrapper">
-          {product.images && product.images.length > 0 ? (
+          {imgs.length > 0 ? (
             <img
-              src={product.images[0]}
+              src={imgs[idx]}
               alt={product.name}
               className="product-detail-image"
             />
@@ -79,11 +82,41 @@ export default function ProductDetailPage() {
               No image available
             </div>
           )}
+          {imgs.length > 1 && (
+            <button
+              onClick={() => setIdx((i) => (i - 1 + imgs.length) % imgs.length)}
+              style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--border-tech)', background: 'rgba(255,255,255,0.8)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', zIndex: 10 }}
+              aria-label="Previous image"
+            >
+              <ChevronLeft size={20} />
+            </button>
+          )}
+          {imgs.length > 1 && (
+            <button
+              onClick={() => setIdx((i) => (i + 1) % imgs.length)}
+              style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--border-tech)', background: 'rgba(255,255,255,0.8)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', zIndex: 10 }}
+              aria-label="Next image"
+            >
+              <ChevronRight size={20} />
+            </button>
+          )}
+          {imgs.length > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '8px' }}>
+              {imgs.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setIdx(i)}
+                  style={{ width: 8, height: 8, borderRadius: '50%', border: 'none', cursor: 'pointer', background: i === idx ? 'var(--accent-blue)' : 'rgba(148,163,184,0.5)', margin: '0 3px' }}
+                  aria-label={`Go to image ${i + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="product-detail-info">
           <h1 className="page-title">{product.name}</h1>
-          <span className={`status-badge status-${statusClass}`}>{statusText}</span>
+          <span className={`status-badge status-${statusClass}`} style={{ margin: '12px 0' }}>{statusText}</span>
 
           <div className="product-detail-rows">
             {details.map((detail) => (
