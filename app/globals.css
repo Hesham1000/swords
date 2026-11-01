@@ -1944,6 +1944,41 @@
   margin-bottom: 2.5rem;
 }
 
+.period-filter {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.period-btn {
+  padding: 0.4rem 1rem;
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.period-btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: var(--accent-blue, #3b82f6);
+  color: var(--text-primary, #f1f5f9);
+}
+
+.period-btn.active {
+  background: var(--accent-blue, #3b82f6);
+  border-color: var(--accent-blue, #3b82f6);
+  color: #fff;
+}
+
+.period-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .stat-card {
   background: var(--bg-card);
   padding: 1.75rem;

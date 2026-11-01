@@ -18,7 +18,14 @@ import { useRouter } from "next/navigation";
 import { useDashboard } from "../layout";
 
 export default function DashboardOverview() {
-  const { user, isAdmin, dashboardData, refreshDashboard } = useDashboard();
+  const { user, isAdmin, dashboardData, refreshDashboard, selectedPeriod, refreshDashboardWithPeriod } = useDashboard();
+  const [periodLoading, setPeriodLoading] = useState(false);
+
+  const handlePeriodChange = async (period: "today" | "week" | "month") => {
+    setPeriodLoading(true);
+    await refreshDashboardWithPeriod(period);
+    setPeriodLoading(false);
+  };
   const router = useRouter();
   const [error, setError] = useState("");
 
@@ -36,6 +43,22 @@ export default function DashboardOverview() {
   }
 
   const { summary, recentInvoices, lowStockItems, analytics } = dashboardData!;
+
+  const calculateTrend = (values: number[]): number => {
+    if (values.length < 2) return 0;
+    const mid = Math.floor(values.length / 2);
+    const firstHalf = values.slice(0, mid);
+    const secondHalf = values.slice(mid);
+    const firstSum = firstHalf.reduce((a, b) => a + b, 0);
+    const secondSum = secondHalf.reduce((a, b) => a + b, 0);
+    if (firstSum === 0) return secondSum > 0 ? 100 : 0;
+    return ((secondSum - firstSum) / firstSum) * 100;
+  };
+
+  const revenueTrend = calculateTrend(analytics.trends.map(t => t.revenue));
+  const ordersTrend = calculateTrend(analytics.trends.map(t => t.orders));
+  const inventoryTrend = 0;
+  const audienceTrend = 0;
 
   const StatCard = ({
     title,
@@ -67,30 +90,54 @@ export default function DashboardOverview() {
 
   return (
     <>
+<div className="period-filter">
+        <button
+          className={`period-btn ${selectedPeriod === "today" ? "active" : ""}`}
+          onClick={() => handlePeriodChange("today")}
+          disabled={periodLoading}
+        >
+          Today
+        </button>
+        <button
+          className={`period-btn ${selectedPeriod === "week" ? "active" : ""}`}
+          onClick={() => handlePeriodChange("week")}
+          disabled={periodLoading}
+        >
+          Week
+        </button>
+        <button
+          className={`period-btn ${selectedPeriod === "month" ? "active" : ""}`}
+          onClick={() => handlePeriodChange("month")}
+          disabled={periodLoading}
+        >
+          Month
+        </button>
+      </div>
+
       <div className="stats-grid">
         <StatCard
           title="Revenue"
           value={summary.totalRevenue}
-          change={12.5} // Mock trend for now
+          change={revenueTrend}
           icon={DollarSign}
           prefix="EGP "
         />
         <StatCard
           title="Orders"
           value={summary.totalOrders}
-          change={8.3}
+          change={ordersTrend}
           icon={ShoppingCart}
         />
         <StatCard
           title="Inventory"
           value={summary.totalInventoryCount}
-          change={5.2}
+          change={inventoryTrend}
           icon={Package}
         />
         <StatCard
           title="Audience"
           value={summary.uniqueCustomers}
-          change={15.7}
+          change={audienceTrend}
           icon={Users}
         />
       </div>
