@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
-import { Menu, X, Loader2 } from "lucide-react";
+import { Menu, X, Loader2, Bell } from "lucide-react";
 import Sidebar from "../components/sidebar";
 import { getCurrentUser, User } from "../lib/api/auth";
 import { getDashboardSummary, DashboardSummaryData } from "../lib/api/dashboard";
@@ -146,6 +146,7 @@ export default function DashboardLayout({
   }, [router]);
 
   const currentPage = pathname.split("/").pop() || "dashboard";
+  const lowStockCount = dashboardData?.lowStockItems?.length ?? 0;
 
   if (loading) {
     return (
@@ -213,7 +214,16 @@ export default function DashboardLayout({
             {pathname.includes("/wallet") && "Wallet Management"}
             {pathname.includes("/history") && "Inventory History"}
           </h2>
-          <div></div>
+          <button
+            className="notification-bell"
+            onClick={() => router.push("/dashboard")}
+            title="Notifications"
+          >
+            <Bell size={20} />
+            {lowStockCount > 0 && (
+              <span className="notification-badge">{lowStockCount}</span>
+            )}
+          </button>
         </div>
 
         <div className="content-wrapper">
@@ -313,6 +323,41 @@ export default function DashboardLayout({
           backdrop-filter: blur(4px);
           z-index: 45;
         }
+          .notification-bell {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-tech);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          .notification-bell:hover {
+            background: rgba(var(--accent-blue-rgb), 0.08);
+            border-color: rgba(var(--accent-blue-rgb), 0.2);
+          }
+          .notification-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 9px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+          }
         @media (max-width: 1024px) {
           .main-content {
             margin-left: 0;
