@@ -2131,7 +2131,6 @@
 
 .invoice-item:hover {
   background: rgba(255, 255, 255, 0.06);
-  transform: scale(1.02);
 }
 
 .invoice-item.status-paid {
@@ -4973,7 +4972,6 @@
 }
 
 .invoice-item:hover {
-  transform: translateX(4px) translateY(-2px);
   background: var(--glass-bg);
   border-color: var(--accent-blue);
   box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.2);
