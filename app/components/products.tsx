@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import { Edit, X, Package, Crown, ChevronLeft, ChevronRight, AlertCircle, Minus, Plus } from "lucide-react";
 import { Product } from "../lib/api/product";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface ProductRowProps {
   product: Product;
@@ -26,6 +26,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
   isSelected,
   onSelect,
 }) => {
+  const router = useRouter();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const images = product.images || [];
   const hasMultipleImages = images.length > 1;
@@ -124,7 +125,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
               className="floating-btn edit"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={() => onEdit(product)}
+              onClick={(e) => { e.stopPropagation(); onEdit(product); }}
               title="Edit product"
             >
               <Edit size={14} />
@@ -135,7 +136,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
               className="floating-btn delete"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={handleDelete}
+              onClick={(e) => { e.stopPropagation(); handleDelete(); }}
               title="Delete product"
             >
               <X size={16} />
@@ -151,7 +152,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
           </div>
         )}
         <div className="product-info">
-          <h3 className="product-title"><Link href={`/products/${product.id}`} style={{ color: "inherit", textDecoration: "none" }}>{product.name}</Link></h3>
+          <h3 className="product-title">{product.name}</h3>
           <div className="product-subtitle">
             <span className="brand">{product.brand?.toUpperCase()}</span>
             {product.model && (product.productType !== 'lame' || !product.isKings || product.model.toLowerCase() !== 'kings') && (
@@ -209,7 +210,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
           </div>
           <div className="stock-controls">
             <button
-              onClick={() => onStockChange?.(product.id, product.quantity - 1)}
+              onClick={(e) => { e.stopPropagation(); onStockChange?.(product.id, product.quantity - 1); }}
               disabled={product.quantity === 0}
               style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid var(--border-tech)", background: "var(--glass-bg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
               title="Decrease stock"
@@ -217,7 +218,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
               <Minus size={14} />
             </button>
             <button
-              onClick={() => onStockChange?.(product.id, product.quantity + 1)}
+              onClick={(e) => { e.stopPropagation(); onStockChange?.(product.id, product.quantity + 1); }}
               style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid var(--border-tech)", background: "var(--glass-bg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
               title="Increase stock"
             >
