@@ -1,19 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAccessTokenEdge } from "./app/lib/auth/edge";
 
+const PROTECTED_ADMIN_ROUTES = [
+  "/dashboard",
+  "/products",
+  "/invoices",
+  "/wallet",
+  "/history",
+];
+
+function isProtectedAdminRoute(pathname: string): boolean {
+  return PROTECTED_ADMIN_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(route + "/")
+  );
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Define public paths and auth paths
-  const isAuthRoute = pathname.startsWith("/api/auth");
-  const isApiRoute = pathname.startsWith("/api");
-  const isProtectedPage = pathname.startsWith("/dashboard");
-
-  // Skip middleware for static files and public auth routes
+  // 1. Skip for static files and public auth routes
   if (
     pathname.includes(".") || // static files like .ico, .png, etc.
     pathname.startsWith("/_next") ||
-    isAuthRoute
+    pathname.startsWith("/api/auth")
   ) {
     return NextResponse.next();
   }
@@ -24,27 +33,26 @@ export async function proxy(request: NextRequest) {
   // 3. Verify the token
   let isValid = false;
   if (accessToken) {
-    const payload = await verifyAccessTokenEdge(accessToken);
-    if (payload) {
-      isValid = true;
+    try {
+      isValid = (await verifyAccessTokenEdge(accessToken)) !== null;
+    } catch {
+      isValid = false;
     }
   }
 
   // 4. Handle protection logic
-  
+
   // If it's a protected API route and not authenticated
-  if (isApiRoute && !isValid && !isAuthRoute) {
+  if (pathname.startsWith("/api") && !isValid) {
     return NextResponse.json(
       { error: "Unauthorized access. Please sign in." },
       { status: 401 }
     );
   }
 
-  // If it's a protected page and not authenticated
-  if (isProtectedPage && !isValid) {
+  // If it's a protected admin page and not authenticated
+  if (isProtectedAdminRoute(pathname) && !isValid) {
     const signInUrl = new URL("/sign-in", request.url);
-    // You can optionally add a callback URL
-    // signInUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signInUrl);
   }
 
@@ -61,7 +69,6 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (handled inside middleware for granularity)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
