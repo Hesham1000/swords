@@ -16,6 +16,7 @@ interface DashboardContextType {
   sidebarOpen: boolean;
   dashboardData: DashboardSummaryData | null;
   refreshDashboard: () => void;
+  setDashboardPeriod: (p: "today" | "week" | "month") => void;
 }
 
 const DashboardContext = React.createContext<DashboardContextType | null>(null);
@@ -38,6 +39,7 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardSummaryData | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [dashboardPeriod, setDashboardPeriod] = useState<"today" | "week" | "month">("month");
   const [isMobile, setIsMobile] = useState(false);
   const fetchedRef = useRef(false);
 
@@ -69,8 +71,9 @@ export default function DashboardLayout({
     sidebarOpen,
     setSidebarOpen,
     dashboardData,
+    setDashboardPeriod,
     refreshDashboard
-  }), [user, sidebarOpen, dashboardData]);
+  }), [user, sidebarOpen, dashboardData, dashboardPeriod]);
 
   // Fetch current user
   useEffect(() => {
@@ -83,7 +86,7 @@ export default function DashboardLayout({
         // Fetch User and Dashboard Summary together
         const [userData, summaryRes] = await Promise.all([
           getCurrentUser(),
-          getDashboardSummary()
+          getDashboardSummary(dashboardPeriod)
         ]);
         
           if (userData) {
@@ -101,7 +104,7 @@ export default function DashboardLayout({
       }
     };
     initDashboard();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, dashboardPeriod]);
 
   // Handle Redirection for non-admins
   useEffect(() => {

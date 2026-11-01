@@ -12,15 +12,21 @@ import {
   AlertCircle, 
   CheckCircle 
 } from "lucide-react";
-import { DashboardSummaryData } from "../../lib/api/dashboard";
+import { DashboardSummaryData, getDashboardSummary } from "../../lib/api/dashboard";
 import { updateInvoiceStatus } from "../../lib/api/invoice";
 import { useRouter } from "next/navigation";
 import { useDashboard } from "../layout";
 
 export default function DashboardOverview() {
-  const { user, isAdmin, dashboardData, refreshDashboard } = useDashboard();
+  const { user, isAdmin, dashboardData, refreshDashboard, setDashboardPeriod } = useDashboard();
   const router = useRouter();
   const [error, setError] = useState("");
+  const [activePeriod, setActivePeriod] = useState<"today" | "week" | "month">("month");
+
+  const handlePeriodChange = (period: "today" | "week" | "month") => {
+    setActivePeriod(period);
+    setDashboardPeriod(period);
+  };
 
   if (!dashboardData && !error) {
     return (
@@ -36,6 +42,17 @@ export default function DashboardOverview() {
   }
 
   const { summary, recentInvoices, lowStockItems, analytics } = dashboardData!;
+
+  const trends = analytics?.trends ?? [];
+  const half = Math.floor(trends.length / 2);
+  const sum = (arr: any[], key: string) => arr.reduce((acc, t) => acc + (Number(t[key]) || 0), 0);
+  const pct = (key: string) => {
+    const first = sum(trends.slice(0, half), key);
+    const second = sum(trends.slice(half), key);
+    return first > 0 ? ((second - first) / first) * 100 : 0;
+  };
+  const revenueChange = pct("revenue");
+  const ordersChange = pct("orders");
 
   const StatCard = ({
     title,
@@ -67,30 +84,42 @@ export default function DashboardOverview() {
 
   return (
     <>
+      <div className="period-filter">
+        {(["today", "week", "month"] as const).map((p) => (
+          <button
+            key={p}
+            className={`period-btn ${activePeriod === p ? "active" : ""}`}
+            onClick={() => handlePeriodChange(p)}
+          >
+            {p.charAt(0).toUpperCase() + p.slice(1)}
+          </button>
+        ))}
+      </div>
+
       <div className="stats-grid">
         <StatCard
           title="Revenue"
           value={summary.totalRevenue}
-          change={12.5} // Mock trend for now
+          change={revenueChange}
           icon={DollarSign}
           prefix="EGP "
         />
         <StatCard
           title="Orders"
           value={summary.totalOrders}
-          change={8.3}
+          change={ordersChange}
           icon={ShoppingCart}
         />
         <StatCard
           title="Inventory"
           value={summary.totalInventoryCount}
-          change={5.2}
+          change={0}
           icon={Package}
         />
         <StatCard
           title="Audience"
           value={summary.uniqueCustomers}
-          change={15.7}
+          change={0}
           icon={Users}
         />
       </div>
