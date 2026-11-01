@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { Menu, X, Loader2, Bell } from "lucide-react";
 import Sidebar from "../components/sidebar";
 import { getCurrentUser, User } from "../lib/api/auth";
@@ -41,7 +41,6 @@ export default function DashboardLayout({
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [dashboardPeriod, setDashboardPeriod] = useState<"today" | "week" | "month">("month");
   const [isMobile, setIsMobile] = useState(false);
-  const fetchedRef = useRef(false);
 
   // Check for mobile on mount and window resize
   useEffect(() => {
@@ -61,7 +60,6 @@ export default function DashboardLayout({
   }, []);
 
   const refreshDashboard = () => {
-    fetchedRef.current = false;
     setRefreshTrigger(prev => prev + 1);
   };
 
