@@ -10,7 +10,8 @@ import {
   Users, 
   Loader2, 
   AlertCircle, 
-  CheckCircle 
+  CheckCircle,
+  Download 
 } from "lucide-react";
 import { DashboardSummaryData, getDashboardSummary } from "../../lib/api/dashboard";
 import { updateInvoiceStatus } from "../../lib/api/invoice";
@@ -26,6 +27,25 @@ export default function DashboardOverview() {
   const handlePeriodChange = (period: "today" | "week" | "month") => {
     setActivePeriod(period);
     setDashboardPeriod(period);
+  };
+
+  const handleExportCSV = () => {
+    const { recentInvoices } = dashboardData!;
+    const escapeCsv = (v: string | number) => '"' + String(v).replace(/"/g, '""') + '"';
+    const rows = recentInvoices.map(
+      (invoice) =>
+        [escapeCsv(invoice.invoiceId), escapeCsv(invoice.customer), escapeCsv(invoice.amount), escapeCsv(invoice.date), escapeCsv(invoice.status)].join(",")
+    );
+    const csv = ["Invoice ID,Customer,Amount,Date,Status", ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "invoices.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   if (!dashboardData && !error) {
@@ -233,7 +253,15 @@ export default function DashboardOverview() {
 
         {/* Recent Invoices */}
         <div className="list-card">
-          <div className="card-header"><h2 className="card-title">Recent Invoices</h2></div>
+          <div className="card-header">
+            <h2 className="card-title">Recent Invoices</h2>
+            <div className="header-actions">
+              <button className="refresh-btn" onClick={handleExportCSV} title="Export Invoices to CSV">
+                <Download size={14} className="refresh-icon" />
+                <span>Export CSV</span>
+              </button>
+            </div>
+          </div>
           <div className="invoice-list">
             {recentInvoices.map((invoice) => (
               <div key={invoice._id || invoice.invoiceId} className={`invoice-item status-${invoice.status}`}>
