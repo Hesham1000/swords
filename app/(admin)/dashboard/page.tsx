@@ -12,7 +12,7 @@ import {
   AlertCircle, 
   CheckCircle 
 } from "lucide-react";
-import { DashboardSummaryData } from "../../lib/api/dashboard";
+import { DashboardSummaryData, getDashboardSummary } from "../../lib/api/dashboard";
 import { updateInvoiceStatus } from "../../lib/api/invoice";
 import { useRouter } from "next/navigation";
 import { useDashboard } from "../layout";
@@ -21,8 +21,26 @@ export default function DashboardOverview() {
   const { user, isAdmin, dashboardData, refreshDashboard } = useDashboard();
   const router = useRouter();
   const [error, setError] = useState("");
+  const [activePeriod, setActivePeriod] = useState<"today" | "week" | "month">("month");
+  const [periodLoading, setPeriodLoading] = useState(false);
+  const [localData, setLocalData] = useState<DashboardSummaryData | null>(null);
 
-  if (!dashboardData && !error) {
+  const data = localData ?? dashboardData;
+
+  const handlePeriodChange = async (p: "today" | "week" | "month") => {
+    setActivePeriod(p);
+    setPeriodLoading(true);
+    try {
+      const res = await getDashboardSummary(p);
+      if (res.success) setLocalData(res.data);
+    } catch (err) {
+      console.error("Period fetch error:", err);
+    } finally {
+      setPeriodLoading(false);
+    }
+  };
+
+  if (!data && !error) {
     return (
       <div className="flex flex-col items-center justify-center p-20 gap-4">
         <Loader2 className="animate-spin text-blue-500" size={40} />
@@ -35,7 +53,21 @@ export default function DashboardOverview() {
     return <div className="error-banner">{error}</div>;
   }
 
-  const { summary, recentInvoices, lowStockItems, analytics } = dashboardData!;
+  const { summary, recentInvoices, lowStockItems, analytics } = data!;
+
+  const calcTrendChange = (key: "revenue" | "orders"): number => {
+    const trends = analytics?.trends ?? [];
+    if (trends.length < 2) return 0;
+    const mid = Math.floor(trends.length / 2);
+    const firstHalf = trends.slice(0, mid);
+    const secondHalf = trends.slice(mid);
+    const firstSum = firstHalf.reduce((acc, t) => acc + (t[key] || 0), 0);
+    const secondSum = secondHalf.reduce((acc, t) => acc + (t[key] || 0), 0);
+    if (firstSum === 0) return secondSum > 0 ? 100 : 0;
+    return ((secondSum - firstSum) / firstSum) * 100;
+  };
+  const revenueChange = calcTrendChange("revenue");
+  const ordersChange = calcTrendChange("orders");
 
   const StatCard = ({
     title,
@@ -71,26 +103,26 @@ export default function DashboardOverview() {
         <StatCard
           title="Revenue"
           value={summary.totalRevenue}
-          change={12.5} // Mock trend for now
+          change={revenueChange}
           icon={DollarSign}
           prefix="EGP "
         />
         <StatCard
           title="Orders"
           value={summary.totalOrders}
-          change={8.3}
+          change={ordersChange}
           icon={ShoppingCart}
         />
         <StatCard
           title="Inventory"
           value={summary.totalInventoryCount}
-          change={5.2}
+          change={0}
           icon={Package}
         />
         <StatCard
           title="Audience"
           value={summary.uniqueCustomers}
-          change={15.7}
+          change={0}
           icon={Users}
         />
       </div>
