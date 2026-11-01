@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { Edit, X, Package, Crown, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { Product } from "../lib/api/product";
 import { motion, AnimatePresence } from "framer-motion";
@@ -143,7 +144,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
           </div>
         )}
         <div className="product-info">
-          <h3 className="product-title">{product.name}</h3>
+          <h3 className="product-title"><Link href={`/products/${product.id}`} style={{ color: "inherit", textDecoration: "none" }}>{product.name}</Link></h3>
           <div className="product-subtitle">
             <span className="brand">{product.brand?.toUpperCase()}</span>
             {product.model && (product.productType !== 'lame' || !product.isKings || product.model.toLowerCase() !== 'kings') && (

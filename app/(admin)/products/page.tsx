@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Package, Plus, X, Loader2 } from "lucide-react";
 import ProductForm from "../../components/productform";
 import ProductsList from "../../components/products-list";
-import { getProducts, deleteProduct, Product } from "../../lib/api/product";
+import { getProducts, deleteProduct, Product, getProductFilters } from "../../lib/api/product";
 import { useDashboard } from "../layout";
 
 export default function ProductsPage() {
@@ -17,6 +17,7 @@ export default function ProductsPage() {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
   const [refresh, setRefresh] = useState(false);
+  const [filterOptions, setFilterOptions] = useState<{ categories: string[]; brands: string[]; types: string[] }>({ categories: [], brands: [], types: [] });
   const lastParamsRef = useRef("");
 
   // Filters
@@ -24,6 +25,18 @@ export default function ProductsPage() {
   const [filterCategory, setFilterCategory] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
+
+  useEffect(() => {
+    const fetchFilters = async () => {
+      try {
+        const response = await getProductFilters();
+        setFilterOptions(response.data);
+      } catch (err) {
+        console.error("Failed to load filter options:", err);
+      }
+    };
+    fetchFilters();
+  }, []);
 
   useEffect(() => {
     const params = JSON.stringify({ page, searchQuery, filterCategory, filterType, filterBrand, refresh });
@@ -108,9 +121,9 @@ export default function ProductsPage() {
             className="filter-select"
           >
             <option value="">All Categories</option>
-            <option value="Epée">Epée</option>
-            <option value="Foil">Foil</option>
-            <option value="Sabre">Sabre</option>
+            {filterOptions.categories.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
           </select>
 
           <select 
@@ -122,21 +135,9 @@ export default function ProductsPage() {
             className="filter-select"
           >
             <option value="">All Types</option>
-            <option value="lame">Lamé</option>
-            <option value="wire">Wire</option>
-            <option value="grip">Grip</option>
-            <option value="guard">Guard</option>
-            <option value="guard_padding">Guard Padding</option>
-            <option value="french_pommel">French Pommel</option>
-            <option value="nut">Nut</option>
-            <option value="point">Point</option>
-            <option value="screws">Screws</option>
-            <option value="point_contact_springs">Springs</option>
-            <option value="socket">Socket</option>
-            <option value="insulating_tube">Insulating Tube</option>
-            <option value="body_wire">Body Wire</option>
-            <option value="cable">Cable</option>
-            <option value="pin">Pin</option>
+            {filterOptions.types.map((type) => (
+              <option key={type} value={type}>{type}</option>
+            ))}
           </select>
 
           <select 
@@ -148,13 +149,9 @@ export default function ProductsPage() {
             className="filter-select"
           >
             <option value="">All Brands</option>
-            <option value="pbt">PBT</option>
-            <option value="dynamo">Dynamo</option>
-            <option value="stm">STM</option>
-            <option value="uhlmann">Uhlmann</option>
-            <option value="allstar">Allstar</option>
-            <option value="folo">Folo</option>
-            <option value="chinese">Chinese</option>
+            {filterOptions.brands.map((brand) => (
+              <option key={brand} value={brand}>{brand}</option>
+            ))}
           </select>
 
           {(searchQuery || filterCategory || filterType || filterBrand) && (
