@@ -17,6 +17,7 @@ interface DashboardContextType {
   dashboardData: DashboardSummaryData | null;
   refreshDashboard: () => void;
   setDashboardPeriod: (p: "today" | "week" | "month") => void;
+  dashboardPeriod: "today" | "week" | "month";
 }
 
 const DashboardContext = React.createContext<DashboardContextType | null>(null);
@@ -70,7 +71,8 @@ export default function DashboardLayout({
     setSidebarOpen,
     dashboardData,
     setDashboardPeriod,
-    refreshDashboard
+    refreshDashboard,
+    dashboardPeriod
   }), [user, sidebarOpen, dashboardData, dashboardPeriod]);
 
   // Fetch current user

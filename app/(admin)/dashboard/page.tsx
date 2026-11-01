@@ -19,13 +19,11 @@ import { useRouter } from "next/navigation";
 import { useDashboard } from "../layout";
 
 export default function DashboardOverview() {
-  const { user, isAdmin, dashboardData, refreshDashboard, setDashboardPeriod } = useDashboard();
+  const { user, isAdmin, dashboardData, refreshDashboard, setDashboardPeriod, dashboardPeriod } = useDashboard();
   const router = useRouter();
   const [error, setError] = useState("");
-  const [activePeriod, setActivePeriod] = useState<"today" | "week" | "month">("month");
 
   const handlePeriodChange = (period: "today" | "week" | "month") => {
-    setActivePeriod(period);
     setDashboardPeriod(period);
   };
 
@@ -108,7 +106,7 @@ export default function DashboardOverview() {
         {(["today", "week", "month"] as const).map((p) => (
           <button
             key={p}
-            className={`period-btn ${activePeriod === p ? "active" : ""}`}
+            className={`period-btn ${dashboardPeriod === p ? "active" : ""}`}
             onClick={() => handlePeriodChange(p)}
           >
             {p.charAt(0).toUpperCase() + p.slice(1)}
