@@ -70,6 +70,8 @@ const ProductsList: React.FC<ProductsListProps> = ({
     );
   }
 
+  const allSelected = products.length > 0 && products.every((p) => selectedIds?.includes(p.id));
+
   return (
     <div className="products-list-container">
       {/* Select All */}
@@ -77,8 +79,8 @@ const ProductsList: React.FC<ProductsListProps> = ({
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, accentColor: "var(--accent-blue)" }}>
           <input
             type="checkbox"
-            checked={products.length > 0 && products.every((p) => selectedIds?.includes(p.id))}
-            onChange={() => onSelectAll(products.map((p) => p.id))}
+            checked={allSelected}
+            onChange={() => onSelectAll(allSelected ? [] : products.map((p) => p.id))}
           />
           <label>Select All</label>
         </div>

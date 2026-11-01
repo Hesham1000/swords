@@ -331,14 +331,14 @@ export default function ProductsPage() {
       )}
 
       {showStockModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }} onClick={() => setShowStockModal(false)}>
-          <div style={{ background: "var(--glass-bg, #fff)", border: "1px solid var(--border-tech)", borderRadius: "8px", padding: "20px", minWidth: "280px" }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ marginTop: 0 }}>Adjust Stock</h3>
-            <p>Enter a delta to add to each selected product's quantity (can be negative).</p>
-            <input type="number" value={stockDelta} onChange={(e) => setStockDelta(Number(e.target.value))} style={{ width: "100%", padding: "8px", marginBottom: "12px", border: "1px solid var(--border-tech)", borderRadius: "6px" }} />
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setShowStockModal(false)}>
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-tech)", borderRadius: "16px", padding: "28px", width: "380px", maxWidth: "90vw", boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }} onClick={(e) => e.stopPropagation()}>
+            <h3 className="card-title" style={{ marginTop: 0, marginBottom: 8 }}>Adjust Stock</h3>
+            <p style={{ color: "var(--text-muted)", fontSize: "14px", marginBottom: "16px" }}>Enter a delta to add to each selected product's quantity (can be negative).</p>
+            <input type="number" value={stockDelta} onChange={(e) => setStockDelta(Number(e.target.value))} style={{ width: "100%", padding: "10px 14px", background: "var(--glass-bg)", border: "1px solid var(--border-tech)", borderRadius: "8px", color: "var(--text-primary)", fontSize: "15px", marginBottom: "20px", outline: "none" }} />
             <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
               <button className="primary-btn" onClick={() => { handleBulkAdjustStock(stockDelta); setShowStockModal(false); }}>Apply</button>
-              <button className="primary-btn" onClick={() => setShowStockModal(false)}>Cancel</button>
+              <button style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid var(--border-tech)", background: "transparent", color: "var(--text-primary)", cursor: "pointer", fontSize: "14px" }} onClick={() => setShowStockModal(false)}>Cancel</button>
             </div>
           </div>
         </div>
