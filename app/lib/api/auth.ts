@@ -1,5 +1,12 @@
 import { API_URL } from "./utils";
 
+export class SessionExpiredError extends Error {
+  constructor() {
+    super("Session expired");
+    this.name = "SessionExpiredError";
+  }
+}
+
 export interface User {
   id: string;
   username: string;
@@ -16,6 +23,13 @@ export async function getCurrentUser(): Promise<{ user: User } | null> {
       },
       credentials: "include", // Essential for sending cookies
     });
+
+    if (response.status === 401) {
+      if (typeof window !== "undefined") {
+        window.location.replace("/sign-in");
+      }
+      throw new SessionExpiredError();
+    }
 
     if (!response.ok) {
       return null;
