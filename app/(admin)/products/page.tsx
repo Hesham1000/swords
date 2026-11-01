@@ -59,6 +59,14 @@ export default function ProductsPage() {
         });
         setProducts(response.data);
         setPagination(response.pagination);
+        const editId = searchParams.get("edit");
+        if (editId) {
+          const found = response.data.find((p: Product) => p.id === editId);
+          if (found) {
+            setEditingProduct(found);
+            setShowForm(true);
+          }
+        }
       } catch (err: any) {
         setError(err.message || "Failed to load products");
       } finally {
