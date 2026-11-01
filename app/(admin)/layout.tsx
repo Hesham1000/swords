@@ -215,13 +215,16 @@ export default function DashboardLayout({
             {pathname.includes("/history") && "Inventory History"}
           </h2>
           <button
-            className="notification-bell"
+            className="notification-bell relative flex items-center justify-center w-10 h-10 rounded-xl text-slate-200 hover:bg-white/10 transition-colors cursor-pointer"
             onClick={() => router.push("/dashboard")}
             title="Notifications"
+            aria-label="Notifications"
           >
             <Bell size={20} />
             {lowStockCount > 0 && (
-              <span className="notification-badge">{lowStockCount}</span>
+              <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[11px] font-bold leading-none">
+                {lowStockCount}
+              </span>
             )}
           </button>
         </div>
