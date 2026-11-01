@@ -5,10 +5,12 @@ import { Package, Plus, X, Loader2 } from "lucide-react";
 import ProductForm from "../../components/productform";
 import ProductsList from "../../components/products-list";
 import { getProducts, deleteProduct, updateProduct, Product, getProductFilters } from "../../lib/api/product";
+import { useSearchParams } from "next/navigation";
 import { useDashboard } from "../layout";
 
 export default function ProductsPage() {
   const { user, isAdmin } = useDashboard();
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -64,7 +66,7 @@ export default function ProductsPage() {
       }
     };
     fetchProducts();
-  }, [page, searchQuery, filterCategory, filterType, filterBrand, refresh]);
+  }, [page, searchQuery, filterCategory, filterType, filterBrand, refresh, searchParams]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this product?")) return;
