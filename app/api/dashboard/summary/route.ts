@@ -15,11 +15,22 @@ export async function GET(request: NextRequest) {
       .toArray();
 
     // 2. ANALYTICS DATA (Revenue, Orders, Customers)
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    const period = request.nextUrl.searchParams.get("period") || "month";
+
+    const now = new Date();
+    let startDate: Date;
+    if (period === "today") {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (period === "week") {
+      startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - 7);
+    } else {
+      startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - 30);
+    }
 
     const periodInvoices = await invoicesCollection.find({
-      date: { $gte: threeMonthsAgo.toISOString().split('T')[0] }
+      date: { $gte: startDate.toISOString().split('T')[0] }
     }).toArray();
 
     const allInvoices = await invoicesCollection.find({}).toArray();
@@ -38,7 +49,8 @@ export async function GET(request: NextRequest) {
       .slice(0, 5);
 
     // 4. TRENDS (Last 30 Days)
-    const last30Days = Array.from({ length: 30 }).map((_, i) => {
+    const trendDays = period === "today" ? 1 : period === "week" ? 7 : 30;
+    const last30Days = Array.from({ length: trendDays }).map((_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
       return d.toISOString().split('T')[0];
