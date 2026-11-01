@@ -1,19 +1,19 @@
 /* Import Premium Professional Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap');
 
 /* PBT Professional Design System - Obsidian & Amber Redesign */
 :root {
   /* LIGHT MODE (DEFAULT) - Premium Sports Fencing Aesthetic */
-  --bg-deep: #f8fafc; /* Clean slate-white background */
+  --bg-deep: #F8F5F0; /* Warm ivory KINGS background */
   --bg-card: #ffffff;
-  --accent-blue: #2563eb; /* Cobalt fencer primary blue */
-  --accent-blue-rgb: 37, 99, 235;
-  --accent-gold: #0ea5e9; /* Sky / Ice fencer secondary blue */
-  --accent-gold-rgb: 14, 165, 233;
-  --accent-red: #ef4444; /* Scoring light crimson red */
-  --accent-red-rgb: 239, 68, 68;
-  --text-primary: #0f172a; /* Slate primary text */
-  --text-secondary: #64748b; /* Muted steel text */
+  --accent-blue: #1E3A5F; /* KINGS deep navy blue */
+  --accent-blue-rgb: 30, 58, 95;
+  --accent-gold: #D4A017; /* KINGS royal gold */
+  --accent-gold-rgb: 212, 160, 23;
+  --accent-red: #C0392B; /* KINGS heraldic crimson red */
+  --accent-red-rgb: 192, 57, 43;
+  --text-primary: #0D1117; /* Deep ink primary text */
+  --text-secondary: #3A3A3A; /* Muted charcoal text */
   --border-tech: #e2e8f0; /* Crisp light steel border */
   --glass-bg: rgba(37, 99, 235, 0.03);
   --shadow-sm: 0 1px 2px rgba(37, 99, 235, 0.05);
@@ -22,38 +22,39 @@
   /* Typography */
   --font-display: 'Outfit', sans-serif;
   --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Playfair Display', serif;
 
   /* Slopes & Effects */
   --skew-angle: -10deg;
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   
   /* Gradations */
-  --grad-amber: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  --grad-amber: linear-gradient(135deg, #D4A017 0%, #C0392B 100%);
   --grad-obsidian: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
-  --grad-btn: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  --grad-btn: linear-gradient(135deg, #1E3A5F 0%, #2C5282 100%);
 }
 
 .dark-mode {
   /* DARK MODE - Elite Technical Fencing Aesthetic */
-  --bg-deep: #030712; /* Deep space dark fencer background */
+  --bg-deep: #0D1117; /* Deep space dark fencer background */
   --bg-card: #0b0f19; /* Technical dark slate card background */
-  --accent-blue: #3b82f6; /* Electric cobalt blue */
-  --accent-blue-rgb: 59, 130, 246;
-  --accent-gold: #38bdf8; /* Sky / Electric Ice blue */
-  --accent-gold-rgb: 56, 189, 248;
-  --accent-red: #f43f5e; /* Bright scoring crimson */
-  --accent-red-rgb: 244, 63, 94;
-  --text-primary: #f8fafc; /* Crisp silver white */
-  --text-secondary: #94a3b8; /* Muted steel gray */
+  --accent-blue: #4A90D9; /* Electric cobalt blue */
+  --accent-blue-rgb: 74, 144, 217;
+  --accent-gold: #F0C040; /* Sky / Electric Ice blue */
+  --accent-gold-rgb: 240, 192, 64;
+  --accent-red: #E74C3C; /* Bright scoring crimson */
+  --accent-red-rgb: 231, 76, 60;
+  --text-primary: #F8F5F0; /* Crisp silver white */
+  --text-secondary: #B0A090; /* Muted steel gray */
   --border-tech: #1e293b; /* Sleek dark slate border */
   --glass-bg: rgba(59, 130, 246, 0.03);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6);
   color-scheme: dark;
   
-  --grad-amber: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  --grad-amber: linear-gradient(135deg, #F0C040 0%, #E74C3C 100%);
   --grad-obsidian: linear-gradient(135deg, #0b0f19 0%, #030712 100%);
-  --grad-btn: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  --grad-btn: linear-gradient(135deg, #4A90D9 0%, #2C5282 100%);
 }
 
 /* Fix for native date/time picker icons in dark mode */
@@ -1874,12 +1875,9 @@
 
 .topbar-title {
   font-family: var(--font-display);
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  color: var(--text-secondary);
+  font-size: 18px;
+  color: var(--text-primary);
   font-weight: 800;
-  word-spacing: 4px;
 }
 
 .content-wrapper {
@@ -1899,8 +1897,6 @@
   font-family: var(--font-display);
   font-size: 32px;
   font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
   color: var(--text-primary);
   position: relative;
 }
@@ -1936,7 +1932,7 @@
 }
 
 .primary-btn:hover {
-  transform: scale(1.05) skewX(var(--skew-angle));
+  transform: scale(1.05);
   box-shadow: 0 8px 25px rgba(var(--accent-blue-rgb), 0.4);
 }
 
@@ -2060,8 +2056,6 @@
   font-size: 18px;
   color: var(--text-primary);
   font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 1px;
 }
 
 /* Technical Chart Styling */
@@ -2137,7 +2131,6 @@
 
 .invoice-item:hover {
   background: rgba(255, 255, 255, 0.06);
-  transform: scale(1.02);
 }
 
 .invoice-item.status-paid {
@@ -4979,7 +4972,6 @@
 }
 
 .invoice-item:hover {
-  transform: translateX(4px) translateY(-2px);
   background: var(--glass-bg);
   border-color: var(--accent-blue);
   box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.2);
