@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getProductById, type Product } from "../../../lib/api/product";
@@ -9,6 +9,7 @@ import { getProductById, type Product } from "../../../lib/api/product";
 export default function ProductDetailPage() {
   const params = useParams();
   const id = params?.id as string | undefined;
+  const router = useRouter();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -127,7 +128,7 @@ export default function ProductDetailPage() {
             ))}
           </div>
 
-          <button className="primary-btn">Edit</button>
+          <button className="primary-btn" onClick={() => router.push("/products?edit=" + product.id)}>Edit</button>
         </div>
       </div>
     </div>
