@@ -16,6 +16,8 @@ interface DashboardContextType {
   sidebarOpen: boolean;
   dashboardData: DashboardSummaryData | null;
   refreshDashboard: () => void;
+  selectedPeriod: "today" | "week" | "month";
+  refreshDashboardWithPeriod: (period: "today" | "week" | "month") => void;
 }
 
 const DashboardContext = React.createContext<DashboardContextType | null>(null);
@@ -37,6 +39,7 @@ export default function DashboardLayout({
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardSummaryData | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<"today" | "week" | "month">("month");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const fetchedRef = useRef(false);
@@ -63,14 +66,26 @@ export default function DashboardLayout({
     setRefreshTrigger(prev => prev + 1);
   };
 
+  const refreshDashboardWithPeriod = async (period: "today" | "week" | "month") => {
+  setSelectedPeriod(period);
+  try {
+  const summaryRes = await getDashboardSummary(period);
+  if (summaryRes.success) setDashboardData(summaryRes.data);
+  } catch (error) {
+  console.error("Dashboard period refresh error:", error);
+  }
+  };
+
   const contextValue = React.useMemo(() => ({
     user,
     isAdmin: !!user?.roles?.includes("admin"),
     sidebarOpen,
     setSidebarOpen,
     dashboardData,
-    refreshDashboard
-  }), [user, sidebarOpen, dashboardData]);
+    refreshDashboard,
+    selectedPeriod,
+    refreshDashboardWithPeriod
+  }), [user, sidebarOpen, dashboardData, selectedPeriod]);
 
   // Fetch current user
   useEffect(() => {
