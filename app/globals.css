@@ -5647,6 +5647,18 @@
   gap: 1.5rem;
   width: 100%;
   box-sizing: border-box;
+  overflow: hidden;
+}
+/* Prevent grid children from growing beyond their cell */
+.catalog-grid > * {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+/* Contain images in catalog cards */
+.catalog-grid img {
+  max-width: 100%;
+  display: block;
 }
 
 @media (max-width: 1024px) {
