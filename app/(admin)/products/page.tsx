@@ -297,7 +297,7 @@ export default function ProductsPage() {
       {error && <div className="error-banner">{error}</div>}
 
       <AnimatePresence>
-        {selectedIds.length > 0 && (
+        {isAdmin && selectedIds.length > 0 && (
           <motion.div
             className="bulk-actions-bar"
             initial={{ opacity: 0, y: -12, scaleY: 0.92 }}
@@ -329,16 +329,16 @@ export default function ProductsPage() {
       <ProductsList
         products={products}
         loading={loading}
-        onDelete={handleDelete}
-        onEdit={handleEdit}
+        onDelete={isAdmin ? handleDelete : undefined}
+        onEdit={isAdmin ? handleEdit : undefined}
         isAdmin={isAdmin}
         currentPage={page}
         onPageChange={setPage}
         pagination={pagination}
-        selectedIds={selectedIds}
-        onSelect={handleSelect}
-        onSelectAll={handleSelectAll}
-          onStockChange={handleStockChange}
+        selectedIds={isAdmin ? selectedIds : []}
+        onSelect={isAdmin ? handleSelect : undefined}
+        onSelectAll={isAdmin ? handleSelectAll : undefined}
+        onStockChange={isAdmin ? handleStockChange : undefined}
       />
 
       {showForm && (
