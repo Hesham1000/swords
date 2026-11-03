@@ -11,18 +11,34 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
-    
+    const status = searchParams.get("status");
+    const dateFrom = searchParams.get("dateFrom");
+    const dateTo = searchParams.get("dateTo");
+
     const invoicesCollection = await getInvoicesCollection();
-    
-    let query = {};
+
+    const conditions: object[] = [];
     if (searchVal) {
-      query = {
+      conditions.push({
         $or: [
           { customer: { $regex: searchVal, $options: "i" } },
           { invoiceId: { $regex: searchVal, $options: "i" } },
           { "items.name": { $regex: searchVal, $options: "i" } }
         ]
-      };
+      });
+    }
+    if (status) {
+      conditions.push({ status });
+    }
+    if (dateFrom || dateTo) {
+      const dateCond: Record<string, string> = {};
+      if (dateFrom) dateCond.$gte = dateFrom;
+      if (dateTo) dateCond.$lte = dateTo;
+      conditions.push({ date: dateCond });
+    }
+    let query = {};
+    if (conditions.length > 0) {
+      query = { $and: conditions };
     }
     
     const totalCount = await invoicesCollection.countDocuments(query);

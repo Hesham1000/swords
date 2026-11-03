@@ -1,14 +1,17 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Package, Plus, X, Loader2 } from "lucide-react";
+import { Package, Plus, X, Loader2, Trash2, SlidersHorizontal, CheckSquare } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import ProductForm from "../../components/productform";
 import ProductsList from "../../components/products-list";
-import { getProducts, deleteProduct, Product } from "../../lib/api/product";
+import { getProducts, deleteProduct, updateProduct, Product, getProductFilters } from "../../lib/api/product";
+import { useSearchParams } from "next/navigation";
 import { useDashboard } from "../layout";
 
 export default function ProductsPage() {
   const { user, isAdmin } = useDashboard();
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -17,6 +20,10 @@ export default function ProductsPage() {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
   const [refresh, setRefresh] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [stockDelta, setStockDelta] = useState(0);
+  const [filterOptions, setFilterOptions] = useState<{ categories: string[]; brands: string[]; types: string[] }>({ categories: [], brands: [], types: [] });
   const lastParamsRef = useRef("");
 
   // Filters
@@ -24,6 +31,18 @@ export default function ProductsPage() {
   const [filterCategory, setFilterCategory] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
+
+  useEffect(() => {
+    const fetchFilters = async () => {
+      try {
+        const response = await getProductFilters();
+        setFilterOptions(response.data);
+      } catch (err) {
+        console.error("Failed to load filter options:", err);
+      }
+    };
+    fetchFilters();
+  }, []);
 
   useEffect(() => {
     const params = JSON.stringify({ page, searchQuery, filterCategory, filterType, filterBrand, refresh });
@@ -41,6 +60,14 @@ export default function ProductsPage() {
         });
         setProducts(response.data);
         setPagination(response.pagination);
+        const editId = searchParams.get("edit");
+        if (editId) {
+          const found = response.data.find((p: Product) => p.id === editId);
+          if (found) {
+            setEditingProduct(found);
+            setShowForm(true);
+          }
+        }
       } catch (err: any) {
         setError(err.message || "Failed to load products");
       } finally {
@@ -48,7 +75,7 @@ export default function ProductsPage() {
       }
     };
     fetchProducts();
-  }, [page, searchQuery, filterCategory, filterType, filterBrand, refresh]);
+  }, [page, searchQuery, filterCategory, filterType, filterBrand, refresh, searchParams]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this product?")) return;
@@ -57,6 +84,114 @@ export default function ProductsPage() {
       setRefresh(!refresh);
     } catch (err: any) {
       alert(err.message || "Failed to delete product");
+    }
+  };
+
+  const handleStockChange = async (id: string, newQty: number) => {
+    const product = products.find((p) => p.id === id);
+    if (!product) return;
+
+    // Optimistic local update
+    const prevProducts = products;
+    setProducts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, quantity: newQty } : p))
+    );
+
+    try {
+      // updateProduct expects a full FormData payload
+      const formData = new FormData();
+      formData.append("name", product.name);
+      formData.append("description", product.description);
+      if (product.price !== null && product.price !== undefined) {
+        formData.append("price", String(product.price));
+      }
+      (product.category || []).forEach((cat) => formData.append("category", cat));
+      formData.append("productType", product.productType);
+      if (product.brand) formData.append("brand", product.brand);
+      if (product.model) formData.append("model", product.model);
+      if (product.subCategory) formData.append("subCategory", product.subCategory);
+      if (product.hand) formData.append("hand", product.hand);
+      formData.append("isKings", String(!!product.isKings));
+      formData.append("isMini", String(!!product.isMini));
+      if (product.lameColor) formData.append("lameColor", product.lameColor);
+      if (product.material) formData.append("material", product.material);
+      if (product.gloveSize) formData.append("gloveSize", product.gloveSize);
+      formData.append("quantity", String(newQty));
+      if (product.images && product.images.length > 0) {
+        formData.append("existingImages", JSON.stringify(product.images));
+      }
+
+      await updateProduct(id, formData);
+    } catch (err: any) {
+      // Revert on failure
+      setProducts(prevProducts);
+      alert(err?.message || "Failed to update stock");
+    }
+  };
+
+
+  const handleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = (ids: string[]) => {
+    setSelectedIds(ids);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected product(s)?`)) return;
+    try {
+      await Promise.all(selectedIds.map((id) => deleteProduct(id)));
+      setSelectedIds([]);
+      setRefresh(!refresh);
+    } catch (err: any) {
+      alert(err?.message || "Failed to delete selected products");
+    }
+  };
+
+  const handleBulkAdjustStock = async (delta: number) => {
+    if (selectedIds.length === 0) return;
+    try {
+      await Promise.all(
+        selectedIds.map(async (id) => {
+          const product = products.find((p) => p.id === id);
+          if (!product) return;
+          const newQty = (product.quantity || 0) + delta;
+          const formData = new FormData();
+          formData.append("name", product.name);
+          formData.append("description", product.description);
+          if (product.price !== null && product.price !== undefined) {
+            formData.append("price", String(product.price));
+          }
+          (product.category || []).forEach((cat) => formData.append("category", cat));
+          formData.append("productType", product.productType);
+          if (product.brand) formData.append("brand", product.brand);
+          if (product.model) formData.append("model", product.model);
+          if (product.subCategory) formData.append("subCategory", product.subCategory);
+          if (product.hand) formData.append("hand", product.hand);
+          formData.append("isKings", String(!!product.isKings));
+          formData.append("isMini", String(!!product.isMini));
+          if (product.lameColor) formData.append("lameColor", product.lameColor);
+          if (product.material) formData.append("material", product.material);
+          if (product.gloveSize) formData.append("gloveSize", product.gloveSize);
+          formData.append("quantity", String(newQty));
+          if (product.images && product.images.length > 0) {
+            formData.append("existingImages", JSON.stringify(product.images));
+          }
+          await updateProduct(id, formData);
+          // Update local state immediately
+          setProducts((prev) =>
+            prev.map((p) => (p.id === id ? { ...p, quantity: newQty } : p))
+          );
+        })
+      );
+      setSelectedIds([]);
+    } catch (err: any) {
+      alert(err?.message || "Failed to adjust stock for selected products");
+      setRefresh(!refresh);
     }
   };
 
@@ -108,9 +243,9 @@ export default function ProductsPage() {
             className="filter-select"
           >
             <option value="">All Categories</option>
-            <option value="Epée">Epée</option>
-            <option value="Foil">Foil</option>
-            <option value="Sabre">Sabre</option>
+            {filterOptions.categories.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
           </select>
 
           <select 
@@ -122,21 +257,9 @@ export default function ProductsPage() {
             className="filter-select"
           >
             <option value="">All Types</option>
-            <option value="lame">Lamé</option>
-            <option value="wire">Wire</option>
-            <option value="grip">Grip</option>
-            <option value="guard">Guard</option>
-            <option value="guard_padding">Guard Padding</option>
-            <option value="french_pommel">French Pommel</option>
-            <option value="nut">Nut</option>
-            <option value="point">Point</option>
-            <option value="screws">Screws</option>
-            <option value="point_contact_springs">Springs</option>
-            <option value="socket">Socket</option>
-            <option value="insulating_tube">Insulating Tube</option>
-            <option value="body_wire">Body Wire</option>
-            <option value="cable">Cable</option>
-            <option value="pin">Pin</option>
+            {filterOptions.types.map((type) => (
+              <option key={type} value={type}>{type}</option>
+            ))}
           </select>
 
           <select 
@@ -148,13 +271,9 @@ export default function ProductsPage() {
             className="filter-select"
           >
             <option value="">All Brands</option>
-            <option value="pbt">PBT</option>
-            <option value="dynamo">Dynamo</option>
-            <option value="stm">STM</option>
-            <option value="uhlmann">Uhlmann</option>
-            <option value="allstar">Allstar</option>
-            <option value="folo">Folo</option>
-            <option value="chinese">Chinese</option>
+            {filterOptions.brands.map((brand) => (
+              <option key={brand} value={brand}>{brand}</option>
+            ))}
           </select>
 
           {(searchQuery || filterCategory || filterType || filterBrand) && (
@@ -177,6 +296,36 @@ export default function ProductsPage() {
 
       {error && <div className="error-banner">{error}</div>}
 
+      <AnimatePresence>
+        {selectedIds.length > 0 && (
+          <motion.div
+            className="bulk-actions-bar"
+            initial={{ opacity: 0, y: -12, scaleY: 0.92 }}
+            animate={{ opacity: 1, y: 0, scaleY: 1 }}
+            exit={{ opacity: 0, y: -12, scaleY: 0.92 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            <div className="bulk-count">
+              <CheckSquare size={15} />
+              <span>{selectedIds.length} selected</span>
+            </div>
+            <div className="bulk-actions-btns">
+              <button className="bulk-btn bulk-btn-stock" onClick={() => setShowStockModal(true)}>
+                <SlidersHorizontal size={14} />
+                Adjust Stock
+              </button>
+              <button className="bulk-btn bulk-btn-delete" onClick={handleBulkDelete}>
+                <Trash2 size={14} />
+                Delete
+              </button>
+              <button className="bulk-btn bulk-btn-clear" onClick={() => setSelectedIds([])}>
+                <X size={14} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <ProductsList
         products={products}
         loading={loading}
@@ -186,6 +335,10 @@ export default function ProductsPage() {
         currentPage={page}
         onPageChange={setPage}
         pagination={pagination}
+        selectedIds={selectedIds}
+        onSelect={handleSelect}
+        onSelectAll={handleSelectAll}
+          onStockChange={handleStockChange}
       />
 
       {showForm && (
@@ -198,6 +351,20 @@ export default function ProductsPage() {
           initialData={editingProduct || undefined}
           isEdit={!!editingProduct}
         />
+      )}
+
+      {showStockModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setShowStockModal(false)}>
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-tech)", borderRadius: "16px", padding: "28px", width: "380px", maxWidth: "90vw", boxShadow: "0 20px 60px rgba(0,0,0,0.4)" }} onClick={(e) => e.stopPropagation()}>
+            <h3 className="card-title" style={{ marginTop: 0, marginBottom: 8 }}>Adjust Stock</h3>
+            <p style={{ color: "var(--text-muted)", fontSize: "14px", marginBottom: "16px" }}>Enter a delta to add to each selected product's quantity (can be negative).</p>
+            <input type="number" value={stockDelta} onChange={(e) => setStockDelta(Number(e.target.value))} style={{ width: "100%", padding: "10px 14px", background: "var(--glass-bg)", border: "1px solid var(--border-tech)", borderRadius: "8px", color: "var(--text-primary)", fontSize: "15px", marginBottom: "20px", outline: "none" }} />
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+              <button className="primary-btn" onClick={() => { handleBulkAdjustStock(stockDelta); setShowStockModal(false); }}>Apply</button>
+              <button style={{ padding: "10px 20px", borderRadius: "8px", border: "1px solid var(--border-tech)", background: "transparent", color: "var(--text-primary)", cursor: "pointer", fontSize: "14px" }} onClick={() => setShowStockModal(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
