@@ -110,7 +110,7 @@ export default function InvoicesPage() {
         </select>
         <input
           type="date"
-          className="filter-date"
+          className="filter-date-input"
           value={dateFrom}
           onChange={(e) => {
             setDateFrom(e.target.value);
@@ -119,7 +119,7 @@ export default function InvoicesPage() {
         />
         <input
           type="date"
-          className="filter-date"
+          className="filter-date-input"
           value={dateTo}
           onChange={(e) => {
             setDateTo(e.target.value);
@@ -143,9 +143,7 @@ export default function InvoicesPage() {
             invoices.map((invoice) => (
               <div key={invoice._id || invoice.invoiceId} className={`invoice-item status-${invoice.status}`}>
                 <div className="invoice-id-col">
-                  <Link href={`/invoices/${invoice._id}`} className="invoice-id-link">
-                    <div className="invoice-id">{invoice.invoiceId}</div>
-                  </Link>
+                  <Link href={"/invoices/" + invoice._id} className="invoice-id-link" style={{ color: "var(--primary, #3498db)", textDecoration: "none" }}>{invoice.invoiceId}</Link>
                   <div className="invoice-customer">{invoice.customer}</div>
                 </div>
                 <div className="invoice-amount-col">
@@ -181,6 +179,7 @@ export default function InvoicesPage() {
                     <button
                       className="delete-invoice-btn"
                       onClick={() => handleDeleteInvoice(invoice._id!)}
+                      style={{ color: "#e74c3c", background: "transparent", border: "1px solid #e74c3c", borderRadius: "4px", padding: "4px 8px", cursor: "pointer", fontSize: "12px" }}
                     >
                       <Trash2 size={14} />
                       Delete
@@ -238,7 +237,7 @@ export default function InvoicesPage() {
           color: var(--text-secondary);
           gap: 1rem;
         }
-        .filter-select, .filter-date {
+        .filter-select, .filter-date-input {
           padding: 0.875rem 1rem;
           background: var(--bg-card);
           border: 1px solid var(--border-tech);
@@ -250,7 +249,7 @@ export default function InvoicesPage() {
           cursor: pointer;
           transition: var(--transition-smooth);
         }
-        .filter-select:focus, .filter-date:focus {
+        .filter-select:focus, .filter-date-input:focus {
           outline: none;
           border-color: var(--accent-blue);
           box-shadow: 0 0 0 4px rgba(0, 102, 255, 0.1);
