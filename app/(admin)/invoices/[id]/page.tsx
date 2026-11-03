@@ -47,11 +47,25 @@ export default function InvoiceDetailPage() {
         <span className={`status-badge status-${invoice.status}`}>{invoice.status}</span>
       </div>
 
-      <div className="invoice-details">
-        <div><strong>Customer:</strong> {invoice.customer}</div>
-        <div><strong>Date:</strong> {invoice.date}</div>
-        <div><strong>Payment Method:</strong> {invoice.paymentMethod}</div>
-        <div><strong>Total Amount:</strong> {invoice.amount.toLocaleString()} EGP</div>
+      <div className="list-card" style={{ padding: '24px', marginTop: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px', padding: '16px', background: 'var(--glass-bg)', borderRadius: '12px', border: '1px solid var(--border-tech)' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '13px', minWidth: '140px' }}>Customer</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{invoice.customer}</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '13px', minWidth: '140px' }}>Date</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{invoice.date}</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '13px', minWidth: '140px' }}>Payment Method</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{invoice.paymentMethod}</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '13px', minWidth: '140px' }}>Total Amount</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{invoice.amount.toLocaleString()} EGP</span>
+          </div>
+        </div>
       </div>
 
       <table className="invoice-items-table">
@@ -78,9 +92,9 @@ export default function InvoiceDetailPage() {
         </tbody>
       </table>
 
-      <button onClick={() => window.print()}>Print</button>
+      <button className="primary-btn" onClick={() => window.print()}>Print Invoice</button>
 
-      <style jsx>{`
+      <style jsx global>{`
         .invoice-items-table {
           border-collapse: collapse;
           width: 100%;
@@ -92,8 +106,12 @@ export default function InvoiceDetailPage() {
         }
         @media print {
           .sidebar,
-          .topbar {
+          .topbar,
+          .main-content > *:not(.page-content) {
             display: none !important;
+          }
+          .page-content {
+            display: block !important;
           }
         }
       `}</style>

@@ -31,9 +31,9 @@ export async function GET(request: NextRequest) {
       conditions.push({ status });
     }
     if (dateFrom || dateTo) {
-      const dateCond: Record<string, Date> = {};
-      if (dateFrom) dateCond.$gte = new Date(dateFrom);
-      if (dateTo) dateCond.$lte = new Date(dateTo);
+      const dateCond: Record<string, string> = {};
+      if (dateFrom) dateCond.$gte = dateFrom;
+      if (dateTo) dateCond.$lte = dateTo;
       conditions.push({ date: dateCond });
     }
     let query = {};

@@ -14,6 +14,7 @@
   --accent-red-rgb: 192, 57, 43;
   --text-primary: #0D1117; /* Deep ink primary text */
   --text-secondary: #3A3A3A; /* Muted charcoal text */
+  --text-muted: #6b7280;
   --border-tech: #e2e8f0; /* Crisp light steel border */
   --glass-bg: rgba(37, 99, 235, 0.03);
   --shadow-sm: 0 1px 2px rgba(37, 99, 235, 0.05);
@@ -46,6 +47,7 @@
   --accent-red-rgb: 231, 76, 60;
   --text-primary: #F8F5F0; /* Crisp silver white */
   --text-secondary: #B0A090; /* Muted steel gray */
+  --text-muted: #9ca3af;
   --border-tech: #1e293b; /* Sleek dark slate border */
   --glass-bg: rgba(59, 130, 246, 0.03);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -5421,4 +5423,20 @@
 
 .back-link:hover {
   color: var(--text-primary);
+}
+
+.primary-btn {
+  background: var(--grad-btn);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+.primary-btn:hover {
+  opacity: 0.9;
+  box-shadow: var(--shadow-md);
 }
