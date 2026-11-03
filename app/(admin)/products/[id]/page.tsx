@@ -5,8 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getProductById, type Product } from "../../../lib/api/product";
+import { useDashboard } from "../../layout";
 
 export default function ProductDetailPage() {
+  const { isAdmin } = useDashboard();
   const params = useParams();
   const id = params?.id as string | undefined;
   const router = useRouter();
@@ -128,7 +130,9 @@ export default function ProductDetailPage() {
             ))}
           </div>
 
-          <button className="primary-btn" onClick={() => router.push("/products?edit=" + product.id)}>Edit</button>
+          {isAdmin && (
+            <button className="primary-btn" onClick={() => router.push("/products?edit=" + product.id)}>Edit</button>
+          )}
         </div>
       </div>
     </div>
