@@ -5670,6 +5670,14 @@
     flex-direction: column !important;
     align-items: stretch !important;
   }
+  .catalog-search-wrapper {
+    flex: none !important;
+    width: 100% !important;
+  }
+  .catalog-search-wrapper input {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
   .catalog-filter-select {
     width: 100% !important;
     min-width: 0 !important;

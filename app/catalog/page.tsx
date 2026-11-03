@@ -175,7 +175,7 @@ function CatalogPageContent() {
             marginBottom: 28,
           }}
         >
-          <div style={{ position: "relative", flex: "1 1 260px", minWidth: 0, width: "100%" }}>
+          <div className="catalog-search-wrapper" style={{ position: "relative", flex: "1 1 260px", minWidth: 0 }}>
             <Search
               size={18}
               style={{
