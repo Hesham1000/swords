@@ -124,11 +124,17 @@ export default function LandingPage() {
                   style={{
                     border: "2px solid var(--accent-gold)",
                     color: "var(--accent-gold)",
-                    background: "transparent",
-                    padding: "1.5rem 3rem",
-                    fontSize: "1.1rem",
+                    background: "rgba(201,168,76,0.12)",
+                    padding: "1.2rem 2.5rem",
+                    fontSize: "1rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
                     borderRadius: "8px",
                     cursor: "pointer",
+                    width: "100%",
+                    maxWidth: "320px",
+                    backdropFilter: "blur(4px)",
                   }}
                 >
                   Browse Catalog

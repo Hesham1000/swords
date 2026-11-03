@@ -152,8 +152,9 @@ function CatalogPageContent() {
         />
       </nav>
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px", boxSizing: "border-box", width: "100%" }}>
+      <div className="catalog-container" style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px", boxSizing: "border-box", width: "100%" }}>
         <h1
+          className="catalog-title"
           style={{
             fontSize: 32,
             fontWeight: 700,
@@ -166,6 +167,7 @@ function CatalogPageContent() {
 
         {/* Search & Filters */}
         <div
+          className="catalog-filter-row"
           style={{
             display: "flex",
             flexWrap: "wrap",
@@ -213,6 +215,7 @@ function CatalogPageContent() {
               setFilterCategory(e.target.value);
             }}
             style={selectStyle}
+            className="catalog-filter-select"
             aria-label="Filter by category"
           >
             <option value="">All Categories</option>
@@ -230,6 +233,7 @@ function CatalogPageContent() {
               setFilterType(e.target.value);
             }}
             style={selectStyle}
+            className="catalog-filter-select"
             aria-label="Filter by type"
           >
             <option value="">All Types</option>
@@ -247,6 +251,7 @@ function CatalogPageContent() {
               setFilterBrand(e.target.value);
             }}
             style={selectStyle}
+            className="catalog-filter-select"
             aria-label="Filter by brand"
           >
             <option value="">All Brands</option>
@@ -487,13 +492,16 @@ function CatalogPageContent() {
         )}
       </div>
 
-      {/* Responsive grid columns */}
       <style>{`
         @media (max-width: 1024px) {
           .catalog-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
         @media (max-width: 640px) {
           .catalog-grid { grid-template-columns: 1fr !important; }
+          .catalog-container { padding: 20px 16px !important; }
+          .catalog-title { font-size: 22px !important; margin-bottom: 16px !important; }
+          .catalog-filter-row { flex-direction: column !important; align-items: stretch !important; }
+          .catalog-filter-select { width: 100% !important; min-width: 0 !important; box-sizing: border-box; }
         }
         @keyframes pulse {
           0%, 100% { opacity: 1; }
