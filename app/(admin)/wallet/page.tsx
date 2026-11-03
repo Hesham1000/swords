@@ -33,7 +33,7 @@ export default function WalletPage() {
       setLoading(true);
       const res = await getWalletTransactions(1, 1000);
       const rows = res.data.map(tx => [
-        new Date(tx.date).toLocaleDateString("en-GB"),
+        new Date(tx.date).toISOString().split("T")[0],
         tx.type,
         tx.note,
         tx.amount,
