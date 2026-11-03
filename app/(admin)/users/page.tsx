@@ -32,9 +32,9 @@ export default function UsersPage() {
       try {
         setLoading(true);
         setError("");
-        const data = await getUsers(debouncedSearch || undefined);
-        setUsers(data);
-      } catch (err: any) {
+          const response = await getUsers(debouncedSearch || undefined);
+          setUsers(response.data);
+        } catch (err: any) {
         setError(err.message || "Failed to load users");
       } finally {
         setLoading(false);
