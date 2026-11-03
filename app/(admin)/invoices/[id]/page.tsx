@@ -21,6 +21,15 @@ export default function InvoiceDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+
+  const handlePrint = () => {
+    const content = document.getElementById('invoice-print-area')?.innerHTML ?? '';
+    const w = window.open('', '_blank', 'width=900,height=700');
+    w?.document.write(`<html><head><title>Invoice ${invoice?.invoiceId}</title><style>body{font-family:Arial,sans-serif;padding:32px;color:#000}table{width:100%;border-collapse:collapse}th,td{padding:10px 8px;border-bottom:1px solid #ddd;text-align:left}th{font-weight:600;font-size:13px;text-transform:uppercase;color:#666}.info-grid{display:grid;gap:8px;margin-bottom:24px}.label{font-size:12px;color:#888;text-transform:uppercase}.value{font-size:15px;font-weight:500}</style></head><body>${content}</body></html>`);
+    w?.document.close();
+    w?.print();
+  };
+
   if (loading) {
     return (
       <div className="page-content">
@@ -46,10 +55,10 @@ export default function InvoiceDetailPage() {
       <div className="page-header">
         <h1 className="page-title">{invoice.invoiceId}</h1>
         <span className={`status-badge status-${invoice.status}`}>{invoice.status}</span>
-          <button className="primary-btn" onClick={() => window.print()}>Print Invoice</button>
+          <button className="primary-btn" onClick={handlePrint}>Print Invoice</button>
       </div>
 
-      <div className="list-card" style={{ padding: '24px', marginTop: '20px' }}>
+      <div className="list-card" style={{ padding: '24px', marginTop: '20px', background: 'var(--bg-card)', border: '1px solid var(--border-tech)', borderRadius: '16px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px', padding: '16px', background: 'var(--glass-bg)', borderRadius: '12px', border: '1px solid var(--border-tech)' }}>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <span style={{ color: 'var(--text-muted)', fontSize: '13px', minWidth: '140px' }}>Customer</span>
@@ -70,13 +79,14 @@ export default function InvoiceDetailPage() {
         </div>
       </div>
 
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-tech)', borderRadius: '12px', overflow: 'hidden', marginTop: '20px' }}>
       <table className="invoice-items-table">
-        <thead>
+        <thead style={{ background: 'var(--glass-bg)' }}>
           <tr>
-            <th>Name</th>
-            <th>Qty</th>
-            <th>Price</th>
-            <th>Subtotal</th>
+            <th style={{ color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, padding: '12px 16px' }}>Name</th>
+            <th style={{ color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, padding: '12px 16px' }}>Qty</th>
+            <th style={{ color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, padding: '12px 16px' }}>Price</th>
+            <th style={{ color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, padding: '12px 16px' }}>Subtotal</th>
           </tr>
         </thead>
         <tbody>
@@ -93,6 +103,7 @@ export default function InvoiceDetailPage() {
           })}
         </tbody>
       </table>
+      </div>
 
       </div>
 
@@ -105,11 +116,6 @@ export default function InvoiceDetailPage() {
         .invoice-items-table td {
           padding: 8px;
           border-bottom: 1px solid var(--border);
-        }
-        @media print {
-          body * { visibility: hidden; }
-          #invoice-print-area, #invoice-print-area * { visibility: visible; }
-          #invoice-print-area { position: fixed; top: 0; left: 0; width: 100%; background: white; padding: 32px; color: #000; }
         }
       `}</style>
     </div>
