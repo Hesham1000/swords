@@ -21,9 +21,22 @@ export default function InvoiceDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!invoice) return;
     const total = invoice.items.reduce((sum: number, item: any) => sum + (item.price ?? 0) * item.quantity, 0);
+    let logoBase64 = "";
+    try {
+      const res = await fetch(window.location.origin + "/icon.png");
+      const blob = await res.blob();
+      logoBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+    } catch {}
+    const logoHtml = logoBase64
+      ? `<img src="${logoBase64}" class="brand-logo" alt="KINGS" />`
+      : `<div style="font-size:24px;font-weight:800;letter-spacing:4px;color:#c9a84c">KINGS</div>`;
     const itemRows = invoice.items
       .map(
         (item: any) => `
@@ -39,7 +52,6 @@ export default function InvoiceDetailPage() {
     const statusColor =
       invoice.status === "paid" ? "#16a34a" : invoice.status === "overdue" ? "#dc2626" : "#d97706";
 
-    const logoUrl = window.location.origin + "/icon.png";
     const w = window.open("", "_blank", "width=900,height=700");
     w?.document.write(`
 <!DOCTYPE html>
@@ -76,7 +88,7 @@ export default function InvoiceDetailPage() {
 <body>
   <div class="header">
     <div>
-      <img src="${logoUrl}" class="brand-logo" alt="KINGS" />
+      ${logoHtml}
     </div>
     <div class="inv-meta">
       <div class="inv-id">${invoice.invoiceId}</div>
