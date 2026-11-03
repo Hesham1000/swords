@@ -39,6 +39,7 @@ export default function InvoiceDetailPage() {
     const statusColor =
       invoice.status === "paid" ? "#16a34a" : invoice.status === "overdue" ? "#dc2626" : "#d97706";
 
+    const logoUrl = window.location.origin + "/icon.png";
     const w = window.open("", "_blank", "width=900,height=700");
     w?.document.write(`
 <!DOCTYPE html>
@@ -50,8 +51,7 @@ export default function InvoiceDetailPage() {
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #111; padding: 48px 56px; }
     .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 2px solid #c9a84c; padding-bottom: 24px; }
-    .brand { font-size: 28px; font-weight: 800; letter-spacing: 4px; color: #c9a84c; }
-    .brand-sub { font-size: 11px; color: #888; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+    .brand-logo { width: 80px; height: 80px; object-fit: contain; background: #2e3d3d; border-radius: 10px; padding: 4px; display: block; }
     .inv-meta { text-align: right; }
     .inv-id { font-size: 22px; font-weight: 700; color: #111; }
     .inv-date { font-size: 13px; color: #666; margin-top: 4px; }
@@ -76,8 +76,7 @@ export default function InvoiceDetailPage() {
 <body>
   <div class="header">
     <div>
-      <div class="brand">KINGS</div>
-      <div class="brand-sub">Fencing Equipment</div>
+      <img src="${logoUrl}" class="brand-logo" alt="KINGS" />
     </div>
     <div class="inv-meta">
       <div class="inv-id">${invoice.invoiceId}</div>
@@ -147,8 +146,13 @@ export default function InvoiceDetailPage() {
       <div className="page-header" style={{ marginBottom: "24px" }}>
         <h1 className="page-title">{invoice.invoiceId}</h1>
         <span className={`status-badge status-${invoice.status}`}>{invoice.status}</span>
-        <button className="primary-btn" onClick={handlePrint} style={{ marginLeft: "auto" }}>
-          Print Invoice
+        <button className="primary-btn" onClick={handlePrint} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "6px" }} title="Print Invoice">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"/>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8"/>
+          </svg>
+          Print
         </button>
       </div>
 
