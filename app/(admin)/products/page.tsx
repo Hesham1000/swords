@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Package, Plus, X, Loader2 } from "lucide-react";
+import { Package, Plus, X, Loader2, Trash2, SlidersHorizontal, CheckSquare } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import ProductForm from "../../components/productform";
 import ProductsList from "../../components/products-list";
 import { getProducts, deleteProduct, updateProduct, Product, getProductFilters } from "../../lib/api/product";
@@ -295,13 +296,35 @@ export default function ProductsPage() {
 
       {error && <div className="error-banner">{error}</div>}
 
-      {selectedIds.length > 0 && (
-        <div className="bulk-actions-bar" style={{ display: "flex", gap: "10px", padding: "10px", background: "var(--glass-bg)", border: "1px solid var(--border-tech)", borderRadius: "8px", marginBottom: "10px", alignItems: "center" }}>
-          <span>{selectedIds.length} selected</span>
-          <button className="primary-btn" onClick={handleBulkDelete}>Delete Selected</button>
-          <button className="primary-btn" onClick={() => setShowStockModal(true)}>Adjust Stock</button>
-        </div>
-      )}
+      <AnimatePresence>
+        {selectedIds.length > 0 && (
+          <motion.div
+            className="bulk-actions-bar"
+            initial={{ opacity: 0, y: -12, scaleY: 0.92 }}
+            animate={{ opacity: 1, y: 0, scaleY: 1 }}
+            exit={{ opacity: 0, y: -12, scaleY: 0.92 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            <div className="bulk-count">
+              <CheckSquare size={15} />
+              <span>{selectedIds.length} selected</span>
+            </div>
+            <div className="bulk-actions-btns">
+              <button className="bulk-btn bulk-btn-stock" onClick={() => setShowStockModal(true)}>
+                <SlidersHorizontal size={14} />
+                Adjust Stock
+              </button>
+              <button className="bulk-btn bulk-btn-delete" onClick={handleBulkDelete}>
+                <Trash2 size={14} />
+                Delete
+              </button>
+              <button className="bulk-btn bulk-btn-clear" onClick={() => setSelectedIds([])}>
+                <X size={14} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <ProductsList
         products={products}

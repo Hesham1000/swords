@@ -65,7 +65,20 @@ const ProductRow: React.FC<ProductRowProps> = ({
       style={{ cursor: "pointer" }}
     >
       <div className="product-image-container">
-          {onSelect && <input type="checkbox" checked={isSelected ?? false} onChange={() => onSelect(product.id)} onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', top: '8px', left: '8px', zIndex: 10, width: '18px', height: '18px', accentColor: 'var(--accent-blue)', cursor: 'pointer' }} />}
+        {onSelect && (
+          <div
+            className={`product-checkbox-wrap ${isSelected ? "checked" : ""}`}
+            onClick={(e) => { e.stopPropagation(); onSelect(product.id); }}
+          >
+            <div className="product-checkbox">
+              {isSelected && (
+                <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                  <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </div>
+          </div>
+        )}
         <AnimatePresence mode="wait">
           {images.length > 0 ? (
             <motion.img
@@ -210,23 +223,25 @@ const ProductRow: React.FC<ProductRowProps> = ({
             {product.quantity < 3 ? <AlertCircle size={12} /> : <Package size={12} />}
             <span>{product.quantity} AVAILABLE</span>
           </div>
-          <div className="stock-controls">
-            <button
-              onClick={(e) => { e.stopPropagation(); onStockChange?.(product.id, product.quantity - 1); }}
-              disabled={product.quantity === 0}
-              style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid var(--border-tech)", background: "var(--glass-bg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-              title="Decrease stock"
-            >
-              <Minus size={14} />
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onStockChange?.(product.id, product.quantity + 1); }}
-              style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid var(--border-tech)", background: "var(--glass-bg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
-              title="Increase stock"
-            >
-              <Plus size={14} />
-            </button>
-          </div>
+          {onStockChange && (
+            <div className="stock-controls">
+              <button
+                className="stock-btn stock-btn-minus"
+                onClick={(e) => { e.stopPropagation(); onStockChange(product.id, product.quantity - 1); }}
+                disabled={product.quantity === 0}
+                title="Decrease stock"
+              >
+                <Minus size={13} />
+              </button>
+              <button
+                className="stock-btn stock-btn-plus"
+                onClick={(e) => { e.stopPropagation(); onStockChange(product.id, product.quantity + 1); }}
+                title="Increase stock"
+              >
+                <Plus size={13} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
