@@ -33,7 +33,7 @@ export default function WalletPage() {
       setLoading(true);
       const res = await getWalletTransactions(1, 1000);
       const rows = res.data.map(tx => [
-        new Date(tx.date).toISOString().split("T")[0],
+        (() => { const d = new Date(tx.date); const m = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; return `${String(d.getDate()).padStart(2,"0")}-${m[d.getMonth()]}-${d.getFullYear()}`; })(),
         tx.type,
         tx.note,
         tx.amount,
