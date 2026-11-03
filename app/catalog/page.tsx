@@ -284,13 +284,7 @@ function CatalogPageContent() {
 
         {/* Loading state */}
         {loading ? (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-              gap: 20,
-            }}
-          >
+          <div className="catalog-grid">
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
@@ -317,14 +311,7 @@ function CatalogPageContent() {
         ) : (
           <>
             {/* Product Grid */}
-            <div
-              className="catalog-grid"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-                gap: 20,
-              }}
-            >
+            <div className="catalog-grid">
               {products.map((product, idx) => {
                 const badge = getStockBadge(product.quantity);
                 return (
@@ -493,16 +480,6 @@ function CatalogPageContent() {
       </div>
 
       <style>{`
-        @media (max-width: 1024px) {
-          .catalog-grid { grid-template-columns: repeat(2, 1fr) !important; }
-        }
-        @media (max-width: 640px) {
-          .catalog-grid { grid-template-columns: 1fr !important; }
-          .catalog-container { padding: 20px 16px !important; }
-          .catalog-title { font-size: 22px !important; margin-bottom: 16px !important; }
-          .catalog-filter-row { flex-direction: column !important; align-items: stretch !important; }
-          .catalog-filter-select { width: 100% !important; min-width: 0 !important; box-sizing: border-box; }
-        }
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
