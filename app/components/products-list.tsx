@@ -10,7 +10,7 @@ interface ProductsListProps {
   loading: boolean;
   error?: string;
   onEdit?: (product: Product) => void;
-  onDelete: (productId: string) => void;
+  onDelete?: (productId: string) => void;
   pagination?: {
     page: number;
     totalPages: number;
