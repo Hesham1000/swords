@@ -42,9 +42,11 @@ export default function InvoiceDetailPage() {
     <div className="page-content">
       <Link href="/invoices" className="back-link">← Back to Invoices</Link>
 
+      <div id="invoice-print-area">
       <div className="page-header">
         <h1 className="page-title">{invoice.invoiceId}</h1>
         <span className={`status-badge status-${invoice.status}`}>{invoice.status}</span>
+          <button className="primary-btn" onClick={() => window.print()}>Print Invoice</button>
       </div>
 
       <div className="list-card" style={{ padding: '24px', marginTop: '20px' }}>
@@ -84,15 +86,15 @@ export default function InvoiceDetailPage() {
               <tr key={idx}>
                 <td>{item.name}</td>
                 <td>{item.quantity}</td>
-                <td>{item.price ?? 0}</td>
-                <td>{subtotal}</td>
+                <td>{(item.price ?? 0).toLocaleString()} EGP</td>
+                <td>{subtotal.toLocaleString()} EGP</td>
               </tr>
             );
           })}
         </tbody>
       </table>
 
-      <button className="primary-btn" onClick={() => window.print()}>Print Invoice</button>
+      </div>
 
       <style jsx global>{`
         .invoice-items-table {
@@ -105,14 +107,9 @@ export default function InvoiceDetailPage() {
           border-bottom: 1px solid var(--border);
         }
         @media print {
-          .sidebar,
-          .topbar,
-          .main-content > *:not(.page-content) {
-            display: none !important;
-          }
-          .page-content {
-            display: block !important;
-          }
+          body * { visibility: hidden; }
+          #invoice-print-area, #invoice-print-area * { visibility: visible; }
+          #invoice-print-area { position: fixed; top: 0; left: 0; width: 100%; background: white; padding: 32px; color: #000; }
         }
       `}</style>
     </div>
