@@ -179,7 +179,6 @@ export default function InvoicesPage() {
                     <button
                       className="delete-invoice-btn"
                       onClick={() => handleDeleteInvoice(invoice._id!)}
-                      style={{ color: "#e74c3c", background: "transparent", border: "1px solid #e74c3c", borderRadius: "4px", padding: "4px 8px", cursor: "pointer", fontSize: "12px" }}
                     >
                       <Trash2 size={14} />
                       Delete
@@ -266,9 +265,9 @@ export default function InvoicesPage() {
           align-items: center;
           gap: 0.25rem;
           padding: 0.375rem 0.75rem;
-          background: #dc2626;
-          color: #ffffff;
-          border: none;
+          background: rgba(220,38,38,0.08);
+          color: #dc2626;
+          border: 1px solid #dc2626;
           border-radius: 8px;
           font-size: 12px;
           font-weight: 600;
@@ -276,10 +275,11 @@ export default function InvoicesPage() {
           transition: var(--transition-smooth);
         }
         .delete-invoice-btn:hover {
-            background: #b91c1c;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-          }
+          background: #dc2626;
+          color: #ffffff;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(220,38,38,0.35);
+        }
           .delete-invoice-btn:active {
             transform: translateY(0) scale(0.98);
           }
