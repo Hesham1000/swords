@@ -99,7 +99,7 @@ export default function LandingPage() {
               <span className="glow-text">ARSENAL</span>
             </h1>
             <p className="hero-description" style={{ color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-              Direct access to **PBT**, **Allstar**, and **Uhlmann**. The premier marketplace and command center for the global fencing community. 
+              Direct access to <strong>PBT</strong>, <strong>Allstar</strong>, and <strong>Uhlmann</strong>. The premier marketplace and command center for the global fencing community.
               Manage your gear, track your performance, and dominate the strip.
             </p>
 
@@ -123,18 +123,17 @@ export default function LandingPage() {
                 <button
                   style={{
                     border: "2px solid var(--accent-gold)",
-                    color: "var(--accent-gold)",
-                    background: "rgba(201,168,76,0.12)",
+                    color: "#0a0e1a",
+                    background: "var(--accent-gold)",
                     padding: "1.2rem 2.5rem",
                     fontSize: "1rem",
-                    fontWeight: 700,
+                    fontWeight: 800,
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
                     borderRadius: "8px",
                     cursor: "pointer",
                     width: "100%",
                     maxWidth: "320px",
-                    backdropFilter: "blur(4px)",
                   }}
                 >
                   Browse Catalog
