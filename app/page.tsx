@@ -113,6 +113,28 @@ export default function LandingPage() {
                 </button>
               </Link>
             </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              style={{ marginTop: "1rem" }}
+            >
+              <Link href="/catalog" style={{ textDecoration: 'none' }}>
+                <button
+                  style={{
+                    border: "2px solid var(--accent-gold)",
+                    color: "var(--accent-gold)",
+                    background: "transparent",
+                    padding: "1.5rem 3rem",
+                    fontSize: "1.1rem",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Browse Catalog
+                </button>
+              </Link>
+            </motion.div>
           </motion.div>
         </div>
       </section>
@@ -141,6 +163,22 @@ export default function LandingPage() {
                 </div>
                 <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '0.5rem' }}>{cat.name}</h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{cat.description}</p>
+                  <div style={{ marginTop: '1rem' }}>
+                    <Link
+                      href={`/catalog?brand=${cat.name}`}
+                      style={{
+                        color: 'var(--accent-gold)',
+                        fontSize: '0.9rem',
+                        fontWeight: '600',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      View in Catalog →
+                    </Link>
+                  </div>
               </motion.div>
             ))}
           </div>
