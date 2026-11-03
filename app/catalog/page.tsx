@@ -111,6 +111,7 @@ function CatalogPageContent() {
       style={{
         background: "#fafafa",
         width: "100%",
+        overflowX: "hidden",
       }}
     >
       {/* Top Nav */}
@@ -151,7 +152,7 @@ function CatalogPageContent() {
         />
       </nav>
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px", boxSizing: "border-box", width: "100%" }}>
         <h1
           style={{
             fontSize: 32,
@@ -315,7 +316,7 @@ function CatalogPageContent() {
               className="catalog-grid"
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
+                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
                 gap: 20,
               }}
             >
