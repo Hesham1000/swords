@@ -129,7 +129,7 @@ export default function InvoiceDetailPage() {
 </body>
 </html>`);
     w?.document.close();
-    w?.print();
+    setTimeout(() => w?.print(), 800);
   };
 
   if (loading) {
