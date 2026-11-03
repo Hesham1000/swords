@@ -126,12 +126,6 @@ export default function WalletPage() {
           <h3 className="stat-title">EUR Balance</h3>
           <p className="stat-value">€ {balance.EUR.toLocaleString()}</p>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon"><Wallet size={20} /></div>
-          <h3 className="stat-title">Total (EGP equiv.)</h3>
-          <p className="stat-value">EGP {(balance.EGP + balance.USD * 48.9 + balance.EUR * 52.5).toLocaleString()}</p>
-          <p className="stat-note">Approx. at fixed rates</p>
-        </div>
       </div>
 
       <div className="list-card full-width">
