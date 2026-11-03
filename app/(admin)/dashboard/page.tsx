@@ -10,17 +10,41 @@ import {
   Users, 
   Loader2, 
   AlertCircle, 
-  CheckCircle 
+  CheckCircle,
+  Download 
 } from "lucide-react";
-import { DashboardSummaryData } from "../../lib/api/dashboard";
-import { updateInvoiceStatus } from "../../lib/api/invoice";
+import { DashboardSummaryData, getDashboardSummary } from "../../lib/api/dashboard";
+import { updateInvoiceStatus, getInvoices } from "../../lib/api/invoice";
 import { useRouter } from "next/navigation";
 import { useDashboard } from "../layout";
 
 export default function DashboardOverview() {
-  const { user, isAdmin, dashboardData, refreshDashboard } = useDashboard();
+  const { user, isAdmin, dashboardData, refreshDashboard, setDashboardPeriod, dashboardPeriod } = useDashboard();
   const router = useRouter();
   const [error, setError] = useState("");
+
+  const handlePeriodChange = (period: "today" | "week" | "month") => {
+    setDashboardPeriod(period);
+  };
+
+  const handleExportCSV = async () => {
+    const response = await getInvoices(1, 1000);
+    const escapeCsv = (v: string | number) => '"' + String(v).replace(/"/g, '""') + '"';
+    const rows = response.data.map(
+      (invoice) =>
+        [escapeCsv(invoice.invoiceId), escapeCsv(invoice.customer), escapeCsv(invoice.amount), escapeCsv(new Date(invoice.date).toLocaleDateString("en-GB")), escapeCsv(invoice.status), escapeCsv(invoice.items.map(item => `${item.name} x ${item.quantity} @ ${item.price} EGP`).join(", "))].join(",")
+    );
+    const csv = ["Invoice ID,Customer,Amount,Date,Status,Items", ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "invoices.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   if (!dashboardData && !error) {
     return (
@@ -36,6 +60,17 @@ export default function DashboardOverview() {
   }
 
   const { summary, recentInvoices, lowStockItems, analytics } = dashboardData!;
+
+  const trends = analytics?.trends ?? [];
+  const half = Math.floor(trends.length / 2);
+  const sum = (arr: any[], key: string) => arr.reduce((acc, t) => acc + (Number(t[key]) || 0), 0);
+  const pct = (key: string) => {
+    const first = sum(trends.slice(0, half), key);
+    const second = sum(trends.slice(half), key);
+    return first > 0 ? ((second - first) / first) * 100 : 0;
+  };
+  const revenueChange = pct("revenue");
+  const ordersChange = pct("orders");
 
   const StatCard = ({
     title,
@@ -67,30 +102,42 @@ export default function DashboardOverview() {
 
   return (
     <>
+      <div className="period-filter">
+        {(["today", "week", "month"] as const).map((p) => (
+          <button
+            key={p}
+            className={`period-btn ${dashboardPeriod === p ? "active" : ""}`}
+            onClick={() => handlePeriodChange(p)}
+          >
+            {p.charAt(0).toUpperCase() + p.slice(1)}
+          </button>
+        ))}
+      </div>
+
       <div className="stats-grid">
         <StatCard
           title="Revenue"
           value={summary.totalRevenue}
-          change={12.5} // Mock trend for now
+          change={revenueChange}
           icon={DollarSign}
           prefix="EGP "
         />
         <StatCard
           title="Orders"
           value={summary.totalOrders}
-          change={8.3}
+          change={ordersChange}
           icon={ShoppingCart}
         />
         <StatCard
           title="Inventory"
           value={summary.totalInventoryCount}
-          change={5.2}
+          change={0}
           icon={Package}
         />
         <StatCard
           title="Audience"
           value={summary.uniqueCustomers}
-          change={15.7}
+          change={0}
           icon={Users}
         />
       </div>
@@ -204,7 +251,15 @@ export default function DashboardOverview() {
 
         {/* Recent Invoices */}
         <div className="list-card">
-          <div className="card-header"><h2 className="card-title">Recent Invoices</h2></div>
+          <div className="card-header">
+            <h2 className="card-title">Recent Invoices</h2>
+            <div className="header-actions">
+              <button className="refresh-btn" onClick={handleExportCSV} title="Export Invoices to CSV">
+                <Download size={14} className="refresh-icon" />
+                <span>Export CSV</span>
+              </button>
+            </div>
+          </div>
           <div className="invoice-list">
             {recentInvoices.map((invoice) => (
               <div key={invoice._id || invoice.invoiceId} className={`invoice-item status-${invoice.status}`}>

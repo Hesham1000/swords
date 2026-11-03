@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
-import { Menu, X, Loader2 } from "lucide-react";
+import React, { useState, useEffect, Suspense } from "react";
+import { Menu, X, Loader2, Bell } from "lucide-react";
 import Sidebar from "../components/sidebar";
 import { getCurrentUser, User } from "../lib/api/auth";
 import { getDashboardSummary, DashboardSummaryData } from "../lib/api/dashboard";
@@ -16,6 +16,8 @@ interface DashboardContextType {
   sidebarOpen: boolean;
   dashboardData: DashboardSummaryData | null;
   refreshDashboard: () => void;
+  setDashboardPeriod: (p: "today" | "week" | "month") => void;
+  dashboardPeriod: "today" | "week" | "month";
 }
 
 const DashboardContext = React.createContext<DashboardContextType | null>(null);
@@ -38,8 +40,8 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardSummaryData | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [dashboardPeriod, setDashboardPeriod] = useState<"today" | "week" | "month">("month");
   const [isMobile, setIsMobile] = useState(false);
-  const fetchedRef = useRef(false);
 
   // Check for mobile on mount and window resize
   useEffect(() => {
@@ -59,7 +61,6 @@ export default function DashboardLayout({
   }, []);
 
   const refreshDashboard = () => {
-    fetchedRef.current = false;
     setRefreshTrigger(prev => prev + 1);
   };
 
@@ -69,13 +70,13 @@ export default function DashboardLayout({
     sidebarOpen,
     setSidebarOpen,
     dashboardData,
-    refreshDashboard
-  }), [user, sidebarOpen, dashboardData]);
+    setDashboardPeriod,
+    refreshDashboard,
+    dashboardPeriod
+  }), [user, sidebarOpen, dashboardData, dashboardPeriod]);
 
   // Fetch current user
   useEffect(() => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
 
     const initDashboard = async () => {
       try {
@@ -83,7 +84,7 @@ export default function DashboardLayout({
         // Fetch User and Dashboard Summary together
         const [userData, summaryRes] = await Promise.all([
           getCurrentUser(),
-          getDashboardSummary()
+          getDashboardSummary(dashboardPeriod)
         ]);
         
           if (userData) {
@@ -101,7 +102,7 @@ export default function DashboardLayout({
       }
     };
     initDashboard();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, dashboardPeriod]);
 
   // Handle Redirection for non-admins
   useEffect(() => {
@@ -143,6 +144,7 @@ export default function DashboardLayout({
   }, [router]);
 
   const currentPage = pathname.split("/").pop() || "dashboard";
+  const lowStockCount = dashboardData?.lowStockItems?.length ?? 0;
 
   if (loading) {
     return (
@@ -210,7 +212,19 @@ export default function DashboardLayout({
             {pathname.includes("/wallet") && "Wallet Management"}
             {pathname.includes("/history") && "Inventory History"}
           </h2>
-          <div></div>
+          <button
+            className="notification-bell"
+            onClick={() => router.push("/dashboard")}
+            title="Notifications"
+            aria-label="Notifications"
+          >
+            <Bell size={20} />
+            {lowStockCount > 0 && (
+              <span className="notification-badge">
+                {lowStockCount}
+              </span>
+            )}
+          </button>
         </div>
 
         <div className="content-wrapper">
@@ -310,6 +324,41 @@ export default function DashboardLayout({
           backdrop-filter: blur(4px);
           z-index: 45;
         }
+          .notification-bell {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-tech);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          .notification-bell:hover {
+            background: rgba(var(--accent-blue-rgb), 0.08);
+            border-color: rgba(var(--accent-blue-rgb), 0.2);
+          }
+          .notification-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 9px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+          }
         @media (max-width: 1024px) {
           .main-content {
             margin-left: 0;
