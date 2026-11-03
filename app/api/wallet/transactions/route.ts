@@ -8,17 +8,20 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const skip = (page - 1) * limit;
+    const type = searchParams.get("type") || "";
+    const query: Record<string, string> = {};
+    if (type) query.type = type;
 
     const transactionsCollection = await getWalletTransactionsCollection();
     
     const [transactions, totalItems] = await Promise.all([
       transactionsCollection
-        .find({})
+        .find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .toArray(),
-      transactionsCollection.countDocuments({})
+      transactionsCollection.countDocuments(query)
     ]);
 
     const totalPages = Math.ceil(totalItems / limit);

@@ -109,11 +109,12 @@ export async function withdrawFromWallet(amount: number, note?: string, currency
 /**
  * Fetch wallet transaction history
  */
-export async function getWalletTransactions(page: number = 1, limit: number = 10): Promise<WalletTransactionsResponse> {
+export async function getWalletTransactions(page: number = 1, limit: number = 10, type?: string): Promise<WalletTransactionsResponse> {
   try {
     const url = new URL(`${apiUrl}/api/wallet/transactions`);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
+    if (type) url.searchParams.append("type", type);
 
     const response = await fetch(url.toString(), {
       method: "GET",

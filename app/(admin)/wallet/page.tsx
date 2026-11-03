@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Wallet, Plus, ArrowUpCircle, ArrowDownCircle, Truck, Loader2 } from "lucide-react";
+import { Wallet, Plus, ArrowUpCircle, ArrowDownCircle, Truck, Loader2, Download } from "lucide-react";
 import WalletDepositForm from "../../components/wallet-deposit-form";
 import ShipmentForm from "../../components/shipment-form";
 import { getWalletBalance, getWalletTransactions, WalletTransaction } from "../../lib/api/wallet";
@@ -18,6 +18,7 @@ export default function WalletPage() {
   const [showShipmentForm, setShowShipmentForm] = useState(false);
   const [refresh, setRefresh] = useState(false);
   const [page, setPage] = useState(1);
+  const [filterType, setFilterType] = useState<"" | "deposit" | "withdraw" | "shipment" | "invoice">("");
   const [pagination, setPagination] = useState<{
     totalPages: number;
     totalItems: number;
@@ -27,8 +28,40 @@ export default function WalletPage() {
   } | null>(null);
   const lastParamsRef = useRef("");
 
+  const handleExportCSV = async () => {
+    try {
+      setLoading(true);
+      const res = await getWalletTransactions(1, 1000);
+      const rows = res.data.map(tx => [
+        `="${new Date(tx.date).toISOString().split("T")[0]}"`,
+        tx.type,
+        tx.note,
+        tx.amount,
+        tx.currency
+      ]);
+      const csvContent = [
+        ["Date", "Type", "Note", "Amount", "Currency"].join(","),
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `wallet-transactions-${new Date().toISOString().split("T")[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed:", err);
+      alert("Failed to export transactions");
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
-    const params = JSON.stringify({ refresh, page });
+    const params = JSON.stringify({ refresh, page, filterType });
     if (params === lastParamsRef.current) return;
     lastParamsRef.current = params;
 
@@ -37,7 +70,7 @@ export default function WalletPage() {
         setLoading(true);
         const [balanceRes, transactionsRes] = await Promise.all([
           getWalletBalance(),
-          getWalletTransactions(page),
+          getWalletTransactions(page, 10, filterType || undefined),
         ]);
         setBalance({
           EGP: balanceRes.data.balanceEGP,
@@ -98,6 +131,26 @@ export default function WalletPage() {
       <div className="list-card full-width">
         <div className="card-header">
           <h2 className="card-title">Transaction History</h2>
+          <button className="export-btn" onClick={handleExportCSV} disabled={loading}>
+            <Download size={16} />
+            <span>Export CSV</span>
+          </button>
+        </div>
+        <div className="filter-container">
+          <select
+            className="filter-select"
+            value={filterType}
+            onChange={(e) => {
+              setFilterType(e.target.value as any);
+              setPage(1);
+            }}
+          >
+            <option value="">All Transactions</option>
+            <option value="deposit">Deposits</option>
+            <option value="withdraw">Withdrawals</option>
+            <option value="shipment">Shipments</option>
+            <option value="invoice">Invoices</option>
+          </select>
         </div>
         <div className="transaction-list">
           {loading ? (
@@ -174,6 +227,9 @@ export default function WalletPage() {
       )}
 
       <style jsx>{`
+        .filter-container { padding: 1rem 1rem 0 1rem; }
+        .filter-select { width: 100%; padding: 0.75rem; background: var(--bg-deep); border: 1px solid var(--border-tech); border-radius: 8px; color: var(--text-primary); font-size: 13px; cursor: pointer; }
+        .filter-select:focus { outline: none; border-color: var(--accent-blue); }
         .transaction-list {
           display: flex;
           flex-direction: column;
@@ -200,6 +256,11 @@ export default function WalletPage() {
         .tx-amount { font-weight: 800; font-family: var(--font-display); }
         .tx-amount.positive { color: #10b981; }
         .tx-amount.negative { color: #3b82f6; }
+        .stat-note {
+          font-size: 11px;
+          color: var(--text-muted);
+          margin-top: 0.5rem;
+        }
         .loading-state, .empty-state { padding: 4rem; text-align: center; color: var(--text-secondary); }
 
         .pagination-footer {
@@ -306,6 +367,37 @@ export default function WalletPage() {
           border-color: var(--accent-blue);
           box-shadow: 0 0 20px rgba(var(--accent-blue-rgb), 0.3);
           transform: translateY(-2px);
+        }
+        .card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 1.5rem;
+          border-bottom: 1px solid var(--border-tech);
+        }
+        .export-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem 1rem;
+          background: rgba(var(--accent-blue-rgb), 0.1);
+          color: var(--accent-blue);
+          border: 1px solid rgba(var(--accent-blue-rgb), 0.2);
+          border-radius: 8px;
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .export-btn:hover:not(:disabled) {
+          background: var(--accent-blue);
+          color: var(--bg-deep);
+          border-color: var(--accent-blue);
+        }
+        .export-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
       `}</style>
     </div>

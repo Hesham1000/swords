@@ -1,16 +1,20 @@
 "use client";
 
 import React from "react";
-import { Edit, X, Package, Crown, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
+import { Edit, X, Package, Crown, ChevronLeft, ChevronRight, AlertCircle, Minus, Plus } from "lucide-react";
 import { Product } from "../lib/api/product";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface ProductRowProps {
   product: Product;
   onEdit?: (product: Product) => void;
   onDelete?: (productId: string) => void;
   isAdmin?: boolean;
+  onStockChange?: (id: string, qty: number) => void;
+  isSelected?: boolean;
+  onSelect?: (id: string) => void;
 }
 
 const ProductRow: React.FC<ProductRowProps> = ({
@@ -18,7 +22,11 @@ const ProductRow: React.FC<ProductRowProps> = ({
   onEdit,
   onDelete,
   isAdmin,
+  onStockChange,
+  isSelected,
+  onSelect,
 }) => {
+  const router = useRouter();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const images = product.images || [];
   const hasMultipleImages = images.length > 1;
@@ -53,8 +61,24 @@ const ProductRow: React.FC<ProductRowProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
+      onClick={() => router.push("/products/" + product.id)}
+      style={{ cursor: "pointer" }}
     >
       <div className="product-image-container">
+        {onSelect && (
+          <div
+            className={`product-checkbox-wrap ${isSelected ? "checked" : ""}`}
+            onClick={(e) => { e.stopPropagation(); onSelect(product.id); }}
+          >
+            <div className="product-checkbox">
+              {isSelected && (
+                <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                  <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </div>
+          </div>
+        )}
         <AnimatePresence mode="wait">
           {images.length > 0 ? (
             <motion.img
@@ -116,7 +140,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
               className="floating-btn edit"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={() => onEdit(product)}
+              onClick={(e) => { e.stopPropagation(); onEdit(product); }}
               title="Edit product"
             >
               <Edit size={14} />
@@ -127,7 +151,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
               className="floating-btn delete"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={handleDelete}
+              onClick={(e) => { e.stopPropagation(); handleDelete(); }}
               title="Delete product"
             >
               <X size={16} />
@@ -199,6 +223,25 @@ const ProductRow: React.FC<ProductRowProps> = ({
             {product.quantity < 3 ? <AlertCircle size={12} /> : <Package size={12} />}
             <span>{product.quantity} AVAILABLE</span>
           </div>
+          {onStockChange && (
+            <div className="stock-controls">
+              <button
+                className="stock-btn stock-btn-minus"
+                onClick={(e) => { e.stopPropagation(); onStockChange(product.id, product.quantity - 1); }}
+                disabled={product.quantity === 0}
+                title="Decrease stock"
+              >
+                <Minus size={13} />
+              </button>
+              <button
+                className="stock-btn stock-btn-plus"
+                onClick={(e) => { e.stopPropagation(); onStockChange(product.id, product.quantity + 1); }}
+                title="Increase stock"
+              >
+                <Plus size={13} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
