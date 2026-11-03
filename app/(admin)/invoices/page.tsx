@@ -276,8 +276,13 @@ export default function InvoicesPage() {
           transition: var(--transition-smooth);
         }
         .delete-invoice-btn:hover {
-          background: #b91c1c;
-        }
+            background: #b91c1c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+          }
+          .delete-invoice-btn:active {
+            transform: translateY(0) scale(0.98);
+          }
       `}</style>
     </div>
   );
