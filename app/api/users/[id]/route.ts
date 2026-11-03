@@ -87,7 +87,7 @@ export async function PATCH(
       { $set: setFields }
     );
 
-    if (result.modifiedCount === 0) {
+    if (result.matchedCount === 0) {
       return NextResponse.json(
         { success: false, error: "User not found" },
         { status: 404 }
