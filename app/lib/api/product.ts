@@ -1,6 +1,6 @@
 // lib/api/products.ts
 // Separate API service file for product operations
-const apiUrl = "";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
 
 export interface Product {
   id: string;
@@ -73,7 +73,8 @@ export async function getProducts(
   } = {}
 ): Promise<ProductsResponse> {
   try {
-    const url = new URL(`${apiUrl}/api/products`);
+    const base = apiUrl || (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
+    const url = new URL(`${base}/api/products`);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("limit", limit.toString());
     
@@ -291,7 +292,8 @@ export interface ProductFiltersResponse {
  */
 export async function getProductFilters(): Promise<ProductFiltersResponse> {
   try {
-    const url = new URL(`${apiUrl}/api/products/filters`, window.location.origin);
+    const base = apiUrl || (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
+    const url = new URL(`${base}/api/products/filters`);
 
     const response = await fetch(url.toString(), {
       method: "GET",
