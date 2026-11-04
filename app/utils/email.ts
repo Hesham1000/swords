@@ -1,5 +1,6 @@
 // lib/utils/email.ts
 import nodemailer from "nodemailer";
+import path from "path";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -74,7 +75,7 @@ export async function sendEmailSetPassword(
     attachments: [
       {
         filename: "icon.png",
-        path: "public/icon.png",
+        path: path.join(process.cwd(), "public", "icon.png"),
         cid: "kings-logo",
       },
     ],
