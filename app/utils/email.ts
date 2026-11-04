@@ -36,14 +36,13 @@ export async function sendEmailSetPassword(
   <div style="background-color: #fff; border-radius: 8px; padding: 30px; max-width: 600px; margin: 40px auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); text-align: center;">
 
     <!-- Logo -->
-    <div style="margin-bottom: 10px;">
+    <div style="margin-bottom: 20px;">
       <img src="cid:kings-logo" alt="${projectName} Logo" style="width: 120px; height: auto;" />
     </div>
 
-    <!-- Welcome Message + Avatar -->
-    <div style="display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+    <!-- Welcome Message -->
+    <div style="margin-bottom: 20px;">
       <h1 style="color: #2c3e50; margin: 0; font-size: 24px;">Welcome, ${username}</h1>
-      <img src="cid:avatar" alt="User Avatar" style="width: 40px; height: 40px; border-radius: 50%; margin-left: 10px;" />
     </div>
 
     <p style="font-size: 16px; margin-bottom: 20px;">You've successfully signed up to <strong>${projectName}</strong>.</p>
@@ -74,14 +73,9 @@ export async function sendEmailSetPassword(
     `,
     attachments: [
       {
-        filename: "suit.jpg",
-        path: "public/suit.jpg",
+        filename: "icon.png",
+        path: "public/icon.png",
         cid: "kings-logo",
-      },
-      {
-        filename: "training.jpg",
-        path: "public/training.jpg",
-        cid: "avatar",
       },
     ],
   };

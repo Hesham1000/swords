@@ -28,6 +28,7 @@ const FencingLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   // Add error state
+  const [signupSuccess, setSignupSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formError, setFormError] = useState<{
     field?: string;
@@ -155,8 +156,7 @@ const FencingLogin = () => {
       const data = await response.json();
 
       if (response.ok) {
-        console.log("Registration successful");
-        router.push("/sign-in");
+        setSignupSuccess(true);
       } else {
         // Display error from API response
         displayApiError(data);
@@ -215,7 +215,29 @@ const FencingLogin = () => {
   };
 
   // Step 1: Username & Email Form
-  const renderStep1 = () => (
+  const renderStep1 = () => signupSuccess ? (
+    <motion.div
+      key="success"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="step-content"
+      style={{ textAlign: "center", padding: "1rem 0" }}
+    >
+      <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
+      <h2 style={{ marginBottom: 8 }}>Account Created!</h2>
+      <p style={{ color: "var(--text-secondary)", marginBottom: 20, lineHeight: 1.6 }}>
+        We've sent a <strong>Set Your Password</strong> link to <strong>{formData.email}</strong>.
+        <br />Check your inbox and click the link to activate your account.
+      </p>
+      <button
+        type="button"
+        className="fencing-btn"
+        onClick={() => { setSignupSuccess(false); toggleForm(); }}
+      >
+        Go to Sign In
+      </button>
+    </motion.div>
+  ) : (
     <motion.div
       key="step1"
       initial={{ opacity: 0, x: 20 }}
