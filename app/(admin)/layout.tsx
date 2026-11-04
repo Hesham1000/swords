@@ -89,6 +89,16 @@ export default function DashboardLayout({
         
           if (userData) {
             setUser(userData.user);
+            // Redirect non-admins away from admin-only routes before rendering
+            const userIsAdmin = !!userData.user?.roles?.includes("admin");
+            const adminOnlyRoutes = ["/dashboard", "/invoices", "/wallet", "/history"];
+            const isProtected = adminOnlyRoutes.some(route =>
+              pathname === route || pathname.startsWith(`${route}/`)
+            );
+            if (!userIsAdmin && isProtected) {
+              router.replace("/products");
+              return;
+            }
           } else {
             // Session expired or missing — redirect to sign-in
             router.replace("/sign-in");

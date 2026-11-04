@@ -26,10 +26,7 @@ const dbConnection = async (): Promise<Connection> => {
   }
 
   try {
-    const options: ConnectOptions = {
-      // no need for useNewUrlParser or useUnifiedTopology anymore
-      dbName: process.env.MONGODB_DB_NAME,
-    };
+    const options: ConnectOptions = {};
 
     console.log("🔗 Connecting to MongoDB with Mongoose...");
 
