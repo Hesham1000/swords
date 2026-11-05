@@ -38,7 +38,7 @@ interface ProductFormData {
   description: string;
   price: string;
   category: ("Foil" | "Sabre" | "Epée")[];
-  productType: "lame" | "wire" | "pbt" | "weapon" | "grip" | "guard" | "guard_padding" | "french_pommel" | "nut" | "point" | "screws" | "point_contact_springs" | "socket" | "insulating_tube" | "body_wire" | "cable" | "pin" | "glove";
+  productType: "lame" | "wire" | "pbt" | "weapon" | "grip" | "guard" | "guard_padding" | "french_pommel" | "nut" | "point" | "screws" | "point_contact_springs" | "socket" | "insulating_tube" | "body_wire" | "cable" | "pin" | "glove" | "bag";
   brand: Brand | "";
   model: string;
   subCategory: string;
@@ -50,6 +50,8 @@ interface ProductFormData {
   gloveSize: string;
   quantity: string;
   images: File[];
+  colorVariants: { color: string; quantity: string }[];
+  sizeVariants: { size: string; quantity: string }[];
 }
 
 interface ProductFormProps {
@@ -82,6 +84,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
     gloveSize: (initialData as any)?.gloveSize || "",
     quantity: initialData?.quantity?.toString() || "1",
     images: [],
+    colorVariants: (initialData as any)?.colorVariants?.map((v: any) => ({ color: v.color, quantity: String(v.quantity) })) || [],
+    sizeVariants: (initialData as any)?.sizeVariants?.map((v: any) => ({ size: v.size, quantity: String(v.quantity) })) || [],
   });
 
   const [loading, setLoading] = useState(false);
@@ -137,16 +141,17 @@ const ProductForm: React.FC<ProductFormProps> = ({
   const handleProductTypeChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const productType = e.target.value as any;
     const isSimplifiedType = ["wire", "grip", "guard", "guard_padding", "french_pommel", "nut", "point", "screws", "point_contact_springs", "socket", "insulating_tube", "body_wire", "cable", "pin"].includes(productType);
-    
+
     setFormData((prev) => ({
       ...prev,
       productType,
       brand: isSimplifiedType ? "pbt" : "",
-      category: productType === "glove" ? ["Epée"] : (isSimplifiedType ? ["Epée"] : prev.category),
+      category: (productType === "glove" || productType === "bag") ? ["Epée"] : (isSimplifiedType ? ["Epée"] : prev.category),
       model: "",
       subCategory: "",
       hand: "",
       gloveSize: "",
+      colorVariants: productType === "bag" ? prev.colorVariants : [],
     }));
   };
 
@@ -231,6 +236,16 @@ const ProductForm: React.FC<ProductFormProps> = ({
       }
 
       formDataToSend.append("quantity", formData.quantity);
+      if (formData.productType === "bag" && formData.colorVariants.length > 0) {
+        formDataToSend.append("colorVariants", JSON.stringify(
+          formData.colorVariants.map((v) => ({ color: v.color, quantity: parseInt(v.quantity) || 0 }))
+        ));
+      }
+      if (formData.productType === "glove" && formData.sizeVariants.length > 0) {
+        formDataToSend.append("sizeVariants", JSON.stringify(
+          formData.sizeVariants.map((v) => ({ size: v.size, quantity: parseInt(v.quantity) || 0 }))
+        ));
+      }
       existingImages.forEach((img) => formDataToSend.append("images", img));
       formData.images.forEach((image) => formDataToSend.append("images", image));
 
@@ -284,6 +299,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     <option value="cable">Cable</option>
                     <option value="pin">Pin</option>
                     <option value="glove">Glove</option>
+                    <option value="bag">Bag</option>
                   </select>
                 </div>
                 <div className="form-group full-width">
@@ -462,6 +478,16 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   </>
                 )}
 
+                {formData.productType === "bag" && (
+                  <div className="form-group">
+                    <label>Zipper Count *</label>
+                    <select name="subCategory" value={formData.subCategory || "two_zipper"} onChange={handleChange} required disabled={loading}>
+                      <option value="two_zipper">Two Zippers</option>
+                      <option value="one_zipper">One Zipper</option>
+                    </select>
+                  </div>
+                )}
+
                 {formData.productType === "socket" && (
                   <div className="form-group">
                     <label>Security Clip *</label>
@@ -473,25 +499,14 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 )}
 
                 {formData.productType === "glove" && (
-                  <>
-                    <div className="form-group">
-                      <label>Glove Size *</label>
-                      <select name="gloveSize" value={formData.gloveSize} onChange={handleChange} required disabled={loading}>
-                        <option value="">Select Size</option>
-                        <option value="7">7</option>
-                        <option value="7.1/2">7½</option>
-                        <option value="8.1/2">8½</option>
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label>Handedness</label>
-                      <select name="hand" value={formData.hand} onChange={handleChange} disabled={loading}>
-                        <option value="">Select Hand</option>
-                        <option value="Right">Right</option>
-                        <option value="Left">Left</option>
-                      </select>
-                    </div>
-                  </>
+                  <div className="form-group">
+                    <label>Handedness *</label>
+                    <select name="hand" value={formData.hand} onChange={handleChange} required disabled={loading}>
+                      <option value="">Select Hand</option>
+                      <option value="Right">Right</option>
+                      <option value="Left">Left</option>
+                    </select>
+                  </div>
                 )}
               </div>
             </div>
@@ -502,6 +517,99 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 <h3>INVENTORY & PRICING</h3>
               </div>
               <div className="form-grid">
+                {formData.productType === "bag" ? (
+                  <div className="form-group full-width">
+                    <label>Color Variants & Stock *</label>
+                    <div className="color-variants-list">
+                      {formData.colorVariants.map((cv, idx) => (
+                        <div key={idx} className="color-variant-row">
+                          <input
+                            type="text"
+                            placeholder="Color name"
+                            value={cv.color}
+                            onChange={(e) => {
+                              const updated = [...formData.colorVariants];
+                              updated[idx] = { ...updated[idx], color: e.target.value };
+                              const totalQty = updated.reduce((s, v) => s + (parseInt(v.quantity) || 0), 0);
+                              setFormData((prev) => ({ ...prev, colorVariants: updated, quantity: String(totalQty) }));
+                            }}
+                            disabled={loading}
+                          />
+                          <input
+                            type="number"
+                            placeholder="Qty"
+                            min="0"
+                            value={cv.quantity}
+                            onChange={(e) => {
+                              const updated = [...formData.colorVariants];
+                              updated[idx] = { ...updated[idx], quantity: e.target.value };
+                              const totalQty = updated.reduce((s, v) => s + (parseInt(v.quantity) || 0), 0);
+                              setFormData((prev) => ({ ...prev, colorVariants: updated, quantity: String(totalQty) }));
+                            }}
+                            disabled={loading}
+                          />
+                          <button type="button" className="remove-color-btn" onClick={() => {
+                            const updated = formData.colorVariants.filter((_, i) => i !== idx);
+                            const totalQty = updated.reduce((s, v) => s + (parseInt(v.quantity) || 0), 0);
+                            setFormData((prev) => ({ ...prev, colorVariants: updated, quantity: String(totalQty) }));
+                          }} disabled={loading}><X size={12} /></button>
+                        </div>
+                      ))}
+                      <button type="button" className="add-color-btn" onClick={() => setFormData((prev) => ({ ...prev, colorVariants: [...prev.colorVariants, { color: "", quantity: "1" }] }))} disabled={loading}>
+                        <Plus size={14} /> Add Color
+                      </button>
+                      {formData.colorVariants.length > 0 && (
+                        <div className="color-total">Total stock: {formData.colorVariants.reduce((s, v) => s + (parseInt(v.quantity) || 0), 0)}</div>
+                      )}
+                    </div>
+                  </div>
+                ) : formData.productType === "glove" ? (
+                  <div className="form-group full-width">
+                    <label>Size Variants & Stock *</label>
+                    <div className="color-variants-list">
+                      {formData.sizeVariants.map((sv, idx) => (
+                        <div key={idx} className="color-variant-row">
+                          <input
+                            type="text"
+                            placeholder="Size (e.g. 7, 8.5/M)"
+                            value={sv.size}
+                            onChange={(e) => {
+                              const updated = [...formData.sizeVariants];
+                              updated[idx] = { ...updated[idx], size: e.target.value };
+                              const totalQty = updated.reduce((s, v) => s + (parseInt(v.quantity) || 0), 0);
+                              setFormData((prev) => ({ ...prev, sizeVariants: updated, quantity: String(totalQty) }));
+                            }}
+                            disabled={loading}
+                          />
+                          <input
+                            type="number"
+                            placeholder="Qty"
+                            min="0"
+                            value={sv.quantity}
+                            onChange={(e) => {
+                              const updated = [...formData.sizeVariants];
+                              updated[idx] = { ...updated[idx], quantity: e.target.value };
+                              const totalQty = updated.reduce((s, v) => s + (parseInt(v.quantity) || 0), 0);
+                              setFormData((prev) => ({ ...prev, sizeVariants: updated, quantity: String(totalQty) }));
+                            }}
+                            disabled={loading}
+                          />
+                          <button type="button" className="remove-color-btn" onClick={() => {
+                            const updated = formData.sizeVariants.filter((_, i) => i !== idx);
+                            const totalQty = updated.reduce((s, v) => s + (parseInt(v.quantity) || 0), 0);
+                            setFormData((prev) => ({ ...prev, sizeVariants: updated, quantity: String(totalQty) }));
+                          }} disabled={loading}><X size={12} /></button>
+                        </div>
+                      ))}
+                      <button type="button" className="add-color-btn" onClick={() => setFormData((prev) => ({ ...prev, sizeVariants: [...prev.sizeVariants, { size: "", quantity: "1" }] }))} disabled={loading}>
+                        <Plus size={14} /> Add Size
+                      </button>
+                      {formData.sizeVariants.length > 0 && (
+                        <div className="color-total">Total stock: {formData.sizeVariants.reduce((s, v) => s + (parseInt(v.quantity) || 0), 0)}</div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
                 <div className="form-group">
                   <label>Available Stock *</label>
                   <div className="input-with-icon">
@@ -509,6 +617,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     <input type="number" name="quantity" value={formData.quantity} onChange={handleChange} min="1" required disabled={loading} />
                   </div>
                 </div>
+                )}
                 <div className="form-group">
                   <label>Unit Price (EGP)</label>
                   <div className="input-with-icon">
@@ -600,6 +709,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
           .media-card img { width: 100%; height: 100%; object-fit: cover; }
           .remove-media { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; background: rgba(225, 29, 72, 0.9); border: none; color: white; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
           .media-tag { position: absolute; bottom: 4px; left: 4px; padding: 2px 4px; background: rgba(0, 0, 0, 0.6); color: white; font-size: 7px; font-weight: 900; border-radius: 2px; }
+          .color-variants-list { display: flex; flex-direction: column; gap: 0.5rem; }
+          .color-variant-row { display: flex; gap: 0.5rem; align-items: center; }
+          .color-variant-row input[type="text"] { flex: 1; }
+          .color-variant-row input[type="number"] { width: 80px; }
+          .remove-color-btn { width: 28px; height: 28px; background: rgba(225,29,72,0.15); border: 1px solid rgba(225,29,72,0.4); color: var(--accent-red); border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+          .add-color-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: transparent; border: 1px dashed var(--border-tech); border-radius: 8px; color: var(--text-secondary); font-family: var(--font-display); font-size: 11px; font-weight: 800; text-transform: uppercase; cursor: pointer; margin-top: 0.25rem; }
+          .color-total { font-family: var(--font-display); font-size: 10px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; padding-top: 0.25rem; }
           .form-actions { display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--border-tech); }
           .btn-primary, .btn-secondary { padding: 0.875rem 1.5rem; font-family: var(--font-display); font-size: 12px; font-weight: 900; border-radius: 8px; cursor: pointer; text-transform: uppercase; }
           .btn-primary { background: var(--accent-blue); color: white; border: none; }

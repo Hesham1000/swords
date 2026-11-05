@@ -8,7 +8,9 @@ export interface Product {
   description: string;
   price: number | null;
   category: ("Foil" | "Sabre" | "Epée")[];
-  productType: "lame" | "wire" | "pbt" | "weapon" | "grip" | "guard" | "guard_padding" | "french_pommel" | "nut" | "point" | "screws" | "point_contact_springs" | "socket" | "insulating_tube" | "body_wire" | "cable" | "pin" | "glove";
+  productType: "lame" | "wire" | "pbt" | "weapon" | "grip" | "guard" | "guard_padding" | "french_pommel" | "nut" | "point" | "screws" | "point_contact_springs" | "socket" | "insulating_tube" | "body_wire" | "cable" | "pin" | "glove" | "bag";
+  colorVariants?: { color: string; quantity: number }[];
+  sizeVariants?: { size: string; quantity: number }[];
   brand: string;
   model: string;
   subCategory?: string;

@@ -66,6 +66,8 @@ export async function PUT(
         const subCategory = formData.get("subCategory") as string;
         const isKings = formData.get("isKings") === "true";
         const hand = formData.get("hand") as string;
+        const colorVariantsRaw = formData.get("colorVariants") as string;
+        const sizeVariantsRaw = formData.get("sizeVariants") as string;
 
         // Handle Image Uploads (similar to create logic)
         const images = formData.getAll("images") as (File | string)[];
@@ -108,6 +110,8 @@ export async function PUT(
             hand,
             images: imagePaths,
             updatedAt: new Date().toISOString(),
+            ...(colorVariantsRaw ? { colorVariants: (() => { try { return JSON.parse(colorVariantsRaw); } catch { return undefined; } })() } : {}),
+            ...(sizeVariantsRaw ? { sizeVariants: (() => { try { return JSON.parse(sizeVariantsRaw); } catch { return undefined; } })() } : {}),
         };
 
         const quantityChange = parseInt(quantity) - (existingProduct.quantity || 0);

@@ -21,6 +21,8 @@ interface ProductData {
   gloveSize?: string;
   quantity: number;
   images: string[];
+  colorVariants?: { color: string; quantity: number }[];
+  sizeVariants?: { size: string; quantity: number }[];
   createdAt: string;
   updatedAt: string;
 }
@@ -115,11 +117,25 @@ export async function POST(request: NextRequest) {
       if (subCategory) productData.subCategory = subCategory;
     }
     else if (productType === "glove") {
-      const gloveSize = formData.get("gloveSize") as string;
       const hand = formData.get("hand") as string;
-      
-      if (gloveSize) productData.gloveSize = gloveSize;
       if (hand) productData.hand = hand;
+      const sizeVariantsRaw = formData.get("sizeVariants") as string;
+      if (sizeVariantsRaw) {
+        try {
+          productData.sizeVariants = JSON.parse(sizeVariantsRaw);
+        } catch {}
+      }
+    }
+    else if (productType === "bag") {
+      productData.brand = brand || "chinese";
+      const subCategory = formData.get("subCategory") as string;
+      if (subCategory) productData.subCategory = subCategory;
+      const colorVariantsRaw = formData.get("colorVariants") as string;
+      if (colorVariantsRaw) {
+        try {
+          productData.colorVariants = JSON.parse(colorVariantsRaw);
+        } catch {}
+      }
     }
     else {
       // Simple types (wire, french_pommel, nut, point, etc.)
