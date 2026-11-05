@@ -7,6 +7,23 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getProductById, type Product } from "../../../lib/api/product";
 import { useDashboard } from "../../layout";
 
+const COLOR_HEX: Record<string, string> = {
+  burgundy: "#7B2D3E", maroon: "#7B2D3E", wine: "#7B2D3E",
+  orange: "#F97316",
+  "sky blue": "#38BDF8", skyblue: "#38BDF8",
+  blue: "#3B82F6", navy: "#1E3A5F",
+  red: "#EF4444", crimson: "#DC2626",
+  green: "#22C55E", lime: "#84CC16",
+  purple: "#A855F7", violet: "#7C3AED",
+  black: "#1F2937", white: "#F9FAFB",
+  yellow: "#EAB308", gold: "#F59E0B",
+  pink: "#EC4899", gray: "#9CA3AF", grey: "#9CA3AF",
+  brown: "#92400E", silver: "#94A3B8",
+};
+function colorHex(name: string) {
+  return COLOR_HEX[name.toLowerCase()] ?? COLOR_HEX[name.toLowerCase().replace(/\s+/g, "")] ?? "#9CA3AF";
+}
+
 export default function ProductDetailPage() {
   const { isAdmin } = useDashboard();
   const params = useParams();
@@ -135,11 +152,25 @@ export default function ProductDetailPage() {
             {colorVariants.length > 0 && (
               <div className="detail-row" style={{ alignItems: "flex-start" }}>
                 <span className="detail-label">Colors</span>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center" }}>
                   {colorVariants.map((cv) => (
-                    <span key={cv.color} style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--border-tech)", background: "var(--bg-deep)", color: cv.quantity > 0 ? "var(--text-primary)" : "var(--text-secondary)", textTransform: "capitalize", opacity: cv.quantity > 0 ? 1 : 0.5 }}>
-                      {cv.color} ×{cv.quantity}
-                    </span>
+                    <div key={cv.color} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                      <span
+                        title={`${cv.color} — qty: ${cv.quantity}`}
+                        style={{
+                          width: 22, height: 22, borderRadius: "50%",
+                          background: colorHex(cv.color),
+                          border: "2px solid rgba(255,255,255,0.15)",
+                          boxShadow: "0 0 0 1px rgba(0,0,0,0.3)",
+                          display: "inline-block",
+                          opacity: cv.quantity > 0 ? 1 : 0.3,
+                          filter: cv.quantity > 0 ? "none" : "grayscale(1)",
+                        }}
+                      />
+                      <span style={{ fontSize: 9, fontWeight: 700, color: "var(--text-secondary)", textTransform: "capitalize", letterSpacing: "0.03em" }}>
+                        {cv.color}
+                      </span>
+                    </div>
                   ))}
                 </div>
               </div>
