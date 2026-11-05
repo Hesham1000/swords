@@ -353,6 +353,64 @@ export default function CatalogProductDetailPage() {
                 </p>
               )}
 
+              {/* Color variants */}
+              {(product as any).colorVariants?.length > 0 && (
+                <div style={{ marginBottom: 20 }}>
+                  <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    Available Colors
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {(product as any).colorVariants.map((cv: { color: string; quantity: number }) => (
+                      <span
+                        key={cv.color}
+                        style={{
+                          padding: "4px 12px",
+                          borderRadius: 999,
+                          fontSize: 13,
+                          fontWeight: 500,
+                          background: cv.quantity > 0 ? "#f3f4f6" : "#fee2e2",
+                          color: cv.quantity > 0 ? "#111827" : "#9ca3af",
+                          border: "1px solid #e5e7eb",
+                          textTransform: "capitalize",
+                        }}
+                      >
+                        {cv.color}
+                        {cv.quantity <= 0 && " (out of stock)"}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Size variants */}
+              {(product as any).sizeVariants?.length > 0 && (
+                <div style={{ marginBottom: 20 }}>
+                  <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    Available Sizes
+                    {product.hand ? ` — ${product.hand} Hand` : ""}
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {(product as any).sizeVariants.map((sv: { size: string; quantity: number }) => (
+                      <span
+                        key={sv.size}
+                        style={{
+                          padding: "4px 14px",
+                          borderRadius: 8,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          background: sv.quantity > 0 ? "#fff" : "#f9fafb",
+                          color: sv.quantity > 0 ? "#111827" : "#9ca3af",
+                          border: `1px solid ${sv.quantity > 0 ? "#d1d5db" : "#e5e7eb"}`,
+                        }}
+                      >
+                        {sv.size}
+                        {sv.quantity <= 0 && <span style={{ fontSize: 11, fontWeight: 400 }}> ✗</span>}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div
                 style={{
                   fontSize: 32,
