@@ -2,6 +2,24 @@
 
 import React from "react";
 import { Edit, X, Package, Crown, ChevronLeft, ChevronRight, AlertCircle, Minus, Plus } from "lucide-react";
+
+const COLOR_MAP: Record<string, string> = {
+  burgundy: "#7B2D3E", maroon: "#7B2D3E", wine: "#7B2D3E",
+  orange: "#F97316",
+  "sky blue": "#38BDF8", skyblue: "#38BDF8",
+  blue: "#3B82F6", navy: "#1E3A5F",
+  red: "#EF4444", crimson: "#DC2626",
+  green: "#22C55E", lime: "#84CC16",
+  purple: "#A855F7", violet: "#7C3AED",
+  black: "#1F2937", white: "#F9FAFB",
+  yellow: "#EAB308", gold: "#F59E0B",
+  pink: "#EC4899", gray: "#9CA3AF", grey: "#9CA3AF",
+  brown: "#92400E", silver: "#94A3B8",
+};
+
+function colorToHex(name: string): string {
+  return COLOR_MAP[name.toLowerCase()] ?? COLOR_MAP[name.toLowerCase().replace(/\s+/g, "")] ?? "#9CA3AF";
+}
 import { Product } from "../lib/api/product";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
@@ -211,11 +229,14 @@ const ProductRow: React.FC<ProductRowProps> = ({
             )}
           </div>
           {(product as any).colorVariants?.length > 0 && (
-            <div className="variant-pills">
+            <div className="color-circles">
               {(product as any).colorVariants.map((cv: { color: string; quantity: number }) => (
-                <span key={cv.color} className={`variant-pill color-pill${cv.quantity <= 0 ? ' out' : ''}`}>
-                  {cv.color}
-                </span>
+                <span
+                  key={cv.color}
+                  className={`color-circle${cv.quantity <= 0 ? " out" : ""}`}
+                  style={{ background: colorToHex(cv.color) }}
+                  title={`${cv.color}${cv.quantity <= 0 ? " (out of stock)" : ""}`}
+                />
               ))}
             </div>
           )}

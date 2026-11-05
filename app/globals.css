@@ -2846,6 +2846,33 @@
   text-decoration: line-through;
 }
 
+.color-circles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.color-circle {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+  display: inline-block;
+  cursor: default;
+  transition: transform 0.15s ease;
+}
+
+.color-circle:hover {
+  transform: scale(1.25);
+}
+
+.color-circle.out {
+  opacity: 0.3;
+  filter: grayscale(1);
+}
+
 .meta-badge.lame-color-badge.rainbow {
   color: #fff;
   border: none;

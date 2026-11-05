@@ -9,6 +9,20 @@ import { getProductById, Product } from "../../lib/api/product";
 
 const GOLD = "#c9a227";
 
+const COLOR_HEX: Record<string, string> = {
+  burgundy: "#7B2D3E", maroon: "#7B2D3E", wine: "#7B2D3E",
+  orange: "#F97316",
+  "sky blue": "#38BDF8", skyblue: "#38BDF8",
+  blue: "#3B82F6", navy: "#1E3A5F",
+  red: "#EF4444", crimson: "#DC2626",
+  green: "#22C55E", lime: "#84CC16",
+  purple: "#A855F7", violet: "#7C3AED",
+  black: "#1F2937", white: "#F9FAFB",
+  yellow: "#EAB308", gold: "#F59E0B",
+  pink: "#EC4899", gray: "#9CA3AF", grey: "#9CA3AF",
+  brown: "#92400E", silver: "#94A3B8",
+};
+
 const navStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
@@ -356,27 +370,30 @@ export default function CatalogProductDetailPage() {
               {/* Color variants */}
               {(product as any).colorVariants?.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
-                  <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                     Available Colors
                   </p>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
                     {(product as any).colorVariants.map((cv: { color: string; quantity: number }) => (
-                      <span
-                        key={cv.color}
-                        style={{
-                          padding: "4px 12px",
-                          borderRadius: 999,
-                          fontSize: 13,
-                          fontWeight: 500,
-                          background: cv.quantity > 0 ? "#f3f4f6" : "#fee2e2",
-                          color: cv.quantity > 0 ? "#111827" : "#9ca3af",
-                          border: "1px solid #e5e7eb",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {cv.color}
-                        {cv.quantity <= 0 && " (out of stock)"}
-                      </span>
+                      <div key={cv.color} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                        <span
+                          title={cv.color}
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: "50%",
+                            background: COLOR_HEX[cv.color.toLowerCase()] ?? COLOR_HEX[cv.color.toLowerCase().replace(/\s+/g, "")] ?? "#9CA3AF",
+                            border: "2px solid rgba(0,0,0,0.12)",
+                            boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
+                            display: "inline-block",
+                            opacity: cv.quantity > 0 ? 1 : 0.3,
+                            filter: cv.quantity > 0 ? "none" : "grayscale(1)",
+                          }}
+                        />
+                        <span style={{ fontSize: 11, color: "#6b7280", textTransform: "capitalize" }}>
+                          {cv.color}
+                        </span>
+                      </div>
                     ))}
                   </div>
                 </div>
