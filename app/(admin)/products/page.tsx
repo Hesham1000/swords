@@ -118,7 +118,7 @@ export default function ProductsPage() {
       if (product.gloveSize) formData.append("gloveSize", product.gloveSize);
       formData.append("quantity", String(newQty));
       if (product.images && product.images.length > 0) {
-        formData.append("existingImages", JSON.stringify(product.images));
+        product.images.forEach((img) => formData.append("images", img));
       }
 
       await updateProduct(id, formData);
@@ -179,7 +179,7 @@ export default function ProductsPage() {
           if (product.gloveSize) formData.append("gloveSize", product.gloveSize);
           formData.append("quantity", String(newQty));
           if (product.images && product.images.length > 0) {
-            formData.append("existingImages", JSON.stringify(product.images));
+            product.images.forEach((img) => formData.append("images", img));
           }
           await updateProduct(id, formData);
           // Update local state immediately
