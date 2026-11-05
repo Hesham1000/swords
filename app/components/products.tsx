@@ -210,6 +210,24 @@ const ProductRow: React.FC<ProductRowProps> = ({
               </span>
             )}
           </div>
+          {(product as any).colorVariants?.length > 0 && (
+            <div className="variant-pills">
+              {(product as any).colorVariants.map((cv: { color: string; quantity: number }) => (
+                <span key={cv.color} className={`variant-pill color-pill${cv.quantity <= 0 ? ' out' : ''}`}>
+                  {cv.color}
+                </span>
+              ))}
+            </div>
+          )}
+          {(product as any).sizeVariants?.length > 0 && (
+            <div className="variant-pills">
+              {(product as any).sizeVariants.map((sv: { size: string; quantity: number }) => (
+                <span key={sv.size} className={`variant-pill size-pill${sv.quantity <= 0 ? ' out' : ''}`}>
+                  {sv.size}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="product-numbers">

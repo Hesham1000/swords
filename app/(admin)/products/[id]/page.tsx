@@ -65,8 +65,12 @@ export default function ProductDetailPage() {
     { label: "Category", value: product.category?.join(", ") || "N/A" },
     { label: "Price", value: product.price ? `${product.price} EGP` : "N/A" },
     { label: "Quantity", value: String(product.quantity) },
+    ...(product.hand ? [{ label: "Hand", value: product.hand }] : []),
     { label: "Description", value: product.description || "N/A" },
   ];
+
+  const colorVariants: { color: string; quantity: number }[] = (product as any).colorVariants || [];
+  const sizeVariants: { size: string; quantity: number }[] = (product as any).sizeVariants || [];
 
   return (
     <div className="page-content">
@@ -128,6 +132,30 @@ export default function ProductDetailPage() {
                 <span className="detail-value">{detail.value}</span>
               </div>
             ))}
+            {colorVariants.length > 0 && (
+              <div className="detail-row" style={{ alignItems: "flex-start" }}>
+                <span className="detail-label">Colors</span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                  {colorVariants.map((cv) => (
+                    <span key={cv.color} style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--border-tech)", background: "var(--bg-deep)", color: cv.quantity > 0 ? "var(--text-primary)" : "var(--text-secondary)", textTransform: "capitalize", opacity: cv.quantity > 0 ? 1 : 0.5 }}>
+                      {cv.color} ×{cv.quantity}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {sizeVariants.length > 0 && (
+              <div className="detail-row" style={{ alignItems: "flex-start" }}>
+                <span className="detail-label">Sizes</span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                  {sizeVariants.map((sv) => (
+                    <span key={sv.size} style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4, border: "1px solid var(--border-tech)", background: "var(--bg-deep)", color: sv.quantity > 0 ? "var(--text-primary)" : "var(--text-secondary)", opacity: sv.quantity > 0 ? 1 : 0.5 }}>
+                      {sv.size} ×{sv.quantity}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {isAdmin && (

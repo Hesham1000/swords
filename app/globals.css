@@ -2822,6 +2822,30 @@
   background: rgba(59, 130, 246, 0.1);
 }
 
+.variant-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+.variant-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-tech);
+  color: var(--text-secondary);
+  background: var(--bg-deep);
+  text-transform: capitalize;
+  letter-spacing: 0.03em;
+}
+
+.variant-pill.out {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
 .meta-badge.lame-color-badge.rainbow {
   color: #fff;
   border: none;
