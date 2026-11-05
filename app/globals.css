@@ -2777,6 +2777,7 @@
   display: flex;
   gap: 0.65rem;
   margin-top: auto;
+  padding-top: 0.5rem;
 }
 
 .meta-badge {
