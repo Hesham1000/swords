@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense, memo } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -31,6 +31,165 @@ const COLOR_HEX: Record<string, string> = {
 };
 function colorHex(name: string) {
   return COLOR_HEX[name.toLowerCase()] ?? COLOR_HEX[name.toLowerCase().replace(/\s+/g, "")] ?? "#9CA3AF";
+}
+
+function CatalogCard({ product }: { product: Product }) {
+  const colorVariants: { color: string; quantity: number }[] = (product as any).colorVariants || [];
+  const sizeVariants: { size: string; quantity: number }[] = (product as any).sizeVariants || [];
+  const [cardImageIdx, setCardImageIdx] = useState(0);
+
+  const badge = (() => {
+    if (product.quantity === 0) return { text: "Out of Stock", bg: "#fee2e2", color: "#b91c1c" };
+    if (product.quantity < 3) return { text: "Low Stock", bg: "#fef3c7", color: "#b45309" };
+    return { text: "In Stock", bg: "#dcfce7", color: "#15803d" };
+  })();
+
+  const selectedColorName = cardImageIdx > 0 ? colorVariants[cardImageIdx - 1]?.color : null;
+  const href = `/catalog/${product.id}${selectedColorName ? `?color=${encodeURIComponent(selectedColorName)}` : ""}`;
+
+  return (
+    <Link
+      href={href}
+      style={{
+        display: "block",
+        background: "#fff",
+        borderRadius: 12,
+        overflow: "hidden",
+        border: "1px solid #e5e7eb",
+        textDecoration: "none",
+        color: "inherit",
+        height: "100%",
+        transition: "box-shadow 0.2s, transform 0.2s",
+      }}
+    >
+      <div
+        style={{
+          position: "relative",
+          height: 200,
+          background: "#f3f4f6",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {product.images && product.images[cardImageIdx] ? (
+          <img
+            src={product.images[cardImageIdx]}
+            alt={product.name}
+            style={{ width: "100%", height: "100%", objectFit: "contain", padding: "4px" }}
+          />
+        ) : (
+          <Package size={48} color="#9ca3af" />
+        )}
+        <span
+          style={{
+            position: "absolute", top: 10, right: 10,
+            padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600,
+            background: badge.bg, color: badge.color,
+          }}
+        >
+          {badge.text}
+        </span>
+      </div>
+
+      <div style={{ padding: 16 }}>
+        {/* Category tags */}
+        {product.category?.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
+            {product.category.map((cat) => (
+              <span
+                key={cat}
+                style={{
+                  fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4,
+                  background: "#eff6ff", color: "#1d4ed8", letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {cat}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Brand + attributes row */}
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: 5 }}>
+          {product.brand && (
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", color: "#9ca3af", textTransform: "uppercase" }}>
+              {product.brand.toUpperCase()}
+            </span>
+          )}
+          {product.hand && (
+            <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "#f3f4f6", color: "#374151", textTransform: "uppercase" }}>
+              {product.hand}
+            </span>
+          )}
+          {product.subCategory && (
+            <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "#f3f4f6", color: "#374151", textTransform: "uppercase" }}>
+              {product.subCategory.replace(/_/g, " ")}
+            </span>
+          )}
+        </div>
+
+        <h3 style={{ fontSize: 16, fontWeight: 600, color: "#111827", margin: "0 0 8px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {product.name}
+        </h3>
+
+        {/* Color circles for bags */}
+        {colorVariants.length > 0 && (
+          <div style={{ display: "flex", gap: 7, marginBottom: 8, flexWrap: "wrap", alignItems: "center" }}>
+            {colorVariants.map((cv, ci) => {
+              const isSelected = cardImageIdx === ci + 1;
+              return (
+                <span
+                  key={cv.color}
+                  title={cv.color}
+                  style={{
+                    width: 18, height: 18, borderRadius: "50%",
+                    background: colorHex(cv.color),
+                    border: isSelected ? "2.5px solid #1d4ed8" : "1.5px solid rgba(0,0,0,0.15)",
+                    boxShadow: isSelected ? "0 0 0 1.5px #1d4ed8" : "none",
+                    display: "inline-block",
+                    cursor: "pointer",
+                    opacity: cv.quantity > 0 ? 1 : 0.3,
+                    filter: cv.quantity > 0 ? "none" : "grayscale(1)",
+                    transition: "box-shadow 0.15s",
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setCardImageIdx(isSelected ? 0 : ci + 1);
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {/* Size pills for gloves */}
+        {sizeVariants.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
+            {sizeVariants.map((sv) => (
+              <span
+                key={sv.size}
+                style={{
+                  fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 4,
+                  background: sv.quantity > 0 ? "#f9fafb" : "#fee2e2",
+                  color: sv.quantity > 0 ? "#374151" : "#9ca3af",
+                  border: "1px solid #e5e7eb",
+                  textDecoration: sv.quantity <= 0 ? "line-through" : "none",
+                }}
+              >
+                {sv.size}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <p style={{ fontSize: 18, fontWeight: 700, color: "#b8860b", margin: 0 }}>
+          {product.price ? `${product.price.toLocaleString()} EGP` : "Price on request"}
+        </p>
+      </div>
+    </Link>
+  );
 }
 
 function CatalogPageContent() {
@@ -101,14 +260,6 @@ function CatalogPageContent() {
     };
     fetchProducts();
   }, [page, searchQuery, filterCategory, filterType, filterBrand]);
-
-  const getStockBadge = (quantity: number) => {
-    if (quantity === 0)
-      return { text: "Out of Stock", bg: "#fee2e2", color: "#b91c1c" };
-    if (quantity < 3)
-      return { text: "Low Stock", bg: "#fef3c7", color: "#b45309" };
-    return { text: "In Stock", bg: "#dcfce7", color: "#15803d" };
-  };
 
   const selectStyle: React.CSSProperties = {
     padding: "10px 12px",
@@ -326,156 +477,16 @@ function CatalogPageContent() {
           <>
             {/* Product Grid */}
             <div className="catalog-grid">
-              {products.map((product, idx) => {
-                const badge = getStockBadge(product.quantity);
-                return (
-                  <motion.div
-                    key={product.id}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25, delay: Math.min(idx * 0.03, 0.3) }}
-                  >
-                    <Link
-                      href={`/catalog/${product.id}`}
-                      style={{
-                        display: "block",
-                        background: "#fff",
-                        borderRadius: 12,
-                        overflow: "hidden",
-                        border: "1px solid #e5e7eb",
-                        textDecoration: "none",
-                        color: "inherit",
-                        height: "100%",
-                        transition: "box-shadow 0.2s, transform 0.2s",
-                      }}
-                    >
-                      <div
-                        style={{
-                          position: "relative",
-                          height: 200,
-                          background: "#f3f4f6",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        {product.images && product.images[0] ? (
-                          <img
-                            src={product.images[0]}
-                            alt={product.name}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "contain",
-                              padding: "4px",
-                            }}
-                          />
-                        ) : (
-                          <Package size={48} color="#9ca3af" />
-                        )}
-                        <span
-                          style={{
-                            position: "absolute",
-                            top: 10,
-                            right: 10,
-                            padding: "4px 10px",
-                            borderRadius: 999,
-                            fontSize: 12,
-                            fontWeight: 600,
-                            background: badge.bg,
-                            color: badge.color,
-                          }}
-                        >
-                          {badge.text}
-                        </span>
-                      </div>
-                      <div style={{ padding: 16 }}>
-                        {/* Brand + attributes row */}
-                        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                          {product.brand && (
-                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", color: "#9ca3af", textTransform: "uppercase" }}>
-                              {product.brand.toUpperCase()}
-                            </span>
-                          )}
-                          {product.hand && (
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "#f3f4f6", color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                              {product.hand}
-                            </span>
-                          )}
-                          {product.subCategory && (
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "#f3f4f6", color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                              {product.subCategory.replace(/_/g, " ")}
-                            </span>
-                          )}
-                        </div>
-                        <h3
-                          style={{
-                            fontSize: 16,
-                            fontWeight: 600,
-                            color: "#111827",
-                            margin: "0 0 6px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {product.name}
-                        </h3>
-                        {/* Color circles for bags */}
-                        {(product as any).colorVariants?.length > 0 && (
-                          <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-                            {(product as any).colorVariants.map((cv: { color: string; quantity: number }) => (
-                              <span
-                                key={cv.color}
-                                title={cv.color}
-                                style={{
-                                  width: 14, height: 14, borderRadius: "50%",
-                                  background: colorHex(cv.color),
-                                  border: "1.5px solid rgba(0,0,0,0.15)",
-                                  display: "inline-block",
-                                  opacity: cv.quantity > 0 ? 1 : 0.3,
-                                  filter: cv.quantity > 0 ? "none" : "grayscale(1)",
-                                }}
-                              />
-                            ))}
-                          </div>
-                        )}
-                        {/* Size pills for gloves */}
-                        {(product as any).sizeVariants?.length > 0 && (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
-                            {(product as any).sizeVariants.map((sv: { size: string; quantity: number }) => (
-                              <span
-                                key={sv.size}
-                                style={{
-                                  fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 4,
-                                  background: sv.quantity > 0 ? "#f9fafb" : "#fee2e2",
-                                  color: sv.quantity > 0 ? "#374151" : "#9ca3af",
-                                  border: "1px solid #e5e7eb",
-                                  textDecoration: sv.quantity <= 0 ? "line-through" : "none",
-                                }}
-                              >
-                                {sv.size}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <p
-                          style={{
-                            fontSize: 18,
-                            fontWeight: 700,
-                            color: "#b8860b",
-                            margin: 0,
-                          }}
-                        >
-                          {product.price
-                            ? `${product.price.toLocaleString()} EGP`
-                            : "Price on request"}
-                        </p>
-                      </div>
-                    </Link>
-                  </motion.div>
-                );
-              })}
+              {products.map((product, i) => (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, delay: Math.min(i * 0.03, 0.3) }}
+                >
+                  <CatalogCard product={product} />
+                </motion.div>
+              ))}
             </div>
 
             {/* Pagination */}

@@ -79,7 +79,13 @@ const ProductRow: React.FC<ProductRowProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      onClick={() => router.push("/products/" + product.id)}
+      onClick={() => {
+        const colorName = currentImageIndex > 0
+          ? (product as any).colorVariants?.[currentImageIndex - 1]?.color
+          : null;
+        const url = "/products/" + product.id + (colorName ? "?color=" + encodeURIComponent(colorName) : "");
+        router.push(url);
+      }}
       style={{ cursor: "pointer" }}
     >
       <div className="product-image-container">
@@ -230,15 +236,23 @@ const ProductRow: React.FC<ProductRowProps> = ({
           </div>
           {(product as any).colorVariants?.length > 0 && (
             <div className="color-circles">
-              {(product as any).colorVariants.map((cv: { color: string; quantity: number }) => (
-                <span
-                  key={cv.color}
-                  className={`color-circle${cv.quantity <= 0 ? " out" : ""}`}
-                  style={{ background: colorToHex(cv.color), cursor: "pointer" }}
-                  title={`${cv.color}${cv.quantity <= 0 ? " (out of stock)" : ""}`}
-                  onClick={(e) => { e.stopPropagation(); router.push(`/products/${product.id}?color=${encodeURIComponent(cv.color)}`); }}
-                />
-              ))}
+              {(product as any).colorVariants.map((cv: { color: string; quantity: number }, ci: number) => {
+                const isSelected = currentImageIndex === ci + 1;
+                return (
+                  <span
+                    key={cv.color}
+                    className={`color-circle${cv.quantity <= 0 ? " out" : ""}`}
+                    style={{
+                      background: colorToHex(cv.color),
+                      cursor: "pointer",
+                      boxShadow: isSelected ? "0 0 0 2px var(--accent-blue, #3b82f6)" : undefined,
+                      border: isSelected ? "2px solid var(--accent-blue, #3b82f6)" : undefined,
+                    }}
+                    title={`${cv.color}${cv.quantity <= 0 ? " (out of stock)" : ""}`}
+                    onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(ci + 1); }}
+                  />
+                );
+              })}
             </div>
           )}
           {(product as any).sizeVariants?.length > 0 && (
