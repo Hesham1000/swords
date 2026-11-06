@@ -4323,6 +4323,34 @@
   box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
 }
 
+.filter-date-input {
+  padding: 0.75rem 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-tech);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  color-scheme: light;
+  min-width: 140px;
+}
+
+.filter-date-input:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 4px rgba(0, 102, 255, 0.1);
+}
+
+.dark-mode .filter-date-input {
+  background: rgba(0, 0, 0, 0.2);
+  color-scheme: dark;
+  color: var(--text-secondary);
+}
+
 .dark-mode .filter-bar {
   background: rgba(255, 255, 255, 0.02);
 }

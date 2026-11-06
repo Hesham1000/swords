@@ -112,6 +112,8 @@ export default function InvoicesPage() {
           type="date"
           className="filter-date-input"
           value={dateFrom}
+          placeholder="From date"
+          title="From date"
           onChange={(e) => {
             setDateFrom(e.target.value);
             setPage(1);
@@ -121,6 +123,8 @@ export default function InvoicesPage() {
           type="date"
           className="filter-date-input"
           value={dateTo}
+          placeholder="To date"
+          title="To date"
           onChange={(e) => {
             setDateTo(e.target.value);
             setPage(1);
