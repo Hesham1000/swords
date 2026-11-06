@@ -36,6 +36,14 @@ export default function ProductDetailPage() {
   const [idx, setIdx] = useState(0);
   const imgs = product?.images ?? [];
 
+  const touchStartX = React.useRef<number>(0);
+  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(delta) < 40 || imgs.length <= 1) return;
+    setIdx((i) => delta < 0 ? (i + 1) % imgs.length : (i - 1 + imgs.length) % imgs.length);
+  };
+
   useEffect(() => {
     if (!id) return;
     getProductById(id)
@@ -100,14 +108,6 @@ export default function ProductDetailPage() {
 
   const colorVariants: { color: string; quantity: number }[] = (product as any).colorVariants || [];
   const sizeVariants: { size: string; quantity: number }[] = (product as any).sizeVariants || [];
-
-  const touchStartX = React.useRef<number>(0);
-  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    const delta = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(delta) < 40 || imgs.length <= 1) return;
-    setIdx((i) => delta < 0 ? (i + 1) % imgs.length : (i - 1 + imgs.length) % imgs.length);
-  };
 
   return (
     <div className="page-content">

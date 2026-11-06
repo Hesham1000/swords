@@ -108,28 +108,24 @@ export default function InvoicesPage() {
           <option value="pending">Pending</option>
           <option value="overdue">Overdue</option>
         </select>
-        <input
-          type="date"
-          className="filter-date-input"
-          value={dateFrom}
-          placeholder="From date"
-          title="From date"
-          onChange={(e) => {
-            setDateFrom(e.target.value);
-            setPage(1);
-          }}
-        />
-        <input
-          type="date"
-          className="filter-date-input"
-          value={dateTo}
-          placeholder="To date"
-          title="To date"
-          onChange={(e) => {
-            setDateTo(e.target.value);
-            setPage(1);
-          }}
-        />
+        <label className="filter-date-wrapper">
+          <span className="filter-date-label">From</span>
+          <input
+            type="date"
+            className="filter-date-input"
+            value={dateFrom}
+            onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+          />
+        </label>
+        <label className="filter-date-wrapper">
+          <span className="filter-date-label">To</span>
+          <input
+            type="date"
+            className="filter-date-input"
+            value={dateTo}
+            onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+          />
+        </label>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
