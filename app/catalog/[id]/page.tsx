@@ -240,11 +240,6 @@ function CatalogProductDetailContent() {
                   border: "1px solid rgba(0,0,0,0.08)",
                   borderRadius: 16,
                   overflow: "hidden",
-                  minHeight: 380,
-                  maxHeight: 580,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
                 }}
               >
                 <AnimatePresence mode="wait">
@@ -259,12 +254,17 @@ function CatalogProductDetailContent() {
                       transition={{ duration: 0.3 }}
                       drag="x"
                       dragConstraints={{ left: 0, right: 0 }}
+                      dragElastic={0.1}
                       onDragEnd={handleDragEnd}
                       style={{
                         width: "100%",
-                        maxHeight: 580,
+                        height: "auto",
+                        display: "block",
                         objectFit: "contain",
                         cursor: hasMultipleImages ? "grab" : "default",
+                        touchAction: "pan-y",
+                        userSelect: "none",
+                        WebkitUserSelect: "none",
                       }}
                     />
                   ) : (

@@ -4329,14 +4329,31 @@
   border: 1px solid var(--border-tech);
   border-radius: 10px;
   color: var(--text-secondary);
+  -webkit-text-fill-color: var(--text-secondary);
   font-family: var(--font-display);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;
   cursor: pointer;
   transition: var(--transition-smooth);
-  color-scheme: light;
+  appearance: none;
+  -webkit-appearance: none;
   min-width: 140px;
+}
+
+.filter-date-input::-webkit-datetime-edit {
+  color: var(--text-secondary);
+  -webkit-text-fill-color: var(--text-secondary);
+}
+
+.filter-date-input::-webkit-datetime-edit-fields-wrapper {
+  background: transparent;
+}
+
+.filter-date-input::-webkit-calendar-picker-indicator {
+  opacity: 0.6;
+  cursor: pointer;
+  filter: invert(0.3);
 }
 
 .filter-date-input:focus {
@@ -4347,8 +4364,19 @@
 
 .dark-mode .filter-date-input {
   background: rgba(0, 0, 0, 0.2);
-  color-scheme: dark;
   color: var(--text-secondary);
+  -webkit-text-fill-color: var(--text-secondary);
+}
+
+.dark-mode .filter-date-input::-webkit-datetime-edit,
+.dark-mode .filter-date-input::-webkit-datetime-edit-fields-wrapper {
+  color: var(--text-secondary);
+  -webkit-text-fill-color: var(--text-secondary);
+  background: transparent;
+}
+
+.dark-mode .filter-date-input::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
 }
 
 .dark-mode .filter-bar {
@@ -5611,6 +5639,23 @@
   grid-template-columns: 1fr 1fr;
   gap: 32px;
   margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+  .product-detail-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+.product-detail-image-wrapper {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-card);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
 }
 
 .product-detail-rows {
