@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getProductById, type Product } from "../../../lib/api/product";
@@ -29,6 +29,7 @@ export default function ProductDetailPage() {
   const params = useParams();
   const id = params?.id as string | undefined;
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,6 +49,17 @@ export default function ProductDetailPage() {
         setLoading(false);
       });
   }, [id]);
+
+  // Init image index from ?color= URL param
+  useEffect(() => {
+    if (!product) return;
+    const colorParam = searchParams.get("color");
+    if (!colorParam) return;
+    const cvs = (product as any).colorVariants as { color: string; quantity: number }[] | undefined;
+    if (!cvs) return;
+    const ci = cvs.findIndex(cv => cv.color.toLowerCase() === colorParam.toLowerCase());
+    if (ci !== -1) setIdx(ci + 1); // images[0] is main/group, images[1+] are per-color
+  }, [product, searchParams]);
 
   if (loading) {
     return (
@@ -153,25 +165,33 @@ export default function ProductDetailPage() {
               <div className="detail-row" style={{ alignItems: "flex-start" }}>
                 <span className="detail-label">Colors</span>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center" }}>
-                  {colorVariants.map((cv) => (
-                    <div key={cv.color} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                      <span
+                  {colorVariants.map((cv, ci) => {
+                    const isSelected = idx === ci + 1;
+                    return (
+                      <div
+                        key={cv.color}
+                        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer" }}
+                        onClick={() => setIdx(ci + 1)}
                         title={`${cv.color} — qty: ${cv.quantity}`}
-                        style={{
-                          width: 22, height: 22, borderRadius: "50%",
-                          background: colorHex(cv.color),
-                          border: "2px solid rgba(255,255,255,0.15)",
-                          boxShadow: "0 0 0 1px rgba(0,0,0,0.3)",
-                          display: "inline-block",
-                          opacity: cv.quantity > 0 ? 1 : 0.3,
-                          filter: cv.quantity > 0 ? "none" : "grayscale(1)",
-                        }}
-                      />
-                      <span style={{ fontSize: 9, fontWeight: 700, color: "var(--text-secondary)", textTransform: "capitalize", letterSpacing: "0.03em" }}>
-                        {cv.color}
-                      </span>
-                    </div>
-                  ))}
+                      >
+                        <span
+                          style={{
+                            width: 22, height: 22, borderRadius: "50%",
+                            background: colorHex(cv.color),
+                            border: isSelected ? "2px solid var(--accent-blue, #3b82f6)" : "2px solid rgba(255,255,255,0.15)",
+                            boxShadow: isSelected ? "0 0 0 2px var(--accent-blue, #3b82f6)" : "0 0 0 1px rgba(0,0,0,0.3)",
+                            display: "inline-block",
+                            opacity: cv.quantity > 0 ? 1 : 0.3,
+                            filter: cv.quantity > 0 ? "none" : "grayscale(1)",
+                            transition: "box-shadow 0.15s",
+                          }}
+                        />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: isSelected ? "var(--text-primary)" : "var(--text-secondary)", textTransform: "capitalize", letterSpacing: "0.03em" }}>
+                          {cv.color}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

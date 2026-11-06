@@ -234,8 +234,9 @@ const ProductRow: React.FC<ProductRowProps> = ({
                 <span
                   key={cv.color}
                   className={`color-circle${cv.quantity <= 0 ? " out" : ""}`}
-                  style={{ background: colorToHex(cv.color) }}
+                  style={{ background: colorToHex(cv.color), cursor: "pointer" }}
                   title={`${cv.color}${cv.quantity <= 0 ? " (out of stock)" : ""}`}
+                  onClick={(e) => { e.stopPropagation(); router.push(`/products/${product.id}?color=${encodeURIComponent(cv.color)}`); }}
                 />
               ))}
             </div>

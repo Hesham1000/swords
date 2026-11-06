@@ -18,6 +18,21 @@ import {
   ProductsResponse,
 } from "../lib/api/product";
 
+const COLOR_HEX: Record<string, string> = {
+  burgundy: "#7B2D3E", maroon: "#7B2D3E", wine: "#7B2D3E",
+  orange: "#F97316",
+  "sky blue": "#38BDF8", skyblue: "#38BDF8",
+  blue: "#3B82F6", navy: "#1E3A5F",
+  red: "#EF4444", green: "#22C55E",
+  purple: "#A855F7", black: "#1F2937", white: "#F9FAFB",
+  yellow: "#EAB308", gold: "#F59E0B",
+  pink: "#EC4899", gray: "#9CA3AF", grey: "#9CA3AF",
+  brown: "#92400E", silver: "#94A3B8",
+};
+function colorHex(name: string) {
+  return COLOR_HEX[name.toLowerCase()] ?? COLOR_HEX[name.toLowerCase().replace(/\s+/g, "")] ?? "#9CA3AF";
+}
+
 function CatalogPageContent() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
@@ -351,7 +366,8 @@ function CatalogPageContent() {
                             style={{
                               width: "100%",
                               height: "100%",
-                              objectFit: "cover",
+                              objectFit: "contain",
+                              padding: "4px",
                             }}
                           />
                         ) : (
@@ -374,26 +390,30 @@ function CatalogPageContent() {
                         </span>
                       </div>
                       <div style={{ padding: 16 }}>
-                        {product.brand && (
-                          <p
-                            style={{
-                              fontSize: 12,
-                              fontWeight: 600,
-                              letterSpacing: "0.05em",
-                              color: "#9ca3af",
-                              margin: "0 0 4px",
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            {product.brand.toUpperCase()}
-                          </p>
-                        )}
+                        {/* Brand + attributes row */}
+                        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                          {product.brand && (
+                            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", color: "#9ca3af", textTransform: "uppercase" }}>
+                              {product.brand.toUpperCase()}
+                            </span>
+                          )}
+                          {product.hand && (
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "#f3f4f6", color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                              {product.hand}
+                            </span>
+                          )}
+                          {product.subCategory && (
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "#f3f4f6", color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                              {product.subCategory.replace(/_/g, " ")}
+                            </span>
+                          )}
+                        </div>
                         <h3
                           style={{
                             fontSize: 16,
                             fontWeight: 600,
                             color: "#111827",
-                            margin: "0 0 8px",
+                            margin: "0 0 6px",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",
@@ -401,6 +421,44 @@ function CatalogPageContent() {
                         >
                           {product.name}
                         </h3>
+                        {/* Color circles for bags */}
+                        {(product as any).colorVariants?.length > 0 && (
+                          <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+                            {(product as any).colorVariants.map((cv: { color: string; quantity: number }) => (
+                              <span
+                                key={cv.color}
+                                title={cv.color}
+                                style={{
+                                  width: 14, height: 14, borderRadius: "50%",
+                                  background: colorHex(cv.color),
+                                  border: "1.5px solid rgba(0,0,0,0.15)",
+                                  display: "inline-block",
+                                  opacity: cv.quantity > 0 ? 1 : 0.3,
+                                  filter: cv.quantity > 0 ? "none" : "grayscale(1)",
+                                }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                        {/* Size pills for gloves */}
+                        {(product as any).sizeVariants?.length > 0 && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
+                            {(product as any).sizeVariants.map((sv: { size: string; quantity: number }) => (
+                              <span
+                                key={sv.size}
+                                style={{
+                                  fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 4,
+                                  background: sv.quantity > 0 ? "#f9fafb" : "#fee2e2",
+                                  color: sv.quantity > 0 ? "#374151" : "#9ca3af",
+                                  border: "1px solid #e5e7eb",
+                                  textDecoration: sv.quantity <= 0 ? "line-through" : "none",
+                                }}
+                              >
+                                {sv.size}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         <p
                           style={{
                             fontSize: 18,
@@ -411,7 +469,7 @@ function CatalogPageContent() {
                         >
                           {product.price
                             ? `${product.price.toLocaleString()} EGP`
-                            : "N/A"}
+                            : "Price on request"}
                         </p>
                       </div>
                     </Link>

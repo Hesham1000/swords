@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Package, AlertCircle, Send } from "lucide-react";
@@ -59,14 +59,16 @@ const stockBadge = (quantity: number) => {
   return { label: "In Stock", bg: "#dcfce7", color: "#15803d" };
 };
 
-export default function CatalogProductDetailPage() {
+function CatalogProductDetailContent() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const id = typeof params?.id === "string" ? params.id : Array.isArray(params?.id) ? params.id[0] : "";
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [showInquiryForm, setShowInquiryForm] = useState(false);
   const [inquirySubmitted, setInquirySubmitted] = useState(false);
   const [inquiryError, setInquiryError] = useState("");
@@ -101,6 +103,20 @@ export default function CatalogProductDetailPage() {
       cancelled = true;
     };
   }, [id]);
+
+  // Init selected color from ?color= URL param
+  useEffect(() => {
+    if (!product) return;
+    const colorParam = searchParams.get("color");
+    if (!colorParam) return;
+    const cvs = (product as any).colorVariants as { color: string; quantity: number }[] | undefined;
+    if (!cvs) return;
+    const ci = cvs.findIndex(cv => cv.color.toLowerCase() === colorParam.toLowerCase());
+    if (ci !== -1) {
+      setSelectedColor(cvs[ci].color);
+      setCurrentImageIndex(ci + 1);
+    }
+  }, [product, searchParams]);
 
   const images = product?.images || [];
   const hasMultipleImages = images.length > 1;
@@ -220,11 +236,12 @@ export default function CatalogProductDetailPage() {
               <div
                 style={{
                   position: "relative",
-                  background: "#fff",
+                  background: "#f8f8f8",
                   border: "1px solid rgba(0,0,0,0.08)",
                   borderRadius: 16,
                   overflow: "hidden",
-                  aspectRatio: "1 / 1",
+                  minHeight: 380,
+                  maxHeight: 580,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -245,8 +262,8 @@ export default function CatalogProductDetailPage() {
                       onDragEnd={handleDragEnd}
                       style={{
                         width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
+                        maxHeight: 580,
+                        objectFit: "contain",
                         cursor: hasMultipleImages ? "grab" : "default",
                       }}
                     />
@@ -373,28 +390,40 @@ export default function CatalogProductDetailPage() {
                   <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                     Available Colors
                   </p>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-                    {(product as any).colorVariants.map((cv: { color: string; quantity: number }) => (
-                      <div key={cv.color} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                        <span
-                          title={cv.color}
-                          style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: "50%",
-                            background: COLOR_HEX[cv.color.toLowerCase()] ?? COLOR_HEX[cv.color.toLowerCase().replace(/\s+/g, "")] ?? "#9CA3AF",
-                            border: "2px solid rgba(0,0,0,0.12)",
-                            boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
-                            display: "inline-block",
-                            opacity: cv.quantity > 0 ? 1 : 0.3,
-                            filter: cv.quantity > 0 ? "none" : "grayscale(1)",
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start" }}>
+                    {(product as any).colorVariants.map((cv: { color: string; quantity: number }, ci: number) => {
+                      const isSelected = selectedColor === cv.color;
+                      return (
+                        <div
+                          key={cv.color}
+                          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, cursor: cv.quantity > 0 ? "pointer" : "default" }}
+                          onClick={() => {
+                            if (cv.quantity <= 0) return;
+                            setSelectedColor(cv.color);
+                            setCurrentImageIndex(ci + 1);
                           }}
-                        />
-                        <span style={{ fontSize: 11, color: "#6b7280", textTransform: "capitalize" }}>
-                          {cv.color}
-                        </span>
-                      </div>
-                    ))}
+                        >
+                          <span
+                            title={cv.color}
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: "50%",
+                              background: COLOR_HEX[cv.color.toLowerCase()] ?? COLOR_HEX[cv.color.toLowerCase().replace(/\s+/g, "")] ?? "#9CA3AF",
+                              border: isSelected ? `3px solid ${GOLD}` : "2px solid rgba(0,0,0,0.12)",
+                              boxShadow: isSelected ? `0 0 0 2px ${GOLD}` : "0 1px 4px rgba(0,0,0,0.18)",
+                              display: "inline-block",
+                              opacity: cv.quantity > 0 ? 1 : 0.3,
+                              filter: cv.quantity > 0 ? "none" : "grayscale(1)",
+                              transition: "box-shadow 0.15s, border 0.15s",
+                            }}
+                          />
+                          <span style={{ fontSize: 11, color: isSelected ? "#111827" : "#6b7280", fontWeight: isSelected ? 600 : 400, textTransform: "capitalize" }}>
+                            {cv.color}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -603,5 +632,13 @@ export default function CatalogProductDetailPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function CatalogProductDetailPage() {
+  return (
+    <Suspense fallback={null}>
+      <CatalogProductDetailContent />
+    </Suspense>
   );
 }
