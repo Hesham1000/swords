@@ -181,8 +181,8 @@ function CatalogProductDetailContent() {
     <div className="catalog-detail-page" style={{ minHeight: "100vh", background: "#fafafa" }}>
       {/* Top Nav */}
       <nav style={navStyle}>
-        <Link href="/" style={backLinkStyle}>
-          <ChevronLeft size={18} /> Back to Home
+        <Link href="/catalog" style={backLinkStyle}>
+          <ChevronLeft size={18} /> Back to Catalog
         </Link>
         <Link href="/catalog" aria-label="KINGS catalog">
           {/* eslint-disable-next-line @next/next/no-img-element */}
